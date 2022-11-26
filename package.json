@@ -1,7 +1,7 @@
 {
-  "name": "tvos-soap4.me",
-  "version": "1.18.2",
-  "description": "tvOS app for soap4.me video service https://soap4.me/",
+  "name": "itaflix-tvos",
+  "version": "1.0.0",
+  "description": "tvOS app for itaflix service",
   "main": "src",
   "engine-strict": true,
   "engines": {
@@ -21,7 +21,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/a-ignatov-parc/tvos-soap4.me.git"
+    "url": "git+https://github.com/Paliddo86/itaflix-tvos.git"
   },
   "keywords": [
     "soap4.me",
@@ -32,12 +32,9 @@
     "tvjs",
     "tv"
   ],
-  "author": "Anton Ignatov <abietis@gmail.com>",
+  "author": "Luigi Pallante <l.pallante86@gmail.com>",
   "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/a-ignatov-parc/tvos-soap4.me/issues"
-  },
-  "homepage": "https://github.com/a-ignatov-parc/tvos-soap4.me#readme",
+  "homepage": "https://github.com/Paliddo86/itaflix-tvos.git#readme",
   "husky": {
     "hooks": {
       "pre-commit": "lint-staged"

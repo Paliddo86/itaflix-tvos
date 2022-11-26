@@ -1,4 +1,4 @@
-# TVML app for soap4.me
+# TVML app for itaflix
 
 [![CircleCI](https://circleci.com/gh/a-ignatov-parc/tvos-soap4.me.svg?style=svg)](https://circleci.com/gh/a-ignatov-parc/tvos-soap4.me)
 
@@ -30,14 +30,4 @@ Now you can build Xcode project and run it in tvOS simulator or on Apple TV.
 
 ## Application
 
-![App Icon](app-icon.jpg)
-
-This application is available as [`soap4atv`](https://itunes.apple.com/ru/app/id1204973085) in the Apple's App Store.
-
-### Screenshots
-
-![My TV Shows Screen](screenshots/screenshot1.png)
-![TV Show Screen](screenshots/screenshot2.png)
-![Season Screen](screenshots/screenshot3.png)
-![All TV Shows Screen](screenshots/screenshot4.png)
-![Genres Screen](screenshots/screenshot5.png)
+![App Icon](AppIcon.png)
