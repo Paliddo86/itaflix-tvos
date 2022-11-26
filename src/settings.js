@@ -8,7 +8,7 @@ const bus = new EventBus();
 
 export const subscription = bus.subscription.bind(bus);
 
-const STORAGE_KEY = 'soap4me-settings';
+const STORAGE_KEY = 'itaflix-settings';
 
 const quality = {
   SD: 'sd',
@@ -29,6 +29,7 @@ const playback = {
 
 const language = {
   AUTO: 'auto',
+  IT: 'it',
   EN: 'en',
   RU: 'ru',
 };
