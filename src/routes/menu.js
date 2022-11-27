@@ -8,6 +8,7 @@ import * as localization from '../localization';
 import { deepEqualShouldUpdate } from '../utils/components';
 
 import { AUTH, GUEST, BASIC } from './menu/constants';
+import styles from '../common/styles';
 
 const datePattern = 'DD-MM-YYYY';
 
@@ -79,6 +80,7 @@ export default function menuRoute(items) {
 
           return (
             <document>
+              <head>{styles}</head>
               <menuBarTemplate>
                 <menuBar>
                   {menuItems.map(({ route, active }) => {

@@ -11,12 +11,15 @@ import {
   capitalizeText,
   isMenuButtonPressNavigatedTo,
   sortTvShows,
+  getStartParams,
 } from '../utils';
 
 import { deepEqualShouldUpdate } from '../utils/components';
 
 import Tile from '../components/tile';
 import Loader from '../components/loader';
+
+import logo from '../assets/img/logo.png';
 
 export default function genresRoute() {
   return TVDML.createPipeline().pipe(
@@ -96,6 +99,8 @@ export default function genresRoute() {
             return <Loader />;
           }
 
+          const { BASEURL } = getStartParams();
+
           return (
             <document>
               <head>
@@ -111,7 +116,15 @@ export default function genresRoute() {
               </head>
               <catalogTemplate>
                 <banner>
-                  <title>{i18n('genres-caption')}</title>
+                  <img
+                    style="tv-align:left; tv-position:top-left"
+                    src={BASEURL + logo}
+                    width="200"
+                    height="75"
+                  />
+                  <title style="tv-align:center; tv-position:top">
+                    {i18n('genres-caption')}
+                  </title>
                 </banner>
                 <list>
                   <section>

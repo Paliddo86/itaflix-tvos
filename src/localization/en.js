@@ -80,6 +80,7 @@ export default {
   'settings-values-auto': 'System language',
   'settings-values-en': 'English',
   'settings-values-ru': 'Русский',
+  'settings-values-it': 'Italian',
 
   'speedtest-caption': 'Speed test',
   'speedtest-loading': 'Loading servers info...',

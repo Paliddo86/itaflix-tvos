@@ -9,7 +9,7 @@ import { deepEqualShouldUpdate } from '../utils/components';
 
 import { version, supportUHD } from '../request/soap';
 
-import poster from '../assets/poster.png';
+import poster from '../assets/img/poster.png';
 
 const { get: i18n } = localization;
 
@@ -23,7 +23,7 @@ const {
 const { SD, HD, FULLHD, UHD } = settings.values[VIDEO_QUALITY];
 const { LOCALIZATION, SUBTITLES } = settings.values[TRANSLATION];
 const { CONTINUES, BY_EPISODE } = settings.values[VIDEO_PLAYBACK];
-const { AUTO, EN, RU } = settings.values[LANGUAGE];
+const { AUTO, EN, RU, IT } = settings.values[LANGUAGE];
 
 const titleMapping = {
   [VIDEO_QUALITY]: 'settings-labels-video_quality',
@@ -56,6 +56,7 @@ const valueMapping = {
   [AUTO]: 'settings-values-auto',
   [EN]: 'settings-values-en',
   [RU]: 'settings-values-ru',
+  [IT]: 'settings-values-it',
 };
 
 function getTitleForKey(key) {

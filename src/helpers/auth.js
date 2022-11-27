@@ -8,7 +8,7 @@ import { noop, getStartParams, removeDocumentFromNavigation } from '../utils';
 
 import Loader from '../components/loader';
 
-import logo from '../assets/logo.png';
+import logo from '../assets/img/logo.png';
 
 const IDLE = 'idle';
 const LOGIN = 'login';

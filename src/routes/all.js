@@ -5,11 +5,17 @@ import { get as i18n } from '../localization';
 
 import { getAllTVShows, getCountriesList } from '../request/soap';
 
-import { isMenuButtonPressNavigatedTo, sortTvShows } from '../utils';
+import {
+  getStartParams,
+  isMenuButtonPressNavigatedTo,
+  sortTvShows,
+} from '../utils';
 import { deepEqualShouldUpdate } from '../utils/components';
 
 import Tile from '../components/tile';
 import Loader from '../components/loader';
+
+import logo from '../assets/img/logo.png';
 
 const UHD = 'uhd';
 const NAME = 'name';
@@ -241,6 +247,8 @@ export default function allRoute() {
           const groups = reducer(series, { contries });
           const title = i18n(titleCode);
 
+          const { BASEURL } = getStartParams();
+
           return (
             <document>
               <head>
@@ -256,10 +264,26 @@ export default function allRoute() {
                         tv-tint-color: rgb(132, 133, 135);
                       }
                     }
+
+                    .center-logo {
+                      display: flex;
+                      justify-content: center;
+                    }
                   `}
                 />
               </head>
               <stackTemplate>
+                <banner>
+                  <img
+                    style="tv-align:left;tv-position:top-left"
+                    src={BASEURL + logo}
+                    width="200"
+                    height="75"
+                  />
+                  <title style="tv-align:center;tv-position:top">
+                    {i18n('all-caption')}
+                  </title>
+                </banner>
                 <collectionList>
                   <separator>
                     <button onSelect={this.onSwitchGroup}>

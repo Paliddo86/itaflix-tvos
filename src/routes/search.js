@@ -18,6 +18,7 @@ import {
 } from '../request/soap';
 
 import Tile from '../components/tile';
+import styles from '../common/styles';
 
 const THROTTLE_TIMEOUT = 500;
 
@@ -51,15 +52,7 @@ export default function searchRoute() {
 
           return (
             <document>
-              <head>
-                <style
-                  content={`
-                    .shelf_indent {
-                      margin: 0 0 60;
-                    }
-                  `}
-                />
-              </head>
+              <head> {styles} </head>
               <searchTemplate>
                 <searchField
                   ref={node => (this.searchField = node)}

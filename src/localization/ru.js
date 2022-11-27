@@ -81,6 +81,7 @@ export default {
   'settings-values-auto': 'Язык системы',
   'settings-values-en': 'English',
   'settings-values-ru': 'Русский',
+  'settings-values-it': 'Italian',
 
   'speedtest-caption': 'Тест скорости',
   'speedtest-loading': 'Загрузка информации о серверах...',
