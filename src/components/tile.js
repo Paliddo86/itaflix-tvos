@@ -29,7 +29,7 @@ export default function Tile({ key, attrs = {}, events = {} }) {
     >
       <img
         src={poster}
-        width="250"
+        width="180"
         height="250"
         class="tile-img"
         style={`
