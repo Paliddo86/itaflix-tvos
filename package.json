@@ -35,11 +35,6 @@
   "author": "Luigi Pallante <l.pallante86@gmail.com>",
   "license": "MIT",
   "homepage": "https://github.com/Paliddo86/itaflix-tvos.git#readme",
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged"
-    }
-  },
   "lint-staged": {
     "*.js": [
       "eslint",
