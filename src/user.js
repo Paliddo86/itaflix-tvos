@@ -4,13 +4,13 @@ import EventBus from './event-bus';
 
 const bus = new EventBus();
 
-const STORAGE_KEY = 'soap4me-user';
+const STORAGE_KEY = 'itaflix-user';
 
 const cache = {
   payload: JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'),
 };
 
-const contract = ['till', 'token', 'logged', 'family', 'selected'];
+const contract = ['till', 'token', 'logged', 'family', 'selected', 'fingerprint', 'verified_at', 'user_id', 'email', 'password'];
 
 export const subscription = bus.subscription.bind(bus);
 
@@ -29,6 +29,7 @@ export function set(payload) {
 
   localStorage.setItem(STORAGE_KEY, JSON.stringify(cache.payload));
   bus.broadcast(cache.payload);
+  console.log("cache payload", cache.payload)
   return cache.payload;
 }
 
@@ -43,7 +44,11 @@ export function clear() {
 }
 
 export function getToken() {
-  return get().token;
+  return get().token || "";
+}
+
+export function getFingerprint() {
+  return get().fingerprint;
 }
 
 export function getMainAccount() {
@@ -67,4 +72,18 @@ export function isAuthorized() {
 
 export function isFamily() {
   return get().selected != null;
+}
+
+export function isSessionValid() {
+  let verifiedDate = get().verified_at;
+  if(!verifiedDate) return false;
+  return new Date(new Date(verifiedDate).getTime() + 60 * 60 * 24 * 1000) > new Date() && getToken() !== "";
+}
+
+export function getLoginData() {
+  return {
+    email: get().email,
+    password: get().password,
+    fingerprint: getFingerprint()
+  }
 }

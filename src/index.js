@@ -3,10 +3,9 @@
 import * as TVDML from 'tvdml';
 
 import * as user from './user';
-import { processFamilyAccount } from './user/utils';
 
 import { get as i18n } from './localization';
-import { checkSession } from './request/soap';
+import { checkSession } from './request/adc';
 import { getStartParams, getOpenURLParams, isQello } from './utils';
 
 import myRoute from './routes/my';
@@ -51,11 +50,9 @@ TVDML.handleRoute('get-token')
   .pipe(TVDML.render(<Loader title={i18n('auth-checking')} />))
   .pipe(checkSession)
   .pipe(payload => {
-    const { logged, token, till } = payload;
-    user.set({ logged, token, till });
+    user.set({ ...payload });
     return payload;
   })
-  .pipe(({ login }) => processFamilyAccount(login))
   .pipe(() => {
     TVDML.redirect('main');
 

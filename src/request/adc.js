@@ -4,7 +4,7 @@ import md5 from 'blueimp-md5';
 
 import config from '../../package.json';
 
-import { getToken, isAuthorized } from '../user';
+import { getToken, isAuthorized, isSessionValid } from '../user';
 import * as request from '../request';
 import * as settings from '../settings';
 import * as topShelf from '../helpers/topShelf';
@@ -16,7 +16,8 @@ const { SD, HD, FULLHD, UHD } = settings.values[VIDEO_QUALITY];
 const { LOCALIZATION, SUBTITLES } = settings.values[TRANSLATION];
 
 const TOP_SHELF_MIN_ITEMS = 4;
-const API_URL = 'https://api.soap4uand.me/v2';
+const HOST = 'https://altadefinizionecommunity.online';
+const API_URL = `${HOST}/api`;
 
 function getLatest(tvshows, count = 10) {
   return tvshows.sort(({ sid: a }, { sid: b }) => b - a).slice(0, count);
@@ -119,14 +120,13 @@ function requestLogger(...params) {
   ];
 }
 
-function headers() {
-  const token = getToken();
-  const name = `soap4atv${isQello() ? '-qello' : ''}`;
-  const userAgent = `ATV: ${name} ${version}`;
+function headers(token = '') {
+  const authToken = token || getToken();
+  const userAgent = `Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36`;
 
   return {
-    'X-Api-Token': token,
-    'X-User-Agent': userAgent,
+    'Authentication': `Bearer ${authToken}`,
+    'Referer': HOST,
     'User-Agent': userAgent,
   };
 }
@@ -138,22 +138,113 @@ function addHeaders(dict) {
   };
 }
 
-export function get(url) {
+// Generates a random "Gmail"
+function generateRandomEmail() {
+	const chars = 'abcdefghijklmnopqrstuvwxyz1234567890.';
+	let string = '';
+  let ii = 0;
+  for (ii = 0; ii < 15; ii+1) {
+		string += chars[Math.floor(Math.random() * chars.length)];
+	}
+	return `${string}@gmail.com`;
+}
+
+// Generates a random password
+function generateRandomPass() {
+	const chars = 'abcdefghijklmnopqrstuvwxyz1234567890.$-';
+	let string = '';
+  let ii = 0;
+	for (ii = 0; ii < 10; ii+1) {
+		string += chars[Math.floor(Math.random() * chars.length)];
+	}
+	return string;
+}
+
+// Generates a fake fingerprint
+function generateFakeFingerPrint() {
+	const chars = '1234567890';
+	let string = '';
+  let ii = 0;
+	for (ii = 0; ii < 16; ii+1) {
+		string += chars[Math.floor(Math.random() * chars.length)];
+	}
+	return string;
+}
+
+export function get(url, token = '') {
   return request
-    .get(url, { prepare: addHeaders(headers()) })
+    .get(url, { prepare: addHeaders(headers(token)) })
     .then(request.toJSON())
     .then(...requestLogger('GET', url));
 }
 
-export function post(url, parameters) {
+export function post(url, parameters, token = "") {
   return request
-    .post(url, parameters, { prepare: addHeaders(headers()) })
+    .post(url, parameters, { prepare: addHeaders(headers(token)) })
     .then(request.toJSON())
     .then(...requestLogger('POST', url, parameters));
 }
 
+export function verifyMail(userId, verifyCode, token) {
+  return get(`${API_URL}/verify/email/${userId}/${verifyCode}`, token);
+}
+
+export function registerAccount(email, password, fingerprint) {
+  const body = {
+    email,
+    password,
+    password_confirmation: password,
+    fingerprint,
+    selected_plan: 1
+  }
+  return post(`${API_URL}/register`, body);
+}
+
+export function login(email, password, fingerprint, token) {
+  const body = {
+    email,
+    password,
+    fingerprint
+  }
+  return post(`${API_URL}/login`, body, token).then(response => {
+    const result = {
+      token: response.token,
+      user_id: response.user.id,
+      fingerprint,
+      verified_at: response.user.email_verified_at,
+      email,
+      password,
+      logged: 1
+    }
+    return Promise.resolve(result);
+  });
+}
+
+export function authorizeAccount() {
+  const email = generateRandomEmail();
+  const pass = generateRandomPass();
+  const fingerprint = generateFakeFingerPrint();
+
+  return registerAccount(email, pass, fingerprint).then(response => {
+    const result = {
+      token: response.token,
+      user_id: response.user.id,
+      fingerprint,
+      email,
+      password: pass
+    }
+    return verifyMail(result.user_id, response.user.verification_code, result.token).then(verifyRes => {
+      if(!verifyRes.status) return Promise.reject(new Error("Fail to verify email"));
+      return Promise.resolve(result);
+    })
+  })
+}
+
 export function checkSession() {
-  return get(`${API_URL}/auth/check/`);
+  if(!isSessionValid()) {
+    return authorizeAccount().then(res => {return login(res.email, res.password, res.fingerprint, res.token)});
+  }
+  return Promise.resolve({logged: 1});
 }
 
 export function authorize({ login, password }) {
