@@ -31,7 +31,7 @@ export default function searchRoute() {
             loading: false,
             updating: false,
             latest: [],
-            series: [],
+            searchResults: [],
             news: [],
             seriesUpdate: [],
             persons: [],
@@ -62,7 +62,7 @@ export default function searchRoute() {
                   {this.renderLatest()}
                   {this.renderNewest()}
                   {this.renderSeriesUpdate()}
-                  {/* {this.renderShows()} */}
+                  {this.renderShows()}
                   {/* {episodes.map((name, i) =>
                     this.renderEpisodes(
                       ...[name, tvshows[name], i + 1 === episodes.length],
@@ -217,7 +217,7 @@ export default function searchRoute() {
         },
 
         renderShows() {
-          if (!this.state.series.length) return null;
+          if (!this.state.searchResults.length) return null;
 
           return (
             <shelf class="shelf_indent">
@@ -225,21 +225,22 @@ export default function searchRoute() {
                 <title>{i18n('search-tvshows')}</title>
               </header>
               <section>
-                {sortTvShows(this.state.series).map(tvshow => {
+              {this.state.searchResults.map(result => {
                   const {
                     sid,
-                    covers: { big: poster },
-                  } = tvshow;
-
-                  const isUHD = !!tvshow['4k'];
-                  const title = i18n('tvshow-title', tvshow);
+                    title,
+                    poster,
+                    quality,
+                    isUpdated
+                  } = result;
 
                   return (
                     <Tile
                       title={title}
                       route="tvshow"
                       poster={poster}
-                      isUHD={isUHD}
+                      quality={quality}
+                      isUpdated={isUpdated}
                       payload={{ title, sid, poster }}
                     />
                   );

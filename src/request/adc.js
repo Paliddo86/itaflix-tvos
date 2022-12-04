@@ -626,8 +626,11 @@ export function removeFromMyTVShows(sid) {
   return post(`${API_URL}/soap/unwatch/${sid}/`);
 }
 
-export function getSearchResults(query) {
-  return get(`${API_URL}/search/?q=${encodeURIComponent(query)}`);
+export function getSearchResults(query, page = 1) {
+  return get(`${API_URL}/search?search=${encodeURIComponent(query)}&page=${page}`).then(response => {
+    return { searchResults: response.data.map(topShelf.mapBaseTile) };
+  })
+
 }
 
 export function saveElapsedTime(eid, time) {
