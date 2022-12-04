@@ -43,6 +43,7 @@ export default function Tile({ key, attrs = {}, events = {} }) {
             transparent,
             rgba(0, 0, 0, ${showBottomShadow ? '0.7' : '0'})
           );
+          border-radius: 4;
         `}
       />
       <title

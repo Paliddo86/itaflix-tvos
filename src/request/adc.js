@@ -120,15 +120,20 @@ function requestLogger(...params) {
   ];
 }
 
-function headers(token = '') {
+function headers(token = '', noToken = false) {
   const authToken = token || getToken();
   const userAgent = `Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36`;
 
-  return {
-    'Authentication': `Bearer ${authToken}`,
+  let headers = {
     'Referer': HOST,
     'User-Agent': userAgent,
   };
+
+  if (!noToken) {
+    headers["Authentication"] = `Bearer ${authToken}`
+  }
+
+  return headers;
 }
 
 function addHeaders(dict) {
@@ -141,46 +146,46 @@ function addHeaders(dict) {
 // Generates a random "Gmail"
 function generateRandomEmail() {
 	const chars = 'abcdefghijklmnopqrstuvwxyz1234567890.';
-	let string = '';
+	let email = '';
   let ii = 0;
-  for (ii = 0; ii < 15; ii+1) {
-		string += chars[Math.floor(Math.random() * chars.length)];
+  for (ii = 0; ii < 15; ii++) {
+		email += chars[Math.floor(Math.random() * chars.length)];
 	}
-	return `${string}@gmail.com`;
+	return email + '@gmail.com';
 }
 
 // Generates a random password
 function generateRandomPass() {
 	const chars = 'abcdefghijklmnopqrstuvwxyz1234567890.$-';
-	let string = '';
+	let pass = '';
   let ii = 0;
-	for (ii = 0; ii < 10; ii+1) {
-		string += chars[Math.floor(Math.random() * chars.length)];
+	for (ii = 0; ii < 10; ii++) {
+		pass += chars[Math.floor(Math.random() * chars.length)];
 	}
-	return string;
+	return pass;
 }
 
 // Generates a fake fingerprint
 function generateFakeFingerPrint() {
 	const chars = '1234567890';
-	let string = '';
+	let finger = '';
   let ii = 0;
-	for (ii = 0; ii < 16; ii+1) {
-		string += chars[Math.floor(Math.random() * chars.length)];
+	for (ii = 0; ii < 16; ii++) {
+		finger += chars[Math.floor(Math.random() * chars.length)];
 	}
-	return string;
+	return finger;
 }
 
-export function get(url, token = '') {
+export function get(url, token = '', noToken = false) {
   return request
-    .get(url, { prepare: addHeaders(headers(token)) })
+    .get(url, { prepare: addHeaders(headers(token, noToken)) })
     .then(request.toJSON())
     .then(...requestLogger('GET', url));
 }
 
-export function post(url, parameters, token = "") {
+export function post(url, parameters, token = "", noToken = false) {
   return request
-    .post(url, parameters, { prepare: addHeaders(headers(token)) })
+    .post(url, parameters, { prepare: addHeaders(headers(token, noToken)) })
     .then(request.toJSON())
     .then(...requestLogger('POST', url, parameters));
 }
@@ -197,7 +202,7 @@ export function registerAccount(email, password, fingerprint) {
     fingerprint,
     selected_plan: 1
   }
-  return post(`${API_URL}/register`, body);
+  return post(`${API_URL}/register`, body, null, true);
 }
 
 export function login(email, password, fingerprint, token) {
@@ -226,6 +231,7 @@ export function authorizeAccount() {
   const fingerprint = generateFakeFingerPrint();
 
   return registerAccount(email, pass, fingerprint).then(response => {
+    console.log("register new account", response)
     const result = {
       token: response.token,
       user_id: response.user.id,
@@ -236,6 +242,8 @@ export function authorizeAccount() {
     return verifyMail(result.user_id, response.user.verification_code, result.token).then(verifyRes => {
       if(!verifyRes.status) return Promise.reject(new Error("Fail to verify email"));
       return Promise.resolve(result);
+    }).catch(error => {
+      console.error("errore", error)
     })
   })
 }

@@ -7,7 +7,7 @@ export default {
 
   'menu-my': 'My',
   'menu-all': 'Shows',
-  'menu-search': '🔍',
+  'menu-search': 'Home',
   'menu-genres': 'Genres',
   'menu-account': 'Account',
   'menu-settings': 'Settings',

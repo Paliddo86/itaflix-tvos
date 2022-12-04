@@ -7,7 +7,7 @@ export default {
 
   'menu-my': 'My',
   'menu-all': 'Serie TV',
-  'menu-search': '🔍',
+  'menu-search': 'Home',
   'menu-genres': 'Generi',
   'menu-account': 'Utente',
   'menu-settings': 'Impostazioni',

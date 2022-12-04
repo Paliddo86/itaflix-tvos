@@ -2,8 +2,6 @@
 
 import EventBus from './event-bus';
 
-import { supportUHD } from './request/soap';
-
 const bus = new EventBus();
 
 export const subscription = bus.subscription.bind(bus);
@@ -49,7 +47,7 @@ export const values = {
 };
 
 const defaults = {
-  [params.VIDEO_QUALITY]: supportUHD ? quality.UHD : quality.FULLHD,
+  [params.VIDEO_QUALITY]: quality.FULLHD,
   [params.TRANSLATION]: translation.LOCALIZATION,
   [params.VIDEO_PLAYBACK]: playback.CONTINUES,
   [params.LANGUAGE]: language.AUTO,
