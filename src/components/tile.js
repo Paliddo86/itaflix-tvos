@@ -1,5 +1,7 @@
 import { link } from '../utils';
 
+import { get as i18n } from '../localization';
+
 export default function Tile({ key, attrs = {}, events = {} }) {
   const {
     route,
@@ -7,7 +9,8 @@ export default function Tile({ key, attrs = {}, events = {} }) {
     poster,
     counter,
     subtitle,
-    isUHD,
+    isUpdated,
+    quality,
     isWatched,
     payload = {},
     autoHighlight,
@@ -15,8 +18,8 @@ export default function Tile({ key, attrs = {}, events = {} }) {
 
   const { onPlay, onSelect, onHighlight, onHoldselect } = events;
 
-  const showTopShadow = isUHD;
-  const showBottomShadow = counter || isWatched;
+  const showTopShadow = quality;
+  const showBottomShadow = counter || isWatched || isUpdated;
 
   return (
     <lockup
@@ -29,9 +32,10 @@ export default function Tile({ key, attrs = {}, events = {} }) {
     >
       <img
         src={poster}
-        width="180"
-        height="250"
+        width="200"
+        height="285"
         class="tile-img"
+        contentsMode="aspectFitBB"
         style={`
           tv-placeholder: tv;
           tv-tint-color: linear-gradient(
@@ -54,17 +58,33 @@ export default function Tile({ key, attrs = {}, events = {} }) {
       </title>
       <subtitle class="tile-subtitle">{subtitle}</subtitle>
       <overlay style="margin: 0; padding: 0;">
-        {isUHD && (
-          <badge
-            src="resource://4k"
+      {quality && (
+            <textBadge
             style={`
               margin: 12 10 0 0;
+              border-radius: 0;
               tv-align: right;
               tv-position: top;
-              tv-tint-color: rgb(255, 255, 255);
-              tv-highlight-color: rgb(255, 255, 255);
+              color: rgb(255, 255, 255);
+              background-color: rgb(51, 153, 255);
             `}
-          />
+          >
+            {quality}
+          </textBadge>
+        )}
+      {isUpdated && (
+            <textBadge
+            style={`
+              margin: 0 10 12 0;
+              border-radius: 0;
+              tv-align: center;
+              tv-position: bottom;
+              color: rgb(255, 255, 255);
+              background-color: rgb(51, 153, 255);
+            `}
+          >
+            {i18n('tvshow-next')}
+          </textBadge>
         )}
         {!isWatched && counter && (
           <textBadge

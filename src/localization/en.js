@@ -6,7 +6,7 @@ export default {
   'auth-checking': 'Checking authorization...',
 
   'menu-my': 'My',
-  'menu-all': 'Shows',
+  'menu-tvshows': 'Shows',
   'menu-search': 'Home',
   'menu-genres': 'Genres',
   'menu-account': 'Account',
@@ -133,6 +133,8 @@ export default {
   'tvshow-episode-airdate': ({ airdate }) => `Airdate ${airdate}`,
   'tvshow-episode-menu-hint': "press and hold to open episode's menu",
   'tvshow-season': ({ seasonNumber }) => `Season ${seasonNumber}`,
+  'tvshow-next': 'New Episode',
+  'tv-show-updates': 'TV Show Updates',
 
   'tvshow-status': 'Status',
   'tvshow-genres': 'Genres',

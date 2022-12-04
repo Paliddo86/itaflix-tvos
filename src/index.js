@@ -56,38 +56,35 @@ TVDML.handleRoute('get-token')
   .pipe(() => {
     TVDML.redirect('main');
 
-    if (!isQello()) {
-      // register openURLHandler after "main" screen goes on top of the stack
-      // and call it synchronously if app opened with url
-      // to instantly show proper screen
-      global.openURLHandler = openURLHandler;
+    // if (!isQello()) {
+    //   // register openURLHandler after "main" screen goes on top of the stack
+    //   // and call it synchronously if app opened with url
+    //   // to instantly show proper screen
+    //   global.openURLHandler = openURLHandler;
 
-      const { openURL } = getStartParams();
+    //   const { openURL } = getStartParams();
 
-      if (openURL) {
-        global.openURLHandler(openURL);
-      }
-    }
+    //   if (openURL) {
+    //     global.openURLHandler(openURL);
+    //   }
+    // }
   });
 
 TVDML.handleRoute('main').pipe(
   menuRoute([
     {
       route: 'search',
-    },
-    {
-      route: 'my',
       active: AUTH,
-      hidden: GUEST,
-    },
-    {
-      route: 'all',
       active: GUEST,
     },
     {
-      route: 'recomendations',
-      hidden: [GUEST, BASIC],
+      route: 'tvshows',
+      active: GUEST,
     },
+    // {
+    //   route: 'recomendations',
+    //   hidden: [GUEST, BASIC],
+    // },
     {
       route: 'genres',
     },
@@ -97,9 +94,9 @@ TVDML.handleRoute('main').pipe(
   ]),
 );
 
-TVDML.handleRoute('my').pipe(myRoute());
+//TVDML.handleRoute('my').pipe(myRoute());
 
-TVDML.handleRoute('all').pipe(allRoute());
+TVDML.handleRoute('tvshows').pipe(allRoute());
 
 TVDML.handleRoute('search').pipe(searchRoute());
 
@@ -113,8 +110,8 @@ TVDML.handleRoute('actor').pipe(actorRoute());
 
 TVDML.handleRoute('speedtest').pipe(speedTestRoute());
 
-TVDML.handleRoute('user').pipe(userRoute());
+//TVDML.handleRoute('user').pipe(userRoute());
 
 TVDML.handleRoute('genres').pipe(genresRoute());
 
-TVDML.handleRoute('recomendations').pipe(myRecomendations());
+//TVDML.handleRoute('recomendations').pipe(myRecomendations());

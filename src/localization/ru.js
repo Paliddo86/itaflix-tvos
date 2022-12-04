@@ -6,7 +6,7 @@ export default {
   'auth-checking': 'Проверяем авторизацию...',
 
   'menu-my': 'Мои',
-  'menu-all': 'Сериалы',
+  'menu-tvshows': 'Сериалы',
   'menu-search': '🔍',
   'menu-genres': 'Жанры',
   'menu-account': 'Аккаунт',

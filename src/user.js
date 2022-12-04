@@ -29,7 +29,6 @@ export function set(payload) {
 
   localStorage.setItem(STORAGE_KEY, JSON.stringify(cache.payload));
   bus.broadcast(cache.payload);
-  console.log("cache payload", cache.payload)
   return cache.payload;
 }
 

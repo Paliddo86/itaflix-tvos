@@ -34,3 +34,14 @@ export function mapSeries(item) {
     }),
   };
 }
+
+export function mapBaseTile(item) {
+  return {
+    title: item.title,
+    sid: item.id,
+    poster: item.poster_image,
+    quality: item.final_quality,
+    type: item.type,
+    isUpdated: item.show_next_episode_flag
+  };
+}

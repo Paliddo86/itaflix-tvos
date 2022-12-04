@@ -357,8 +357,41 @@ export function getAllTVShows() {
   });
 }
 
-export function getLatestTVShows(count = 10) {
-  return getAllTVShows().then(tvshows => getLatest(tvshows, count));
+export function getLatestUpdates() {
+  return get(`${API_URL}/home/posts/categories?page=1`).then(response => {
+    let data = response.categories.data;
+
+    return {
+      latest: {
+        name: data[0].homepage_name,
+        values: data[0].posts.map(topShelf.mapBaseTile)
+      },
+      news: {
+        name: data[1].homepage_name,
+        values: data[1].posts.map(topShelf.mapBaseTile)
+      },
+      seriesUpdate: {
+        name: i18n('tv-show-updates'),
+        values: data[2].posts.map(topShelf.mapBaseTile)
+      }
+    }
+
+    // if (!isAuthorized() && !isQello()) {
+    //   const latest = getLatest(series);
+
+    //   topShelf.set({
+    //     sections: [
+    //       {
+    //         id: 'latest',
+    //         title: i18n('search-latest'),
+    //         items: latest.map(topShelf.mapSeries),
+    //       },
+    //     ],
+    //   });
+    // }
+
+    // return series;
+  });
 }
 
 export function getPopularTVShows(count = 10) {

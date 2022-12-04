@@ -6,7 +6,7 @@ export default {
   'auth-checking': 'Verifica sottoscrizione...',
 
   'menu-my': 'My',
-  'menu-all': 'Serie TV',
+  'menu-tvshows': 'Serie TV',
   'menu-search': 'Home',
   'menu-genres': 'Generi',
   'menu-account': 'Utente',
@@ -133,6 +133,8 @@ export default {
   'tvshow-episode-airdate': ({ airdate }) => `Andato in onda ${airdate}`,
   'tvshow-episode-menu-hint': 'tieni premuto per aprire il menù episodio',
   'tvshow-season': ({ seasonNumber }) => `Stagione ${seasonNumber}`,
+  'tvshow-next': 'Nuovi Episodi',
+  'tv-show-updates': 'Aggiornamenti Serie TV',
 
   'tvshow-status': 'Stato',
   'tvshow-genres': 'Generi',

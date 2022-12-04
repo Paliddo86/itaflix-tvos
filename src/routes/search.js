@@ -13,9 +13,8 @@ import { processEntitiesInString } from '../utils/parser';
 
 import {
   getSearchResults,
-  getLatestTVShows,
-  getPopularTVShows,
-} from '../request/soap';
+  getLatestUpdates,
+} from '../request/adc';
 
 import Tile from '../components/tile';
 import styles from '../common/styles';
@@ -33,7 +32,8 @@ export default function searchRoute() {
             updating: false,
             latest: [],
             series: [],
-            popular: [],
+            news: [],
+            seriesUpdate: [],
             persons: [],
             episodes: [],
           };
@@ -60,14 +60,14 @@ export default function searchRoute() {
                 />
                 <collectionList>
                   {this.renderLatest()}
-                  {this.renderPopular()}
-                  {this.renderPersons()}
-                  {this.renderShows()}
-                  {episodes.map((name, i) =>
+                  {this.renderNewest()}
+                  {this.renderSeriesUpdate()}
+                  {/* {this.renderShows()} */}
+                  {/* {episodes.map((name, i) =>
                     this.renderEpisodes(
                       ...[name, tvshows[name], i + 1 === episodes.length],
                     ),
-                  )}
+                  )} */}
                 </collectionList>
               </searchTemplate>
             </document>
@@ -75,29 +75,29 @@ export default function searchRoute() {
         },
 
         renderLatest() {
-          if (!this.state.latest.length || this.state.value) return null;
-
+          if (!this.state.latest.values.length || this.state.value) return null;
           return (
             <shelf>
               <header>
-                <title>{i18n('search-latest')}</title>
+                <title>{this.state.latest.name}</title>
               </header>
               <section>
-                {this.state.latest.map(tvshow => {
+                {this.state.latest.values.map(tvshow => {
                   const {
                     sid,
-                    covers: { big: poster },
+                    title,
+                    poster,
+                    quality,
+                    isUpdated
                   } = tvshow;
-
-                  const isUHD = !!tvshow['4k'];
-                  const title = i18n('tvshow-title', tvshow);
 
                   return (
                     <Tile
                       title={title}
                       route="tvshow"
                       poster={poster}
-                      isUHD={isUHD}
+                      quality={quality}
+                      isUpdated={isUpdated}
                       payload={{ title, sid, poster }}
                     />
                   );
@@ -107,30 +107,63 @@ export default function searchRoute() {
           );
         },
 
-        renderPopular() {
-          if (!this.state.popular.length || this.state.value) return null;
-
+        renderNewest() {
+          if (!this.state.news.values.length || this.state.value) return null;
           return (
             <shelf>
               <header>
-                <title>{i18n('search-popular')}</title>
+                <title>{this.state.news.name}</title>
               </header>
               <section>
-                {this.state.popular.map(tvshow => {
+                {this.state.news.values.map(tvshow => {
                   const {
                     sid,
-                    covers: { big: poster },
+                    title,
+                    poster,
+                    quality,
+                    isUpdated
                   } = tvshow;
-
-                  const isUHD = !!tvshow['4k'];
-                  const title = i18n('tvshow-title', tvshow);
 
                   return (
                     <Tile
                       title={title}
                       route="tvshow"
                       poster={poster}
-                      isUHD={isUHD}
+                      quality={quality}
+                      isUpdated={isUpdated}
+                      payload={{ title, sid, poster }}
+                    />
+                  );
+                })}
+              </section>
+            </shelf>
+          );
+        },
+
+        renderSeriesUpdate() {
+          if (!this.state.seriesUpdate.values.length || this.state.value) return null;
+          return (
+            <shelf>
+              <header>
+                <title>{this.state.seriesUpdate.name}</title>
+              </header>
+              <section>
+                {this.state.seriesUpdate.values.map(tvshow => {
+                  const {
+                    sid,
+                    title,
+                    poster,
+                    quality,
+                    isUpdated
+                  } = tvshow;
+
+                  return (
+                    <Tile
+                      title={title}
+                      route="tvshow"
+                      poster={poster}
+                      quality={quality}
+                      isUpdated={isUpdated}
                       payload={{ title, sid, poster }}
                     />
                   );
@@ -281,9 +314,7 @@ export default function searchRoute() {
         },
 
         loadData() {
-          return Promise.all([getLatestTVShows(), getPopularTVShows()]).then(
-            ([latest, popular]) => ({ latest, popular }),
-          );
+          return getLatestUpdates();
         },
 
         search(query) {
