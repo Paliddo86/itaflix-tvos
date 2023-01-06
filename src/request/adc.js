@@ -1,10 +1,8 @@
 /* global Device */
 
-import md5 from 'blueimp-md5';
-
 import config from '../../package.json';
 
-import { getFingerprint, getLoginData, getToken, isAuthorized, isSessionValid } from '../user';
+import { getLoginData, getToken, isAuthorized, isSessionValid } from '../user';
 import * as request from '../request';
 import * as settings from '../settings';
 import * as topShelf from '../helpers/topShelf';
@@ -643,4 +641,10 @@ export function getUiData() {
 
     settings.set(settings.params.GENRES, genres);
   });
+}
+
+export function getRelated(slug) {
+  return get(`${API_URL}/posts/related/${slug}?page=1`).then((response) => {
+    return { relatedData: response.data.map(topShelf.mapBaseTile) };
+  })
 }

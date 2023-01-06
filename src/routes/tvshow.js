@@ -44,6 +44,7 @@ import {
   removeFromMyTVShows,
   rateTVShow,
   mediaQualities,
+  getRelated,
 } from '../request/adc';
 
 import Tile from '../components/tile';
@@ -161,6 +162,7 @@ export default function tvShowRoute() {
               getTVShowDescription(sid),
               getTmdbShowDetails(tmdb_id, imdb_id),
               getTVShowSeasons(slug),
+              getRelated(slug)
               // getCountriesList(),
               // getTVShowSchedule(sid),
               //getTVShowRecommendations(sid),
@@ -176,7 +178,8 @@ export default function tvShowRoute() {
                 return {
                   tvshow: tvshowResponse.result, 
                   tmdb: tmdbShowResponse,
-                  seasons
+                  seasons,
+                  recomendations: recomendations.relatedData
                 };
 
               //   return Promise.all([
@@ -216,7 +219,7 @@ export default function tvShowRoute() {
                     <heroImg src={this.props.poster.replace("/thumbnail_241/", "/original/")} />
                   </banner>
                   {this.renderSeasons()}
-                  {/* {this.renderRecomendations()} */}
+                  {this.renderRecomendations()}
                   {/* {this.renderRatings()} */}
                   {/* {this.renderCrew()} */}
                 </productTemplate>
@@ -258,9 +261,11 @@ export default function tvShowRoute() {
             const { 
               overview: description, 
               vote_average: rating,
-              episode_run_time: episodeRuntime
+              episode_run_time,
+              last_episode_to_air
             } = this.state.tmdb;
 
+            const episodeRuntime = episode_run_time[0] || last_episode_to_air.runtime;
             // const hasTrailers = !!this.state.trailers.length;
             // const hasMultipleTrailers = this.state.trailers.length > 1;
 
@@ -338,7 +343,7 @@ export default function tvShowRoute() {
             //     {startWatchingBtn}
             //     {/* {moreBtn} */}
             //   </row>)
-
+            let maxLines = description.length <= 136 ? 2:4
             return (
               <stack>
                 <title>{title}</title>
@@ -350,6 +355,9 @@ export default function tvShowRoute() {
                 <description
                   handlesOverflow="true"
                   onSelect={this.onShowFullDescription}
+                  style={`
+                    tv-text-max-lines: ${maxLines};
+                  `}
                 >
                   {description}
                 </description>
@@ -550,10 +558,11 @@ export default function tvShowRoute() {
                   {this.state.recomendations.map(tvshow => {
                     const {
                       sid,
-                      covers: { big: poster },
+                      poster,
+                      quality,
+                      isUpdated
                     } = tvshow;
 
-                    const isUHD = !!tvshow['4k'];
                     const title = i18n('tvshow-title', tvshow);
 
                     return (
@@ -562,8 +571,9 @@ export default function tvShowRoute() {
                         title={title}
                         poster={poster}
                         route="tvshow"
-                        isUHD={isUHD}
-                        payload={{ sid, title, poster }}
+                        quality={quality}
+                        isUpdated={isUpdated}
+                        payload={tvshow}
                       />
                     );
                   })}

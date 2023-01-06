@@ -84,13 +84,10 @@ export default function searchRoute() {
               <section>
                 {this.state.latest.values.map(tvshow => {
                   const {
-                    sid,
                     title,
                     poster,
                     quality,
                     isUpdated,
-                    tmdb_id,
-                    imdb_id
                   } = tvshow;
 
                   return (
@@ -100,7 +97,7 @@ export default function searchRoute() {
                       poster={poster}
                       quality={quality}
                       isUpdated={isUpdated}
-                      payload={{ title, sid, poster, tmdb_id, imdb_id }}
+                      payload={tvshow}
                     />
                   );
                 })}
@@ -119,13 +116,10 @@ export default function searchRoute() {
               <section>
                 {this.state.news.values.map(tvshow => {
                   const {
-                    sid,
                     title,
                     poster,
                     quality,
                     isUpdated,
-                    tmdb_id,
-                    imdb_id
                   } = tvshow;
 
                   return (
@@ -135,7 +129,7 @@ export default function searchRoute() {
                       poster={poster}
                       quality={quality}
                       isUpdated={isUpdated}
-                      payload={{ title, sid, poster, tmdb_id, imdb_id }}
+                      payload={tvshow}
                     />
                   );
                 })}
@@ -154,24 +148,22 @@ export default function searchRoute() {
               <section>
                 {this.state.seriesUpdate.values.map(tvshow => {
                   const {
-                    sid,
                     title,
                     poster,
                     quality,
                     isUpdated,
-                    slug,
-                    tmdb_id,
-                    imdb_id
+                    sid
                   } = tvshow;
 
                   return (
                     <Tile
+                      key={sid}
                       title={title}
                       route="tvshow"
                       poster={poster}
                       quality={quality}
                       isUpdated={isUpdated}
-                      payload={{ title, sid, poster, slug, tmdb_id, imdb_id }}
+                      payload={tvshow}
                     />
                   );
                 })}
@@ -339,9 +331,9 @@ export default function searchRoute() {
         loadResults(query) {
           this.setState({ loading: true });
           if(!query) {
-            result.searchResults = [];
-            this.setState({ loading: false, ...result })
-            return Promise.resolve(result)
+            let searchResults = [];
+            this.setState({ loading: false, updating: true, searchResults })
+            return Promise.resolve({searchResults})
           }
           return getSearchResults(query)
             .catch(() => ({}))
