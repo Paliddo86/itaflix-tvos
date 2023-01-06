@@ -11,6 +11,7 @@ export default {
   'menu-search': 'Home',
   'menu-genres': 'Generi',
   'menu-account': 'Utente',
+  'menu-account-auth': 'Utente Connesso',
   'menu-user': 'Utente',
   'menu-settings': 'Impostazioni',
   'menu-recomendations': 'Raccomandati',

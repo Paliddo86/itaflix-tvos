@@ -89,6 +89,8 @@ export default function userRoute() {
             isFamilyAccount,
           } = this.state;
 
+          const username = user.getLogin();
+
           if (!authorized) {
             return (
               <Authorize
@@ -138,7 +140,7 @@ export default function userRoute() {
                     <section>
                       {accountsList.map(account => {
                         const { fid, name, firstName } = account;
-                        const isActive = true;
+                        const isActive = authorized;
 
                         return (
                           <monogramLockup
@@ -146,8 +148,8 @@ export default function userRoute() {
                             onSelect={this.onActivate.bind(this, account)}
                             disabled={!extended}
                           >
-                            <monogram firstName={firstName || name} />
-                            <title>{name}</title>
+                            <monogram firstName={firstName || name || username} />
+                            <title>{username}</title>
                             {isActive && (
                               <subtitle>{i18n('user-account-active')}</subtitle>
                             )}

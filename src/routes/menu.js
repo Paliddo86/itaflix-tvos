@@ -100,7 +100,7 @@ export default function menuRoute(items) {
                   <menuItem key="nickname" route="user">
                     {authorized ? (
                       <title>
-                        {nickname}
+                        <title>{localization.get('menu-account-auth')}</title>
                       </title>
                     ) : (
                       <title>{localization.get('menu-account')}</title>
