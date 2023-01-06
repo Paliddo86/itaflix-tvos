@@ -12,7 +12,7 @@ export default function Tile({ key, attrs = {}, events = {} }) {
     isUpdated,
     quality,
     isWatched,
-    payload = {},
+    payload = payload || {},
     autoHighlight,
     isTmdbPoster
   } = attrs;
@@ -73,7 +73,7 @@ export default function Tile({ key, attrs = {}, events = {} }) {
             {quality}
           </textBadge>
         )}
-      {isUpdated && (
+      {(isUpdated || payload.updateType) && (
             <textBadge
             style={`
               margin: 0 10 12 0;
@@ -84,7 +84,7 @@ export default function Tile({ key, attrs = {}, events = {} }) {
               background-color: rgb(51, 153, 255);
             `}
           >
-            {i18n('tvshow-next')}
+            {payload.updateType? payload.updateType : i18n('tvshow-next')}
           </textBadge>
         )}
         {!isWatched && counter && (

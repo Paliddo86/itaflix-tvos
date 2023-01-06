@@ -139,6 +139,8 @@ export default {
   'tvshow-next': 'Nuovi Episodi',
   'tv-show-updates': 'Aggiornamenti Serie TV',
 
+  'movie-updates': 'Aggiornamenti Film',
+
   'tvshow-status': 'Stato',
   'tvshow-genres': 'Generi',
   'tvshow-actors': 'Attori',
@@ -242,6 +244,8 @@ export default {
   'search-actor': 'Attori',
   'search-tvshows': 'Serie TV',
   'search-result': 'Risultati Ricerca',
+  'search-result-movie': 'Film trovati',
+  'search-result-tvshow': 'Serie TV trovate',
 
   'actor-tvshows': 'Serie TV',
   'actor-title': 'Attori',

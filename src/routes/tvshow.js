@@ -343,7 +343,7 @@ export default function tvShowRoute() {
             //     {startWatchingBtn}
             //     {/* {moreBtn} */}
             //   </row>)
-            let maxLines = description.length <= 136 ? 2:4
+
             return (
               <stack>
                 <title>{title}</title>
@@ -353,10 +353,11 @@ export default function tvShowRoute() {
                   <text>{`${i18n('tvshow-information-runtime').toUpperCase()}: ${moment.duration(+episodeRuntime, 'minutes').humanize()}`}</text>
                 </row>
                 <description
+                  allowsZooming="true"
                   handlesOverflow="true"
                   onSelect={this.onShowFullDescription}
                   style={`
-                    tv-text-max-lines: ${maxLines};
+                    tv-text-max-lines: 2;
                   `}
                 >
                   {description}

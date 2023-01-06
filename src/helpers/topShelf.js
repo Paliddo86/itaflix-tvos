@@ -45,6 +45,7 @@ export function mapBaseTile(item) {
     isUpdated: item.show_next_episode_flag,
     slug: item.slug,
     tmdb_id: item.tmdb_id,
-    imdb_id:item.imdb_id
+    imdb_id: item.imdb_id,
+    updateType: item.update_type
   };
 }

@@ -603,7 +603,21 @@ export function removeFromMyTVShows(sid) {
 
 export function getSearchResults(query, page = 1) {
   return get(`${API_URL}/search?search=${encodeURIComponent(query)}&page=${page}`).then(response => {
-    return { searchResults: response.data.map(topShelf.mapBaseTile) };
+    let moviesFounded = [];
+    let tvshowFounded = [];
+
+    for(let data of response.data) {
+      if(data.type === "tvshow") {
+        tvshowFounded.push(topShelf.mapBaseTile(data));
+      } else if(data.type === "movie"){
+        moviesFounded.push(topShelf.mapBaseTile(data));
+      }
+    }
+
+    return { searchResults: {
+      moviesFounded,
+      tvshowFounded
+    } };
   })
 
 }
@@ -646,5 +660,33 @@ export function getUiData() {
 export function getRelated(slug) {
   return get(`${API_URL}/posts/related/${slug}?page=1`).then((response) => {
     return { relatedData: response.data.map(topShelf.mapBaseTile) };
+  })
+}
+
+export function getAllUpdates() {
+  return get(`${API_URL}/posts/updates`).then((response) => {
+    let moviesUpdates = [];
+    let tvshowUpdates = [];
+
+    for(let key in response.updates) {
+      for(let data of response.updates[key]) {
+        if(data.post.type === "tvshow") {
+          tvshowUpdates.push(topShelf.mapBaseTile({...data.post, update_type: data.update_type}));
+        } else if(data.post.type === "movie"){
+          moviesUpdates.push(topShelf.mapBaseTile({...data.post, update_type: data.update_type}));
+        }
+      }
+    }
+
+    return {
+      moviesUpdate: {
+        name: i18n('movie-updates'),
+        values: moviesUpdates
+      },
+      seriesUpdate: {
+        name: i18n('tv-show-updates'),
+        values: tvshowUpdates
+      }
+    }
   })
 }
