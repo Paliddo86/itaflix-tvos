@@ -132,6 +132,34 @@ export function createMediaItem(episode) {
   }, new MediaItem('video'));
 }
 
+const findQuality = ['720p', '1080p', '2k', '4k'];
+
+export function createMediaItems(episode, videoQuality) {
+  let qualityIndex = findQuality.indexOf(videoQuality);
+
+  if (episode.streams.length === 1) {
+    let mediaItem = new MediaItem('video', encodeURI(episode.streams[0].url));
+    mediaItem.title = episode.title;
+    mediaItem.description = episode.description;
+    mediaItem.artworkImageURL = episode.artworkImageURL;
+    return mediaItem;
+  }
+
+  let media = episode.streams.filter(stream => {
+    return stream.resolution.name === videoQuality;
+  })
+
+  if(media.length) {
+    let mediaItem = new MediaItem('video', encodeURI(media[0].url));
+    mediaItem.title = episode.title;
+    mediaItem.description = episode.description;
+    mediaItem.artworkImageURL = episode.artworkImageURL;
+    return mediaItem;
+  };
+
+  return createMediaItems(episode, findQuality[qualityIndex - 1] || findQuality[0]);
+}
+
 export function getOpenURLParams(str) {
   const { query, pathname } = url.parse(str, true);
   const route = pathname.slice(1);

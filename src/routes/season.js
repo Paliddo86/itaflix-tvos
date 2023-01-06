@@ -3,7 +3,7 @@
 import moment from 'moment';
 import * as TVDML from 'tvdml';
 
-import { getStartParams, createMediaItem } from '../utils';
+import { getStartParams, createMediaItem, createMediaItems } from '../utils';
 import { processEntitiesInString } from '../utils/parser';
 import { deepEqualShouldUpdate } from '../utils/components';
 
@@ -26,12 +26,13 @@ import {
   markEpisodeAsWatched,
   markEpisodeAsUnwatched,
   rateEpisode,
-} from '../request/soap';
+} from '../request/adc';
 
 import Loader from '../components/loader';
 
 import hand from '../assets/icons/hand.png';
 import hand2x from '../assets/icons/hand@2x.png';
+import { getTmdbImageUrl, getTmdbShowSeasonDetail } from '../request/tmdb';
 
 const MARK_AS_WATCHED_PERCENTAGE = 90;
 const SHOW_RATING_PERCENTAGE = 50;
@@ -42,53 +43,31 @@ const { SD, UHD } = settings.values[VIDEO_QUALITY];
 const { CONTINUES } = settings.values[VIDEO_PLAYBACK];
 const { LOCALIZATION, SUBTITLES } = settings.values[TRANSLATION];
 
-const subtitlesList = [
-  localization.ORIGINAL_SUBTITLES,
-  localization.LOCALIZATION_SUBTITLES,
-];
-
 const translationOrder = [LOCALIZATION, SUBTITLES];
 
-function getEpisode(episodeNumber, episodes) {
-  const [episode] = episodes.filter(item => item.episode === episodeNumber);
-  return episode;
-}
-
-function getEpisodeItem(sid, episode, poster, translation) {
-  if (!episode) return null;
-
+function getEpisodeItem(slug, seasonId, episodeId, poster, tmdbEpisode) {
   const {
-    season,
-    spoiler,
-    episode: episodeNumber,
-    screenshots: { big: episodePoster },
-  } = episode;
+    name,
+    overview
+  } = tmdbEpisode;
 
-  const title = processEntitiesInString(i18n('tvshow-episode-title', episode));
-  const description = processEntitiesInString(spoiler);
-
-  const id = [sid, season, episodeNumber].join('-');
-  const file = getEpisodeMedia(episode, translation);
-  const media = { sid, file };
-
-  return getMediaStream(media).then(({ stream, start_from: startFrom }) => ({
-    id,
-    title,
-    description,
-    url: stream,
-    artworkImageURL: poster || episodePoster,
-    resumeTime: startFrom && parseFloat(startFrom),
-  }));
+  return getMediaStream(slug, seasonId - 1, episodeId).then((response) => {
+    const { streams, backdrop_url, title, id } = response;
+    return {
+      id,
+      title: `${title} - ${name}`,
+      description: overview,
+      streams,
+      artworkImageURL: backdrop_url || poster || episodePoster,
+      resumeTime: 0
+    }
+  });
 }
 
 function getScheduleEpsForSeason(schedule, season) {
   const [seasonSchedule] = (schedule || []).filter(scheduleItem => {
     const scheduledSeason = scheduleItem.season;
 
-    /**
-     * Апи може может присылать `id` как числом так и строкой.
-     * Поэтому делаем сравнение с приведением типов.
-     */
     // eslint-disable-next-line eqeqeq
     return scheduledSeason == season;
   });
@@ -161,10 +140,6 @@ function getSeasonData(payload, isDemo) {
   );
 }
 
-function someEpisodesHasSubtitles(episodes) {
-  return episodes.some(episodeHasSubtitles);
-}
-
 export default function seasonRoute() {
   return TVDML.createPipeline()
     .pipe(
@@ -173,17 +148,25 @@ export default function seasonRoute() {
           navigation: {
             id,
             sid,
+            tmdb_id,
+            imdb_id,
             title,
+            slug,
             poster,
             episodeNumber,
+            season,
             shouldPlayImmediately,
           },
         }) => ({
           sid,
           id,
+          slug,
+          tmdb_id,
+          imdb_id,
           title,
           poster,
           episodeNumber,
+          season,
           shouldPlayImmediately,
         }),
       ),
@@ -231,45 +214,28 @@ export default function seasonRoute() {
           shouldComponentUpdate: deepEqualShouldUpdate,
 
           loadData() {
-            const { id, sid } = this.props;
-
+            const { id, tmdb_id, imdb_id } = this.props;
             const { extended, translation, highlightEpisode } = this.state;
 
             return Promise.all([
-              getTVShowSchedule(sid),
-              getTVShowSeason(sid, id),
-              getTVShowDescription(sid),
+              getTmdbShowSeasonDetail(tmdb_id, id, imdb_id),
+              // getTVShowSeason(sid, id),
+              // getTVShowDescription(sid),
             ])
-              .then(([schedule, season, tvshow]) => ({
-                tvshow,
-                season,
-                schedule,
-              }))
-              .then(payload => {
-                const { tvshow, season, schedule } = payload;
+              .then(([tmdbSeason]) => {
+                // const episodes = season ? season.episodes : [];
+                // const firstUnwatchedEp = episodes.find(
+                //   ({ watched }) => !watched,
+                // );
+                // const firstUnwatchedEpNumber = (firstUnwatchedEp || {}).episode;
 
-                const episodes = season ? season.episodes : [];
-                const firstUnwatchedEp = episodes.find(
-                  ({ watched }) => !watched,
-                );
-                const firstUnwatchedEpNumber = (firstUnwatchedEp || {}).episode;
-
-                const highlight = highlightEpisode || firstUnwatchedEpNumber;
+                // const highlight = highlightEpisode || firstUnwatchedEpNumber;
 
                 return {
-                  ...payload,
-                  ...getSeasonData(
-                    {
-                      id,
-                      tvshow,
-                      season,
-                      schedule,
-                      translation,
-                    },
-                    !extended,
-                  ),
-                  highlightEpisode: highlight,
-                  episodesHasSubtitles: someEpisodesHasSubtitles(episodes),
+                  tmdbEpisodes: tmdbSeason.episodes,
+                  translation,
+                  highlightEpisode: 0,
+                  episodesHasSubtitles: false,
                 };
               });
           },
@@ -298,22 +264,23 @@ export default function seasonRoute() {
             }
 
             const {
-              tvshow,
-              season,
-              extended,
-              episodes,
+              tmdbEpisodes,
               translation,
               highlightEpisode,
               episodesHasSubtitles,
             } = this.state;
 
-            const { season: seasonNumber } = season;
+            const {
+              season,
+              title,
+              poster,
+              id
+            } = this.props
+
+            const seasonTitle = season.season_label;
 
             const { BASEURL } = getStartParams();
             const settingsTranslation = settings.get(TRANSLATION);
-
-            const title = i18n('tvshow-title', tvshow);
-            const seasonTitle = i18n('tvshow-season', { seasonNumber });
 
             return (
               <document>
@@ -364,11 +331,11 @@ export default function seasonRoute() {
                 </head>
                 <compilationTemplate>
                   <background>
-                    <heroImg src={this.state.poster} />
+                    <heroImg src={poster} />
                   </background>
                   <list>
                     <relatedContent>
-                      <lockup>{this.renderPoster(this.state.poster)}</lockup>
+                      <lockup>{this.renderPoster(poster)}</lockup>
                     </relatedContent>
                     <segmentBarHeader>
                       <title>{title}</title>
@@ -396,73 +363,68 @@ export default function seasonRoute() {
                       )}
                     </segmentBarHeader>
                     <section>
-                      {episodes.map(episode => {
-                        const {
-                          rating,
-                          spoiler,
-                          date: begins,
-                          episode: episodeNumber,
-                        } = episode;
+                      {season.episodes.map((episode, index) => {
+                        // const {
+                        //   rating,
+                        //   spoiler,
+                        //   date: begins,
+                        //   episode: episodeNumber,
+                        // } = episode;
 
-                        if (begins) {
-                          const date = moment(begins, 'DD.MM.YYYY');
-                          const airdate = date.format('ll');
+                        // if (begins) {
+                        //   const date = moment(begins, 'DD.MM.YYYY');
+                        //   const airdate = date.format('ll');
 
-                          const dateTitle = date.isValid()
-                            ? i18n('tvshow-episode-airdate', { airdate })
-                            : '';
+                        //   const dateTitle = date.isValid()
+                        //     ? i18n('tvshow-episode-airdate', { airdate })
+                        //     : '';
 
-                          return (
-                            <listItemLockup class="item item--disabled">
-                              <ordinal minLength="3">{episodeNumber}</ordinal>
-                              <title class="title">{episode.title}</title>
-                              <decorationLabel>
-                                <text>{dateTitle}</text>
-                              </decorationLabel>
-                            </listItemLockup>
-                          );
-                        }
+                        //   return (
+                        //     <listItemLockup class="item item--disabled">
+                        //       <ordinal minLength="3">{episodeNumber}</ordinal>
+                        //       <title class="title">{episode.title}</title>
+                        //       <decorationLabel>
+                        //         <text>{dateTitle}</text>
+                        //       </decorationLabel>
+                        //     </listItemLockup>
+                        //   );
+                        // }
 
-                        const episodePoster =
-                          (episode.screenshots || {}).big || this.state.poster;
+                        const episodePoster = tmdbEpisodes[index].still_path ? getTmdbImageUrl(tmdbEpisodes[index].still_path, true) : poster;
 
-                        const file = getEpisodeMedia(episode, translation);
-                        const mqCode = file && mediaQualities[file.quality];
-                        const mtCode =
-                          file && mediaLocalizations[file.translate];
+                        // const file = getEpisodeMedia(episode, translation);
+                        // const mqCode = file && mediaQualities[file.quality];
+                        // const mtCode =
+                        //   file && mediaLocalizations[file.translate];
 
-                        const hasHD = file && mqCode !== SD;
-                        const isUHD = hasHD && mqCode === UHD;
-                        const hasSubtitles = !!~subtitlesList.indexOf(mtCode);
+                        // const hasHD = file && mqCode !== SD;
+                        // const isUHD = hasHD && mqCode === UHD;
+                        // const hasSubtitles = !!~subtitlesList.indexOf(mtCode);
 
-                        const highlight = episodeNumber === highlightEpisode;
+                        const highlight = index === highlightEpisode;
 
-                        const epTitleCode = i18n(
-                          'tvshow-episode-title',
-                          episode,
-                        );
-                        const epTitle = processEntitiesInString(epTitleCode);
-                        const description = processEntitiesInString(spoiler);
+                        const epTitle = tmdbEpisodes[index].name;
+                        const description = tmdbEpisodes[index].overview;
 
-                        const epId = `eid-${episodeNumber}`;
+                        const epId = `eid-${index}`;
 
-                        const badges = [
-                          this.state[epId] && (
-                            <badge
-                              class="badge"
-                              src="resource://button-checkmark"
-                            />
-                          ),
-                          hasSubtitles && (
-                            <badge class="badge" src="resource://cc" />
-                          ),
-                          hasHD && (
-                            <badge
-                              class="badge"
-                              src={`resource://${isUHD ? '4k' : 'hd'}`}
-                            />
-                          ),
-                        ];
+                        // const badges = [
+                        //   this.state[epId] && (
+                        //     <badge
+                        //       class="badge"
+                        //       src="resource://button-checkmark"
+                        //     />
+                        //   ),
+                        //   hasSubtitles && (
+                        //     <badge class="badge" src="resource://cc" />
+                        //   ),
+                        //   hasHD && (
+                        //     <badge
+                        //       class="badge"
+                        //       src={`resource://${isUHD ? '4k' : 'hd'}`}
+                        //     />
+                        //   ),
+                        // ];
 
                         // eslint-disable-next-line react/jsx-no-bind
                         const onSelectDesc = this.onShowMenu.bind(
@@ -470,10 +432,7 @@ export default function seasonRoute() {
                           episode,
                         );
 
-                        const onSelectEpisode = extended
-                          ? // eslint-disable-next-line react/jsx-no-bind
-                            this.playEpisode.bind(this, episodeNumber)
-                          : onSelectDesc;
+                        const onSelectEpisode = this.playEpisode.bind(this, index);
 
                         const listItemRef = highlight
                           ? // eslint-disable-next-line react/jsx-no-bind
@@ -489,9 +448,9 @@ export default function seasonRoute() {
                             onHoldselect={onSelectDesc}
                             autoHighlight={highlight ? 'true' : undefined}
                           >
-                            <ordinal minLength="3">{episodeNumber}</ordinal>
+                            <ordinal minLength="3">{tmdbEpisodes[index].episode_number}</ordinal>
                             <title class="title">{epTitle}</title>
-                            <decorationLabel>
+                            {/* <decorationLabel>
                               {badges
                                 .filter(Boolean)
                                 .reduce((result, item, i) => {
@@ -499,14 +458,14 @@ export default function seasonRoute() {
                                   result.push(item);
                                   return result;
                                 }, [])}
-                            </decorationLabel>
+                            </decorationLabel> */}
                             <relatedContent>
                               <lockup class="item-content">
                                 {this.renderPoster(episodePoster, true)}
                                 <row class="controls_container">
                                   <ratingBadge
                                     style="tv-rating-style: star-l"
-                                    value={rating / 10}
+                                    value={tmdbEpisodes[index].vote_average / 10}
                                   />
                                 </row>
                                 <description class="item-desc">
@@ -575,9 +534,9 @@ export default function seasonRoute() {
           },
 
           playEpisode(episodeNumber) {
-            const { sid } = this.props;
+            const { slug, id: seasonId, season, poster } = this.props;
 
-            const { poster, episodes, translation } = this.state;
+            // const {episodes, translation } = this.state;
 
             const player = new Player();
 
@@ -597,13 +556,13 @@ export default function seasonRoute() {
                   currentMediaItem.duration = currentMediaItemDuration;
                 }
 
-                const [, , currentEpisodeNumber] = currentMediaItem.id.split(
-                  '-',
-                );
-                const currentEpisode = getEpisode(
-                  currentEpisodeNumber,
-                  episodes,
-                );
+                // const [, , currentEpisodeNumber] = currentMediaItem.id.split(
+                //   '-',
+                // );
+                // const currentEpisode = getEpisode(
+                //   currentEpisodeNumber,
+                //   episodes,
+                // );
 
                 const watchedPercent = (time * 100) / currentMediaItemDuration;
                 const passedBoundary =
@@ -612,10 +571,10 @@ export default function seasonRoute() {
                 if (passedBoundary && !currentMediaItem.markedAsWatched) {
                   currentMediaItem.markedAsWatched = true;
 
-                  const index = episodes.indexOf(currentEpisode);
-                  const nextEpisodeNumber = (episodes[index + 1] || {}).episode;
+                  const index = episodeNumber;
+                  const nextEpisodeNumber = (season.episodes[index + 1] || {}).number;
 
-                  this.onMarkAsWatched(currentEpisodeNumber);
+                  this.onMarkAsWatched(episodeNumber);
 
                   // Setting next episode as highlighted if exist
                   if (nextEpisodeNumber) {
@@ -626,15 +585,15 @@ export default function seasonRoute() {
                    * If user configured app for continues playback then loading next
                    * episode media file and adding it to current playlist.
                    */
-                  if (settings.get(VIDEO_PLAYBACK) === CONTINUES) {
-                    const nextEpisode = getEpisode(nextEpisodeNumber, episodes);
+                  // if (settings.get(VIDEO_PLAYBACK) === CONTINUES) {
+                  //   const nextEpisode = getEpisode(nextEpisodeNumber, episodes);
 
-                    getEpisodeItem(sid, nextEpisode, poster, translation)
-                      .then(createMediaItem)
-                      .then(episodeMediaItem => {
-                        player.playlist.push(episodeMediaItem);
-                      });
-                  }
+                  //   getEpisodeItem(sid, nextEpisode, poster, translation)
+                  //     .then(createMediaItem)
+                  //     .then(episodeMediaItem => {
+                  //       player.playlist.push(episodeMediaItem);
+                  //     });
+                  // }
                 }
 
                 const { duration, markedAsRated } = currentMediaItem;
@@ -770,25 +729,29 @@ export default function seasonRoute() {
                 overlayDocument.destroyComponent();
               }
 
-              if (shouldSaveTime) {
-                const { id, currentTime } = currentMediaItem;
+              // if (shouldSaveTime) {
+              //   const { id, currentTime } = currentMediaItem;
 
-                const [, , currentEpisodeNumber] = id.split('-');
-                const currentEpisode = getEpisode(
-                  currentEpisodeNumber,
-                  episodes,
-                );
-                const { eid } = getEpisodeMedia(currentEpisode, translation);
+              //   const [, , currentEpisodeNumber] = id.split('-');
+              //   const currentEpisode = getEpisode(
+              //     currentEpisodeNumber,
+              //     episodes,
+              //   );
+              //   const { eid } = getEpisodeMedia(currentEpisode, translation);
 
-                saveElapsedTime(eid, currentTime);
-              }
+              //   saveElapsedTime(eid, currentTime);
+              // }
             });
 
-            const episode = getEpisode(episodeNumber, episodes);
+            //const episode = getEpisode(episodeNumber, episodes);
 
             // Loading initial episode and starting playback.
-            getEpisodeItem(sid, episode, poster, translation)
-              .then(createMediaItem)
+            const {tmdbEpisodes} = this.state
+            getEpisodeItem(slug, seasonId, episodeNumber, poster , tmdbEpisodes[episodeNumber])
+              .then(episode => {
+                let videoQuality = settings.getPreferredVideoQuality();
+                return createMediaItems(episode, videoQuality);
+              })
               .then(episodeMediaItem => {
                 player.playlist.push(episodeMediaItem);
                 player.play();

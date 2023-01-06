@@ -21,7 +21,7 @@ import {
   getFamilyAccounts,
   turnOffFamilyAccount,
   migrateToFamilyAccount,
-} from '../request/soap';
+} from '../request/adc';
 
 import Loader from '../components/loader';
 import Authorize from '../components/authorize';
@@ -65,20 +65,12 @@ export default function userRoute() {
             onError: defaultErrorHandlers,
 
             // eslint-disable-next-line consistent-return
-            onSuccess: ({ token, till, login }) => {
+            onSuccess: (payload) => {
               const dismiss = this.authHelper.dismiss.bind(this.authHelper);
 
-              user.set({ token, till, logged: 1 });
-
-              if (!user.isExtended()) {
-                user.set({ family: [{ name: login, fid: 0 }], selected: null });
-                this.setState(this.getUserState());
-                return promisedTimeout(RENDERING_DELAY).then(dismiss);
-              }
-
-              this.fetchAccountUpdate()
-                .then(promisedTimeout(RENDERING_DELAY))
-                .then(dismiss);
+              user.set({ ...payload});
+              this.setState(this.getUserState());
+              dismiss();
             },
           });
         },
@@ -106,15 +98,13 @@ export default function userRoute() {
             );
           }
 
-          const currentFid = `${selected.fid}`;
-
           const accountsList = isFamilyAccount
             ? family.concat({
                 firstName: '+',
                 action: ADD_ACCOUNT,
                 name: i18n('user-add-account-button'),
               })
-            : [selected];
+            : selected ? [selected] : [{}];
 
           /**
            * Исправление рендеринга списка аккаунтов.
@@ -148,7 +138,7 @@ export default function userRoute() {
                     <section>
                       {accountsList.map(account => {
                         const { fid, name, firstName } = account;
-                        const isActive = currentFid === fid;
+                        const isActive = true;
 
                         return (
                           <monogramLockup
@@ -270,10 +260,10 @@ export default function userRoute() {
           logout()
             .then(user.clear)
             .then(checkSession)
-            .then(({ logged, token, till }) => {
+            .then(({ logged, token }) => {
               const family = null;
               const selected = null;
-              user.set({ logged, token, till, family, selected });
+              user.set({ logged, token });
               this.setState(this.getUserState());
             })
             .then(promisedTimeout(RENDERING_DELAY))

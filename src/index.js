@@ -5,11 +5,12 @@ import * as TVDML from 'tvdml';
 import * as user from './user';
 
 import { get as i18n } from './localization';
-import { checkSession } from './request/adc';
+import { checkSession, getUiData } from './request/adc';
 import { getStartParams, getOpenURLParams, isQello } from './utils';
 
 import myRoute from './routes/my';
-import allRoute from './routes/all';
+import tvShows from './routes/tvshows';
+import movies from './routes/movies';
 import menuRoute from './routes/menu';
 import userRoute from './routes/user';
 import actorRoute from './routes/actor';
@@ -48,6 +49,7 @@ TVDML.subscribe(TVDML.event.LAUNCH).pipe(params => {
 
 TVDML.handleRoute('get-token')
   .pipe(TVDML.render(<Loader title={i18n('auth-checking')} />))
+  .pipe(getUiData)
   .pipe(checkSession)
   .pipe(payload => {
     user.set({ ...payload });
@@ -78,6 +80,10 @@ TVDML.handleRoute('main').pipe(
       active: GUEST,
     },
     {
+      route: 'movies',
+      active: GUEST,
+    },
+    {
       route: 'tvshows',
       active: GUEST,
     },
@@ -96,7 +102,9 @@ TVDML.handleRoute('main').pipe(
 
 //TVDML.handleRoute('my').pipe(myRoute());
 
-TVDML.handleRoute('tvshows').pipe(allRoute());
+TVDML.handleRoute('tvshows').pipe(tvShows());
+
+TVDML.handleRoute('movies').pipe(movies());
 
 TVDML.handleRoute('search').pipe(searchRoute());
 
@@ -110,7 +118,7 @@ TVDML.handleRoute('actor').pipe(actorRoute());
 
 TVDML.handleRoute('speedtest').pipe(speedTestRoute());
 
-//TVDML.handleRoute('user').pipe(userRoute());
+TVDML.handleRoute('user').pipe(userRoute());
 
 TVDML.handleRoute('genres').pipe(genresRoute());
 

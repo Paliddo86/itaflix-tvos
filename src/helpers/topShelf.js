@@ -42,6 +42,9 @@ export function mapBaseTile(item) {
     poster: item.poster_image,
     quality: item.final_quality,
     type: item.type,
-    isUpdated: item.show_next_episode_flag
+    isUpdated: item.show_next_episode_flag,
+    slug: item.slug,
+    tmdb_id: item.tmdb_id,
+    imdb_id:item.imdb_id
   };
 }

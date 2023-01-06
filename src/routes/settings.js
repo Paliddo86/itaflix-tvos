@@ -7,7 +7,7 @@ import * as localization from '../localization';
 import { link, getStartParams } from '../utils';
 import { deepEqualShouldUpdate } from '../utils/components';
 
-import { version, supportUHD } from '../request/soap';
+import { version } from '../request/adc';
 
 import poster from '../assets/img/poster.png';
 
@@ -35,7 +35,7 @@ const titleMapping = {
 const onlyForExtendedAccounts = [TRANSLATION, VIDEO_PLAYBACK];
 
 const disabledFeatures = {
-  [UHD]: !supportUHD,
+  [UHD]: true,
 };
 
 const descriptionMapping = {

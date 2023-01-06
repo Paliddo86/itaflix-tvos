@@ -14,7 +14,6 @@ import { defaultErrorHandlers } from '../helpers/auth/handlers';
 
 import {
   link,
-  capitalizeText,
   createMediaItem,
   getMonogramImageUrl,
   isMenuButtonPressNavigatedTo,
@@ -26,8 +25,6 @@ import { deepEqualShouldUpdate } from '../utils/components';
 import { get as i18n } from '../localization';
 
 import {
-  TVShowStatuses,
-  TVShowStatusStrings,
   getEpisodeMedia,
   getTrailerStream,
   getCountriesList,
@@ -47,11 +44,16 @@ import {
   removeFromMyTVShows,
   rateTVShow,
   mediaQualities,
-} from '../request/soap';
+} from '../request/adc';
 
 import Tile from '../components/tile';
 import Loader from '../components/loader';
 import Authorize from '../components/authorize';
+import { 
+  getTmdbShowDetails, 
+  tmdbTVShowStatusStrings,
+  getTmdbImageUrl
+} from '../request/tmdb';
 
 const { VIDEO_QUALITY } = settings.params;
 const { UHD } = settings.values[VIDEO_QUALITY];
@@ -73,10 +75,13 @@ export default function tvShowRoute() {
   return TVDML.createPipeline()
     .pipe(
       TVDML.passthrough(
-        ({ navigation: { sid, title, poster, continueWatchingAndPlay } }) => ({
+        ({ navigation: { sid, title, poster, slug, tmdb_id, imdb_id, continueWatchingAndPlay } }) => ({
           sid,
           title,
           poster,
+          slug,
+          tmdb_id,
+          imdb_id,
           continueWatchingAndPlay: continueWatchingAndPlay === '1',
         }),
       ),
@@ -151,43 +156,48 @@ export default function tvShowRoute() {
           shouldComponentUpdate: deepEqualShouldUpdate,
 
           loadData() {
-            const { sid } = this.props;
-
+            const { sid, slug, tmdb_id, imdb_id } = this.props;
             return Promise.all([
-              getCountriesList(),
-              getTVShowSeasons(sid),
-              getTVShowSchedule(sid),
               getTVShowDescription(sid),
-              getTVShowRecommendations(sid),
+              getTmdbShowDetails(tmdb_id, imdb_id),
+              getTVShowSeasons(slug),
+              // getCountriesList(),
+              // getTVShowSchedule(sid),
+              //getTVShowRecommendations(sid),
             ])
               .then(payload => {
                 const [
-                  contries,
+                  tvshowResponse,
+                  tmdbShowResponse,
                   seasons,
-                  schedule,
-                  tvshow,
                   recomendations,
                 ] = payload;
 
-                return Promise.all([
-                  tvshow.reviews > 0 ? getTVShowReviews(sid) : [],
-                  tvshow.trailers > 0 ? getTVShowTrailers(sid) : [],
-                ]).then(([reviews, trailers]) => ({
-                  tvshow,
-                  reviews,
-                  seasons,
-                  schedule,
-                  trailers,
-                  contries,
-                  recomendations,
-                }));
-              })
-              .then(payload => ({
-                likes: +payload.tvshow.likes,
-                watching: payload.tvshow.watching > 0,
-                continueWatching: !!this.getSeasonToWatch(payload.seasons),
-                ...payload,
-              }));
+                return {
+                  tvshow: tvshowResponse.result, 
+                  tmdb: tmdbShowResponse,
+                  seasons
+                };
+
+              //   return Promise.all([
+              //     tvshow.reviews > 0 ? getTVShowReviews(sid) : [],
+              //     tvshow.trailers > 0 ? getTVShowTrailers(sid) : [],
+              //   ]).then(([reviews, trailers]) => ({
+              //     tvshow,
+              //     reviews,
+              //     seasons,
+              //     schedule,
+              //     trailers,
+              //     contries,
+              //     recomendations,
+              //   }));
+              // })
+              // .then(payload => ({
+              //   likes: +payload.tvshow.likes,
+              //   watching: payload.tvshow.watching > 0,
+              //   continueWatching: !!this.getSeasonToWatch(payload.seasons),
+              //   ...payload,
+              });
           },
 
           render() {
@@ -203,20 +213,20 @@ export default function tvShowRoute() {
                   <banner>
                     {this.renderStatus()}
                     {this.renderInfo()}
-                    <heroImg src={this.state.tvshow.covers.big} />
+                    <heroImg src={this.props.poster.replace("/thumbnail_241/", "/original/")} />
                   </banner>
                   {this.renderSeasons()}
-                  {this.renderRecomendations()}
-                  {this.renderRatings()}
-                  {this.renderCrew()}
-                  {this.renderAdditionalInfo()}
+                  {/* {this.renderRecomendations()} */}
+                  {/* {this.renderRatings()} */}
+                  {/* {this.renderCrew()} */}
                 </productTemplate>
               </document>
             );
           },
 
           renderStatus() {
-            const { status, genres, actors } = this.state.tvshow;
+            const { categories_ids } = this.state.tvshow;
+            const { status } = this.state.tmdb;
 
             return (
               <infoList>
@@ -225,39 +235,34 @@ export default function tvShowRoute() {
                     <title>{i18n('tvshow-status')}</title>
                   </header>
                   <text>
-                    {i18n(TVShowStatusStrings[TVShowStatuses[status]])}
+                    {i18n(tmdbTVShowStatusStrings[status])}
                   </text>
                 </info>
                 <info>
                   <header>
                     <title>{i18n('tvshow-genres')}</title>
                   </header>
-                  {genres.map(capitalizeText).map(genre => (
-                    <text key={genre}>{genre}</text>
-                  ))}
+                  {categories_ids.map(id => {
+                      let genre = settings.getGenresById(id);
+                      return (<text key={genre}>{genre}</text>);
+                    })
+                  }
                 </info>
-                {actors.length && (
-                  <info>
-                    <header>
-                      <title>{i18n('tvshow-actors')}</title>
-                    </header>
-                    {actors.map(({ person_en: personName }) => (
-                      <text key={personName}>{personName}</text>
-                    ))}
-                  </info>
-                )}
               </infoList>
             );
           },
 
           renderInfo() {
-            const { likes } = this.state;
 
-            const { description, soap_rating: soapRating } = this.state.tvshow;
+            const { title, year, quality } = this.state.tvshow;
+            const { 
+              overview: description, 
+              vote_average: rating,
+              episode_run_time: episodeRuntime
+            } = this.state.tmdb;
 
-            const title = i18n('tvshow-title', this.state.tvshow);
-            const hasTrailers = !!this.state.trailers.length;
-            const hasMultipleTrailers = this.state.trailers.length > 1;
+            // const hasTrailers = !!this.state.trailers.length;
+            // const hasMultipleTrailers = this.state.trailers.length > 1;
 
             let buttons = <row />;
 
@@ -271,26 +276,28 @@ export default function tvShowRoute() {
               </buttonLockup>
             );
 
-            const trailerBtnTitleCode = hasMultipleTrailers
-              ? 'tvshow-control-show-trailers'
-              : 'tvshow-control-show-trailer';
+            // const trailerBtnTitleCode = hasMultipleTrailers
+            //   ? 'tvshow-control-show-trailers'
+            //   : 'tvshow-control-show-trailer';
 
-            const showTrailerBtn = (
-              <buttonLockup
-                onPlay={this.onShowFirstTrailer}
-                onSelect={this.onShowTrailer}
-              >
-                <badge src="resource://button-preview" />
-                <title>{i18n(trailerBtnTitleCode)}</title>
-              </buttonLockup>
-            );
+            // const showTrailerBtn = (
+            //   <buttonLockup
+            //     onPlay={this.onShowFirstTrailer}
+            //     onSelect={this.onShowTrailer}
+            //   >
+            //     <badge src="resource://button-preview" />
+            //     <title>{i18n(trailerBtnTitleCode)}</title>
+            //   </buttonLockup>
+            // );
 
-            const startWatchingBtn = (
-              <buttonLockup onSelect={this.onAddToSubscriptions}>
-                <badge src="resource://button-add" />
-                <title>{i18n('tvshow-control-start-watching')}</title>
-              </buttonLockup>
-            );
+            const startWatchingBtn = quality.map((quality) => {
+                return (
+                  <buttonLockup onSelect={this.onAddToSubscriptions}>
+                    <badge src="resource://button-play" />
+                    <title>{i18n('tvshow-control-play', {quality})}</title>
+                  </buttonLockup>
+                );
+              });
 
             const stopWatchingBtn = (
               <buttonLockup onSelect={this.onRemoveFromSubscription}>
@@ -313,38 +320,32 @@ export default function tvShowRoute() {
               </buttonLockup>
             );
 
-            if (this.state.watching) {
-              buttons = (
-                <row>
-                  {this.canContinueWatching() && continueWatchingBtn}
-                  {hasTrailers && showTrailerBtn}
-                  {this.state.authorized && stopWatchingBtn}
-                  {this.state.authorized && rateBtn}
-                  {this.state.authorized && moreBtn}
-                </row>
-              );
-            } else {
-              buttons = (
-                <row>
-                  {hasTrailers && showTrailerBtn}
-                  {startWatchingBtn}
-                  {this.state.authorized && rateBtn}
-                  {this.state.authorized && moreBtn}
-                </row>
-              );
-            }
+            // if (this.state.watching) {
+            //   buttons = (
+            //     <row>
+            //       {this.canContinueWatching() && continueWatchingBtn}
+            //       {hasTrailers && showTrailerBtn}
+            //       {this.state.authorized && stopWatchingBtn}
+            //       {this.state.authorized && rateBtn}
+            //       {this.state.authorized && moreBtn}
+            //     </row>
+            //   );
+            // } else {
+              //   );
+              // }
+            // buttons = (
+            //   <row>
+            //     {startWatchingBtn}
+            //     {/* {moreBtn} */}
+            //   </row>)
 
             return (
               <stack>
                 <title>{title}</title>
                 <row>
-                  <ratingBadge value={soapRating / 10} />
-                  <text>
-                    {i18n('tvshow-liked-by')}{' '}
-                    {likes > 0
-                      ? i18n('tvshow-liked-by-people', { likes })
-                      : i18n('tvshow-liked-by-no-one')}
-                  </text>
+                  <ratingBadge value={rating / 10} />
+                  <text>{`${i18n('tvshow-information-year').toUpperCase()}: ${year}`}</text>
+                  <text>{`${i18n('tvshow-information-runtime').toUpperCase()}: ${moment.duration(+episodeRuntime, 'minutes').humanize()}`}</text>
                 </row>
                 <description
                   handlesOverflow="true"
@@ -352,34 +353,36 @@ export default function tvShowRoute() {
                 >
                   {description}
                 </description>
-                {buttons}
               </stack>
             );
           },
 
           renderSeasons() {
-            const { sid, covers } = this.state.tvshow;
+            const { seasons: origTmdbSeasons } = this.state.tmdb;
+            const tmdbSeasons = origTmdbSeasons.filter(elem => elem.season_number != 0);
+            const {sid, slug, tmdb_id, poster, imdb_id } = this.props;
+            const seasons = this.state.seasons;
             const title = i18n('tvshow-title', this.state.tvshow);
 
-            const scheduleDiff = this.state.schedule
-              .slice(this.state.seasons.length)
-              .map(season => ({
-                covers,
-                begins: season.episodes[0].date,
-                ...season,
-              }));
+            // const scheduleDiff = this.state.schedule
+            //   .slice(this.state.seasons.length)
+            //   .map(season => ({
+            //     covers,
+            //     begins: season.episodes[0].date,
+            //     ...season,
+            //   }));
 
-            const seasons = this.state.seasons.concat(scheduleDiff);
+            // const seasons = this.state.seasons.concat(scheduleDiff);
 
-            const currentMoment = moment();
+            // const currentMoment = moment();
 
-            const nextDay = currentMoment
-              .clone()
-              .add(moment.relativeTimeThreshold('h'), 'hour');
+            // const nextDay = currentMoment
+            //   .clone()
+            //   .add(moment.relativeTimeThreshold('h'), 'hour');
 
-            const nextMonth = currentMoment
-              .clone()
-              .add(moment.relativeTimeThreshold('d'), 'day');
+            // const nextMonth = currentMoment
+            //   .clone()
+            //   .add(moment.relativeTimeThreshold('d'), 'day');
 
             if (!seasons.length) return null;
 
@@ -390,94 +393,99 @@ export default function tvShowRoute() {
                 </header>
                 <section>
                   {seasons.map((season, i) => {
-                    const {
-                      begins,
-                      season: seasonNumber,
-                      covers: { big: poster },
-                    } = season;
+                    let seasonPoster = tmdbSeasons[i].poster_path ? getTmdbImageUrl(tmdbSeasons[i].poster_path) : poster;
+                    // const {
+                    //   season: i,
+                    //   covers: { big: poster},
+                    // } = season;
 
-                    const { schedule } = this.state;
+                    //const { schedule } = this.state;
 
-                    const seasonHasPoster = !!this.state.seasons[i];
-                    const seasonTitle = i18n('tvshow-season', { seasonNumber });
-                    const unwatched = calculateUnwatchedCount(season);
+                    const seasonHasPoster = !!seasonPoster;
+                    const seasonTitle = season.season_label;
+                    const totalEpisodes = season.episodes.length;
+                    //const unwatched = calculateUnwatchedCount(season);
 
                     const { episodes: seasonEpisodes } = season;
-                    const { episodes: scheduleEpisodes } = schedule[i] || {
-                      episodes: [],
-                    };
+                    // const { episodes: scheduleEpisodes } = schedule[i] || {
+                    //   episodes: [],
+                    // };
 
-                    const [scheduleEpisode] = scheduleEpisodes
-                      .slice(seasonEpisodes.length)
-                      .filter(episode => {
-                        const episodeDate = moment(episode.date, 'DD.MM.YYYY');
-                        return episodeDate > currentMoment;
-                      });
+                    // const [scheduleEpisode] = scheduleEpisodes
+                    //   .slice(seasonEpisodes.length)
+                    //   .filter(episode => {
+                    //     const episodeDate = moment(episode.date, 'DD.MM.YYYY');
+                    //     return episodeDate > currentMoment;
+                    //   });
 
-                    const isUHD = seasonEpisodes
-                      .map(({ files }) => files)
-                      .filter(Boolean)
-                      .some(files =>
-                        files.some(({ quality }) => {
-                          const mqCode = mediaQualities[quality];
-                          return mqCode === UHD;
-                        }),
-                      );
+                    // const isUHD = seasonEpisodes
+                    //   .map(({ files }) => files)
+                    //   .filter(Boolean)
+                    //   .some(files =>
+                    //     files.some(({ quality }) => {
+                    //       const mqCode = mediaQualities[quality];
+                    //       return mqCode === UHD;
+                    //     }),
+                    //   );
 
-                    let isWatched = !unwatched;
-                    let dateTitle;
-                    let date;
+                    let isWatched = false;
+                    // let dateTitle;
+                    // let date;
 
-                    if (scheduleEpisode) {
-                      date = moment(scheduleEpisode.date, 'DD.MM.YYYY');
+                    // if (scheduleEpisode) {
+                    //   date = moment(scheduleEpisode.date, 'DD.MM.YYYY');
 
-                      if (!date.isValid() || nextMonth < date) {
-                        dateTitle = i18n('new-episode-soon');
-                      } else if (nextDay > date) {
-                        dateTitle = i18n('new-episode-day');
-                      } else {
-                        dateTitle = i18n('new-episode-custom-date', {
-                          date: date.fromNow(),
-                        });
-                      }
-                      if (currentMoment < date) isWatched = false;
-                    }
+                    //   if (!date.isValid() || nextMonth < date) {
+                    //     dateTitle = i18n('new-episode-soon');
+                    //   } else if (nextDay > date) {
+                    //     dateTitle = i18n('new-episode-day');
+                    //   } else {
+                    //     dateTitle = i18n('new-episode-custom-date', {
+                    //       date: date.fromNow(),
+                    //     });
+                    //   }
+                    //   if (currentMoment < date) isWatched = false;
+                    // }
 
-                    if (begins) {
-                      date = moment(begins, 'DD.MM.YYYY');
+                    // if (begins) {
+                    //   date = moment(begins, 'DD.MM.YYYY');
 
-                      if (!date.isValid() || nextMonth < date) {
-                        dateTitle = i18n('new-season-soon');
-                      } else if (nextDay > date) {
-                        dateTitle = i18n('new-season-day');
-                      } else {
-                        dateTitle = i18n('new-season-custom-date', {
-                          date: date.fromNow(),
-                        });
-                      }
-                      isWatched = false;
-                    }
+                    //   if (!date.isValid() || nextMonth < date) {
+                    //     dateTitle = i18n('new-season-soon');
+                    //   } else if (nextDay > date) {
+                    //     dateTitle = i18n('new-season-day');
+                    //   } else {
+                    //     dateTitle = i18n('new-season-custom-date', {
+                    //       date: date.fromNow(),
+                    //     });
+                    //   }
+                    //   isWatched = false;
+                    // }
 
                     const payload = {
                       sid,
-                      poster,
-                      id: seasonNumber,
-                      title: `${title} — ${seasonTitle}`,
+                      tmdb_id,
+                      imdb_id,
+                      slug,
+                      season,
+                      poster: seasonPoster,
+                      id: tmdbSeasons[i].season_number,
+                      title,
                     };
-
                     return (
                       <Tile
-                        key={seasonNumber}
+                        key={sid+"_"+i}
                         title={seasonTitle}
                         route="season"
-                        poster={seasonHasPoster && poster}
-                        counter={unwatched || dateTitle}
+                        poster={seasonHasPoster && seasonPoster}
+                        counter={totalEpisodes || unwatched || dateTitle}
                         isWatched={isWatched}
-                        isUHD={isUHD}
+                        isUHD={false}
                         payload={payload}
+                        isTmdbPoster={true}
                         // eslint-disable-next-line react/jsx-no-bind
                         onHoldselect={this.onSeasonOptions.bind(
-                          ...[this, payload.id, payload.title, isWatched],
+                          ...[this, payload.id, payload.title, payload.season, payload.tmdb_id, payload.imdb_id, isWatched],
                         )}
                       />
                     );
@@ -698,68 +706,6 @@ export default function tvShowRoute() {
             );
           },
 
-          renderAdditionalInfo() {
-            const {
-              year,
-              network,
-              episode_runtime: episodeRuntime,
-              country: countryCode,
-            } = this.state.tvshow;
-
-            const { contries } = this.state;
-
-            const [{ full: country }] = contries.filter(
-              ({ short }) => short === countryCode,
-            );
-
-            return (
-              <productInfo>
-                <infoTable>
-                  <header>
-                    <title>{i18n('tvshow-information')}</title>
-                  </header>
-                  <info>
-                    <header>
-                      <title>{i18n('tvshow-information-year')}</title>
-                    </header>
-                    <text>{year}</text>
-                  </info>
-                  <info>
-                    <header>
-                      <title>{i18n('tvshow-information-runtime')}</title>
-                    </header>
-                    <text>
-                      {moment.duration(+episodeRuntime, 'minutes').humanize()}
-                    </text>
-                  </info>
-                  <info>
-                    <header>
-                      <title>{i18n('tvshow-information-country')}</title>
-                    </header>
-                    <text>{country}</text>
-                  </info>
-                  <info>
-                    <header>
-                      <title>{i18n('tvshow-information-network')}</title>
-                    </header>
-                    <text>{network}</text>
-                  </info>
-                </infoTable>
-                <infoTable>
-                  <header>
-                    <title>{i18n('tvshow-languages')}</title>
-                  </header>
-                  <info>
-                    <header>
-                      <title>{i18n('tvshow-languages-primary')}</title>
-                    </header>
-                    <text>{i18n('tvshow-languages-primary-values')}</text>
-                  </info>
-                </infoTable>
-              </productInfo>
-            );
-          },
-
           getSeasonToWatch(seasons = []) {
             return seasons.reduce((result, season) => {
               if (!result && calculateUnwatchedCount(season)) return season;
@@ -897,7 +843,7 @@ export default function tvShowRoute() {
 
           onShowFullDescription() {
             const title = i18n('tvshow-title', this.state.tvshow);
-            const { description } = this.state.tvshow;
+            const { overview: description } = this.state.tmdb;
 
             TVDML.renderModal(
               <document>

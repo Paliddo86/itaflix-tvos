@@ -14,6 +14,7 @@ export default function Tile({ key, attrs = {}, events = {} }) {
     isWatched,
     payload = {},
     autoHighlight,
+    isTmdbPoster
   } = attrs;
 
   const { onPlay, onSelect, onHighlight, onHoldselect } = events;
@@ -32,8 +33,8 @@ export default function Tile({ key, attrs = {}, events = {} }) {
     >
       <img
         src={poster}
-        width="200"
-        height="285"
+        width={isTmdbPoster ? "185" : "200"}
+        height={isTmdbPoster ? "277" : "285"}
         class="tile-img"
         contentsMode="aspectFitBB"
         style={`

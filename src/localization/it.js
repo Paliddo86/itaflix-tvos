@@ -7,9 +7,11 @@ export default {
 
   'menu-my': 'My',
   'menu-tvshows': 'Serie TV',
+  'menu-movies': 'Film',
   'menu-search': 'Home',
   'menu-genres': 'Generi',
   'menu-account': 'Utente',
+  'menu-user': 'Utente',
   'menu-settings': 'Impostazioni',
   'menu-recomendations': 'Raccomandati',
 
@@ -143,10 +145,11 @@ export default {
   'tvshow-also-watched': 'Correlati',
   'tvshow-ratings': 'Voti e recensioni',
   'tvshow-cast-crew': 'Attori e Cast',
+  'tvshow-quality': 'Qualità',
 
   'tvshow-information': 'Informazioni',
   'tvshow-information-year': 'Anno',
-  'tvshow-information-runtime': 'Durata',
+  'tvshow-information-runtime': 'Durata Episodio',
   'tvshow-information-country': 'Paese',
   'tvshow-information-network': 'Distributore',
 
@@ -172,11 +175,15 @@ export default {
   'tvshow-status-ended': 'Completata',
   'tvshow-status-closed': 'Annullata',
   'tvshow-status-running': 'In Corso',
+  'tvshow-status-pilot': 'Pilota',
+  'tvshow-status-planned': 'Pianificata',
+  'tvshow-status-production': 'In Produzione',
 
   'tvshow-control-continue-watching': 'Continua a guardare',
   'tvshow-control-show-trailer': 'Play\nTrailer',
   'tvshow-control-show-trailers': 'Visualizza\nTrailers',
-  'tvshow-control-start-watching': 'Inizia a guardare',
+  'tvshow-control-start-watching': 'Guarda',
+  'tvshow-control-play': ({quality}) => `Guarda in ${quality}`,
   'tvshow-control-stop-watching': 'Ferma di guardare',
   'tvshow-control-rate': 'Vota Serie Tv',
   'tvshow-control-more': 'Altro',
@@ -233,6 +240,7 @@ export default {
   'search-persons': 'Persone',
   'search-actor': 'Attori',
   'search-tvshows': 'Serie TV',
+  'search-result': 'Risultati Ricerca',
 
   'actor-tvshows': 'Serie TV',
   'actor-title': 'Attori',
@@ -241,23 +249,23 @@ export default {
   'authorize-description':
     'Hai bisogno di una sottoscrizione per visualizzare i contenuti',
   'authorize-user-description':
-    'If you want your tv to be in sync with your online account at soap4.me you need to be authorized.\n\nAuthorization is also required to manage your subscriptions and rate tv shows with episodes from tv.',
+    'Per utilizzare il servizio su tv devi autorizzare il tuo account utente.\n\nL\'autorizzazione è necessaria per visualizzare i contenuti su tv.',
   'authorize-tvshow-description':
-    'If you would like to track your subscriptions and sync them with your online account at soap4.me you need to be authorized',
+    'Verifica che il tuo account utente sia autorizzato',
   'authorize-control-trigger': 'Autorizza',
 
-  'login-step1-caption': 'Enter user login (not e-mail)',
+  'login-step1-caption': 'Inserisci la mail',
   'login-step1-placeholder': 'Login',
-  'login-step1-button': 'Next',
+  'login-step1-button': 'Avanti',
 
-  'login-step2-caption': 'Enter account password (minimum 6 symbols)',
+  'login-step2-caption': 'Inserisci la password (minimo 6 caratteri)',
   'login-step2-placeholder': 'Password',
-  'login-step2-button': 'Authorize',
+  'login-step2-button': 'Autorizza',
 
   'login-step3-caption': 'Autorizzo...',
 
-  'login-error-wrong-login': 'Incorrect login or password',
-  'login-error-something-went-wrong': 'Something went wrong =(',
+  'login-error-wrong-login': 'Email o password non corretti',
+  'login-error-something-went-wrong': 'Qualcosa non ha funzionato =(',
 
   'translation-localization': 'Lingua Interfaccia',
   'translation-subtitles': 'Sottotitoli',

@@ -4,7 +4,7 @@ import md5 from 'blueimp-md5';
 
 import config from '../../package.json';
 
-import { getToken, isAuthorized, isSessionValid } from '../user';
+import { getFingerprint, getLoginData, getToken, isAuthorized, isSessionValid } from '../user';
 import * as request from '../request';
 import * as settings from '../settings';
 import * as topShelf from '../helpers/topShelf';
@@ -17,7 +17,9 @@ const { LOCALIZATION, SUBTITLES } = settings.values[TRANSLATION];
 
 const TOP_SHELF_MIN_ITEMS = 4;
 const HOST = 'https://altadefinizionecommunity.online';
+const ONLY_HOST = 'altadefinizionecommunity.online';
 const API_URL = `${HOST}/api`;
+const FINGERPRINT = 1313464847774033;
 
 function getLatest(tvshows, count = 10) {
   return tvshows.sort(({ sid: a }, { sid: b }) => b - a).slice(0, count);
@@ -109,7 +111,7 @@ function resolveCodeToIndex(code, collection = []) {
 function requestLogger(...params) {
   return [
     response => {
-      console.info(...params, response);
+      if(process.env.NODE_ENV === 'development') console.info(...params, response);
       return response;
     },
 
@@ -125,12 +127,15 @@ function headers(token = '', noToken = false) {
   const userAgent = `Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36`;
 
   let headers = {
-    'Referer': HOST,
     'User-Agent': userAgent,
+    'Host': ONLY_HOST,
+    'Origin': HOST,
+    'X-Requested-With': "XMLHttpRequest",
+    'Accept': 'application/json'
   };
 
   if (!noToken) {
-    headers["Authentication"] = `Bearer ${authToken}`
+    headers["Authorization"] = `Bearer ${authToken}`
   }
 
   return headers;
@@ -205,13 +210,13 @@ export function registerAccount(email, password, fingerprint) {
   return post(`${API_URL}/register`, body, null, true);
 }
 
-export function login(email, password, fingerprint, token) {
+export function login(email, password, fingerprint) {
   const body = {
     email,
     password,
     fingerprint
   }
-  return post(`${API_URL}/login`, body, token).then(response => {
+  return post(`${API_URL}/login`, body, null, true).then(response => {
     const result = {
       token: response.token,
       user_id: response.user.id,
@@ -219,7 +224,7 @@ export function login(email, password, fingerprint, token) {
       verified_at: response.user.email_verified_at,
       email,
       password,
-      logged: 1
+      logged: response.status ? 1 : 0
     }
     return Promise.resolve(result);
   });
@@ -228,10 +233,8 @@ export function login(email, password, fingerprint, token) {
 export function authorizeAccount() {
   const email = generateRandomEmail();
   const pass = generateRandomPass();
-  const fingerprint = generateFakeFingerPrint();
 
   return registerAccount(email, pass, fingerprint).then(response => {
-    console.log("register new account", response)
     const result = {
       token: response.token,
       user_id: response.user.id,
@@ -249,14 +252,29 @@ export function authorizeAccount() {
 }
 
 export function checkSession() {
-  if(!isSessionValid()) {
-    return authorizeAccount().then(res => {return login(res.email, res.password, res.fingerprint, res.token)});
-  }
-  return Promise.resolve({logged: 1});
+  if(isSessionValid()) return Promise.resolve({logged: 1});
+  let {email, password} = getLoginData();
+  if (!email) return Promise.resolve({logged: 0, token:""});
+  if (!password) return Promise.resolve({logged: 0, token:""});
+
+  return login(email, password, FINGERPRINT).then(result => {
+      return reAuthorize(result).then((auth) => {
+        return Promise.resolve({...result, email_verified_at: auth.user.email_verified_at});
+    });
+  });
 }
 
-export function authorize({ login, password }) {
-  return post(`${API_URL}/auth/`, { login, password }).catch(xhr => {
+export function authorize({ email, password }) {
+  return login(email, password, FINGERPRINT).catch(xhr => {
+    if (xhr.status === 403) {
+      return request.toJSON()(xhr);
+    }
+    return Promise.reject(xhr);
+  });
+}
+
+export function reAuthorize({ token }) {
+  return post(`${API_URL}/user/disable_forced_on_subscription`, {}, token).catch(xhr => {
     if (xhr.status === 403) {
       return request.toJSON()(xhr);
     }
@@ -293,7 +311,7 @@ export function deleteAccount(fid) {
 }
 
 export function logout() {
-  return post(`${API_URL}/auth/logout/`);
+  return post(`${API_URL}/logout`);
 }
 
 export function getMyTVShows() {
@@ -405,7 +423,7 @@ export function getTVShowsByGenre(genre) {
 }
 
 export function getTVShowDescription(sid) {
-  return get(`${API_URL}/soap/description/${sid}/`);
+  return get(`${API_URL}/posts/id/${sid}`).then(response => {return {result: response.post}});
 }
 
 export function getCountriesList() {
@@ -467,43 +485,8 @@ export function getTVShowTrailers(sid) {
   return get(`${API_URL}/trailers/${sid}/`).then(...emptyOrErrorsResolvers([]));
 }
 
-export function getTVShowSeasons(sid) {
-  return (
-    getTVShowEpisodes(sid)
-      // eslint-disable-next-line arrow-body-style
-      .then(({ covers, episodes }) => {
-        return (episodes || []).reduce((result, episode) => {
-          if (!result[episode.season]) {
-            // eslint-disable-next-line no-param-reassign
-            result[episode.season] = {
-              episodes: [],
-              unwatched: 0,
-              season: episode.season,
-              covers: covers.filter(
-                ({ season }) => season === episode.season,
-              )[0],
-            };
-          }
-          result[episode.season].episodes.push(episode);
-
-          // eslint-disable-next-line no-param-reassign
-          if (!episode.watched) result[episode.season].unwatched += 1;
-          return result;
-        }, {});
-      })
-      // eslint-disable-next-line arrow-body-style
-      .then(seasonsCollection => {
-        return Object.keys(seasonsCollection)
-          .sort((a, b) => a - b)
-          .map(seasonNumber => seasonsCollection[seasonNumber])
-          .map(season => ({
-            ...season,
-            episodes: season.episodes
-              .slice(0)
-              .sort((a, b) => a.episode - b.episode),
-          }));
-      })
-  );
+export function getTVShowSeasons(slug) {
+  return get(`${API_URL}/posts/seasons/${slug}`).then(response => {return response.seasons});
 }
 
 export function getTVShowSeason(sid, id) {
@@ -604,14 +587,8 @@ export function markEpisodeAsUnwatched(sid, season, episodeNumber) {
   return post(`${API_URL}/episodes/unwatch/${sid}/${season}/${episodeNumber}/`);
 }
 
-export function getMediaStream(media) {
-  const { sid, file } = media;
-  const { eid, hash: episodeHash } = file;
-
-  const token = getToken();
-  const hash = md5(token + eid + sid + episodeHash);
-
-  return post(`${API_URL}/play/episode/${eid}/`, { eid, hash });
+export function getMediaStream(slug, seasonId, episodeId) {
+  return get(`${API_URL}/post/urls/stream/${slug}/${seasonId}/${episodeId}`);
 }
 
 export function getTrailerStream(tid) {
@@ -646,4 +623,24 @@ export function getSpeedTestServers() {
 
 export function saveSpeedTestResults(results) {
   return post(`${API_URL}/speedtest/save/`, results);
+}
+
+export function getUiData() {
+  return get(`${API_URL}/generic/ui`).then(response => {
+    let genres = {};
+    let keys = [
+      "featured_categories", 
+      "movie_categories",
+      "tvshow_categories",
+      "tvprogram_categories"
+    ];
+
+    for(let key of keys) {
+      response[key].forEach(elem => {
+        genres[elem.id] = elem.name;
+      });
+    }
+
+    settings.set(settings.params.GENRES, genres);
+  });
 }

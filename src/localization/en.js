@@ -7,6 +7,7 @@ export default {
 
   'menu-my': 'My',
   'menu-tvshows': 'Shows',
+  'menu-movies': 'Movies',
   'menu-search': 'Home',
   'menu-genres': 'Genres',
   'menu-account': 'Account',

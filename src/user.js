@@ -58,7 +58,7 @@ export function getMainAccount() {
 }
 
 export function getLogin() {
-  return (get().selected || getMainAccount() || {}).name;
+  return (get().email || "").split('@')[0] || "";
 }
 
 export function isExtended() {
@@ -76,7 +76,7 @@ export function isFamily() {
 export function isSessionValid() {
   let verifiedDate = get().verified_at;
   if(!verifiedDate) return false;
-  return new Date(new Date(verifiedDate).getTime() + 60 * 60 * 24 * 1000) > new Date() && getToken() !== "";
+  return new Date(new Date(verifiedDate).getTime() + 60 * 60 * 23 * 1000) > new Date() && getToken() !== "";
 }
 
 export function getLoginData() {

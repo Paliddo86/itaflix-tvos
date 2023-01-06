@@ -88,7 +88,9 @@ export default function searchRoute() {
                     title,
                     poster,
                     quality,
-                    isUpdated
+                    isUpdated,
+                    tmdb_id,
+                    imdb_id
                   } = tvshow;
 
                   return (
@@ -98,7 +100,7 @@ export default function searchRoute() {
                       poster={poster}
                       quality={quality}
                       isUpdated={isUpdated}
-                      payload={{ title, sid, poster }}
+                      payload={{ title, sid, poster, tmdb_id, imdb_id }}
                     />
                   );
                 })}
@@ -121,7 +123,9 @@ export default function searchRoute() {
                     title,
                     poster,
                     quality,
-                    isUpdated
+                    isUpdated,
+                    tmdb_id,
+                    imdb_id
                   } = tvshow;
 
                   return (
@@ -131,7 +135,7 @@ export default function searchRoute() {
                       poster={poster}
                       quality={quality}
                       isUpdated={isUpdated}
-                      payload={{ title, sid, poster }}
+                      payload={{ title, sid, poster, tmdb_id, imdb_id }}
                     />
                   );
                 })}
@@ -154,7 +158,10 @@ export default function searchRoute() {
                     title,
                     poster,
                     quality,
-                    isUpdated
+                    isUpdated,
+                    slug,
+                    tmdb_id,
+                    imdb_id
                   } = tvshow;
 
                   return (
@@ -164,7 +171,7 @@ export default function searchRoute() {
                       poster={poster}
                       quality={quality}
                       isUpdated={isUpdated}
-                      payload={{ title, sid, poster }}
+                      payload={{ title, sid, poster, slug, tmdb_id, imdb_id }}
                     />
                   );
                 })}
@@ -222,7 +229,7 @@ export default function searchRoute() {
           return (
             <shelf class="shelf_indent">
               <header>
-                <title>{i18n('search-tvshows')}</title>
+                <title>{i18n('search-result')}</title>
               </header>
               <section>
               {this.state.searchResults.map(result => {
@@ -231,7 +238,10 @@ export default function searchRoute() {
                     title,
                     poster,
                     quality,
-                    isUpdated
+                    isUpdated,
+                    slug,
+                    tmdb_id,
+                    imdb_id
                   } = result;
 
                   return (
@@ -241,7 +251,7 @@ export default function searchRoute() {
                       poster={poster}
                       quality={quality}
                       isUpdated={isUpdated}
-                      payload={{ title, sid, poster }}
+                      payload={{ title, sid, slug, poster, tmdb_id, imdb_id }}
                     />
                   );
                 })}
@@ -328,6 +338,11 @@ export default function searchRoute() {
 
         loadResults(query) {
           this.setState({ loading: true });
+          if(!query) {
+            result.searchResults = [];
+            this.setState({ loading: false, ...result })
+            return Promise.resolve(result)
+          }
           return getSearchResults(query)
             .catch(() => ({}))
             .then(result => this.setState({ loading: false, ...result }));

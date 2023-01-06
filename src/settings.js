@@ -15,6 +15,13 @@ const quality = {
   UHD: '4k',
 };
 
+const streamQuality = {
+  SD: '720p',
+  HD: '1080p',
+  FULLHD: '2k',
+  UHD: '4k',
+}
+
 const translation = {
   LOCALIZATION: 'localization',
   SUBTITLES: 'subtitles',
@@ -37,6 +44,7 @@ export const params = {
   TRANSLATION: 'translation',
   VIDEO_PLAYBACK: 'video-playback',
   LANGUAGE: 'language',
+  GENRES: 'genres'
 };
 
 export const values = {
@@ -44,6 +52,7 @@ export const values = {
   [params.TRANSLATION]: translation,
   [params.VIDEO_PLAYBACK]: playback,
   [params.LANGUAGE]: language,
+  [params.GENRES]: {},
 };
 
 const defaults = {
@@ -85,7 +94,7 @@ const settings = getSettingsFromStorage(defaults);
 
 export function set(key, value) {
   const hasParam = checkKeyValidity(key);
-  const hasValue = checkKeyValueValidity(key, value);
+  const hasValue = key === params.GENRES ? true : checkKeyValueValidity(key, value);
 
   if (!hasParam) throw new Error(`Unsupported settings param "${key}"`);
   if (!hasValue) {
@@ -104,5 +113,19 @@ export function get(key) {
 }
 
 export function getAll() {
-  return { ...settings };
+  let setting = {}
+  for (let key in settings) {
+    if(key === params.GENRES) continue;
+    setting[key] = settings[key];
+  }
+  return setting;
+}
+
+export function getGenresById(id) {
+  return settings[params.GENRES][id];
+}
+
+export function getPreferredVideoQuality() {
+  let quality = streamQuality[settings[params.VIDEO_QUALITY].toUpperCase()];
+  return quality;
 }
