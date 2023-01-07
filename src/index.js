@@ -6,7 +6,7 @@ import * as user from './user';
 
 import { get as i18n } from './localization';
 import { checkSession, getUiData } from './request/adc';
-import { getStartParams, getOpenURLParams, isQello } from './utils';
+import { getOpenURLParams } from './utils';
 
 import myRoute from './routes/my';
 import tvShows from './routes/tvshows';
@@ -20,6 +20,7 @@ import searchRoute from './routes/search';
 import genresRoute from './routes/genres';
 import settingsRoute from './routes/settings';
 import speedTestRoute from './routes/speedtest';
+import movieRoute from './routes/movie';
 import myRecomendations from './routes/recomendations';
 
 import { AUTH, BASIC, GUEST } from './routes/menu/constants';
@@ -111,6 +112,8 @@ TVDML.handleRoute('search').pipe(searchRoute());
 TVDML.handleRoute('settings').pipe(settingsRoute());
 
 TVDML.handleRoute('tvshow').pipe(tvShowRoute());
+
+TVDML.handleRoute('movie').pipe(movieRoute());
 
 TVDML.handleRoute('season').pipe(seasonRoute());
 

@@ -250,12 +250,12 @@ export function authorizeAccount() {
 }
 
 export function checkSession() {
-  if(isSessionValid()) return Promise.resolve({logged: 1});
   let {email, password} = getLoginData();
   if (!email) return Promise.resolve({logged: 0, token:""});
   if (!password) return Promise.resolve({logged: 0, token:""});
 
   return login(email, password, FINGERPRINT).then(result => {
+    if(isSessionValid()) return Promise.resolve({...result});
       return reAuthorize(result).then((auth) => {
         return Promise.resolve({...result, email_verified_at: auth.user.email_verified_at});
     });
@@ -424,6 +424,10 @@ export function getTVShowDescription(sid) {
   return get(`${API_URL}/posts/id/${sid}`).then(response => {return {result: response.post}});
 }
 
+export function getMovieDescription(sid) {
+  return get(`${API_URL}/posts/id/${sid}`).then(response => {return {result: response.post}});
+}
+
 export function getCountriesList() {
   return get(`${API_URL}/soap/countrys/`);
 }
@@ -587,6 +591,10 @@ export function markEpisodeAsUnwatched(sid, season, episodeNumber) {
 
 export function getMediaStream(slug, seasonId, episodeId) {
   return get(`${API_URL}/post/urls/stream/${slug}/${seasonId}/${episodeId}`);
+}
+
+export function getMovieMediaStream(slug) {
+  return get(`${API_URL}/post/urls/stream/${slug}`);
 }
 
 export function getTrailerStream(tid) {

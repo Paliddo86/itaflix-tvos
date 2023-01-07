@@ -17,6 +17,7 @@ import {
   createMediaItem,
   getMonogramImageUrl,
   isMenuButtonPressNavigatedTo,
+  createMediaItems,
 } from '../utils';
 
 import { processEntitiesInString } from '../utils/parser';
@@ -27,8 +28,6 @@ import { get as i18n } from '../localization';
 import {
   getEpisodeMedia,
   getTrailerStream,
-  getTVShowSeasons,
-  getTVShowDescription,
   markTVShowAsWatched,
   markTVShowAsUnwatched,
   markSeasonAsWatched,
@@ -39,19 +38,21 @@ import {
   removeFromMyTVShows,
   rateTVShow,
   getRelated,
+  getMovieDescription,
+  getMovieMediaStream,
 } from '../request/adc';
 
 import Tile from '../components/tile';
 import Loader from '../components/loader';
 import Authorize from '../components/authorize';
 import { 
-  getTmdbShowDetails, 
   tmdbTVShowStatusStrings,
-  getTmdbImageUrl
+  getTmdbMovieDetails
 } from '../request/tmdb';
 
-const { VIDEO_QUALITY } = settings.params;
-const { UHD } = settings.values[VIDEO_QUALITY];
+const MARK_AS_WATCHED_PERCENTAGE = 90;
+const SHOW_RATING_PERCENTAGE = 50;
+const RATING_SCREEN_TIMEOUT = 10;
 
 function calculateUnwatchedCount(season) {
   return season.unwatched || 0;
@@ -66,7 +67,7 @@ function getTrailerItem(trailer) {
   }));
 }
 
-export default function tvShowRoute() {
+export default function movieRoute() {
   return TVDML.createPipeline()
     .pipe(
       TVDML.passthrough(
@@ -77,7 +78,7 @@ export default function tvShowRoute() {
           slug,
           tmdb_id,
           imdb_id,
-          continueWatchingAndPlay: continueWatchingAndPlay === '1',
+          continueWatchingAndPlay: continueWatchingAndPlay === '1'
         }),
       ),
     )
@@ -153,26 +154,20 @@ export default function tvShowRoute() {
           loadData() {
             const { sid, slug, tmdb_id, imdb_id } = this.props;
             return Promise.all([
-              getTVShowDescription(sid),
-              getTmdbShowDetails(tmdb_id, imdb_id),
-              getTVShowSeasons(slug),
+              getMovieDescription(sid),
+              getTmdbMovieDetails(tmdb_id, imdb_id),
               getRelated(slug)
-              // getCountriesList(),
-              // getTVShowSchedule(sid),
-              //getTVShowRecommendations(sid),
             ])
               .then(payload => {
                 const [
-                  tvshowResponse,
-                  tmdbShowResponse,
-                  seasons,
+                  movieResponse,
+                  tmdbMovieResponse,
                   recomendations,
                 ] = payload;
 
                 return {
-                  tvshow: tvshowResponse.result, 
-                  tmdb: tmdbShowResponse,
-                  seasons,
+                  movie: movieResponse.result, 
+                  tmdb: tmdbMovieResponse,
                   recomendations: recomendations.relatedData
                 };
 
@@ -196,7 +191,6 @@ export default function tvShowRoute() {
               //   ...payload,
               });
           },
-
           render() {
             if (this.state.loading) {
               return (
@@ -212,24 +206,256 @@ export default function tvShowRoute() {
                     {this.renderInfo()}
                     <heroImg src={this.props.poster.replace("/thumbnail_241/", "/original/")} />
                   </banner>
-                  {this.renderSeasons()}
                   {this.renderRecomendations()}
-                  {/* {this.renderRatings()} */}
-                  {/* {this.renderCrew()} */}
                 </productTemplate>
               </document>
             );
           },
 
+          playMovie() {
+            const { slug, poster } = this.props;
+            const { overview } = this.state.tmdb;
+
+            // const {episodes, translation } = this.state;
+
+            const player = new Player();
+
+            player.playlist = new Playlist();
+            player.interactiveOverlayDismissable = false;
+
+            let overlayDocument;
+
+            player.addEventListener(
+              'timeDidChange',
+              ({ time }) => {
+                const { currentMediaItem, currentMediaItemDuration } = player;
+
+                currentMediaItem.currentTime = time;
+
+                if (!currentMediaItem.duration) {
+                  currentMediaItem.duration = currentMediaItemDuration;
+                }
+
+                // const [, , currentEpisodeNumber] = currentMediaItem.id.split(
+                //   '-',
+                // );
+                // const currentEpisode = getEpisode(
+                //   currentEpisodeNumber,
+                //   episodes,
+                // );
+
+                const watchedPercent = (time * 100) / currentMediaItemDuration;
+                const passedBoundary =
+                  watchedPercent >= MARK_AS_WATCHED_PERCENTAGE;
+
+                if (passedBoundary && !currentMediaItem.markedAsWatched) {
+                  currentMediaItem.markedAsWatched = true;
+
+                  const index = episodeNumber;
+                  const nextEpisodeNumber = (season.episodes[index + 1] || {}).number;
+
+                  this.onMarkAsWatched(episodeNumber);
+
+                  // Setting next episode as highlighted if exist
+                  if (nextEpisodeNumber) {
+                    this.setState({ highlightEpisode: nextEpisodeNumber });
+                  }
+
+                  /**
+                   * If user configured app for continues playback then loading next
+                   * episode media file and adding it to current playlist.
+                   */
+                  // if (settings.get(VIDEO_PLAYBACK) === CONTINUES) {
+                  //   const nextEpisode = getEpisode(nextEpisodeNumber, episodes);
+
+                  //   getEpisodeItem(sid, nextEpisode, poster, translation)
+                  //     .then(createMediaItem)
+                  //     .then(episodeMediaItem => {
+                  //       player.playlist.push(episodeMediaItem);
+                  //     });
+                  // }
+                }
+
+                const { duration, markedAsRated } = currentMediaItem;
+
+                /**
+                 * Rounding time values to lower integer and checking if it's last
+                 * second of the episode.
+                 */
+                if (
+                  !isNaN(duration) &&
+                  time >= duration - 1 &&
+                  !markedAsRated
+                ) {
+                  currentMediaItem.markedAsRated = true;
+
+                  const minimalWatchTime =
+                    (duration * SHOW_RATING_PERCENTAGE) / 100;
+
+                  /**
+                   * Creating bound closure for rate method to be able to use in
+                   * child component.
+                   */
+                  const onRateChange = this.onRateChange.bind(this);
+
+                  /**
+                   * Don't show rating screen if watched time less than minimum
+                   * allowed time. This means that user didn't watch episode enough
+                   * to rate it.
+                   */
+                  if (time < minimalWatchTime) return;
+
+                  /**
+                   * Pausing player so we can show rating screen with blocked
+                   * controls.
+                   * All thanks to `player.interactiveOverlayDismissable`.
+                   */
+                  player.pause();
+
+                  /**
+                   * Parsing document because we don't want to show rating screen
+                   * as normal screen. It must be rendered
+                   * as `interactiveOverlayDocument`.
+                   */
+                  TVDML.parseDocument(
+                    TVDML.createComponent({
+                      getInitialState() {
+                        return {
+                          timeout: RATING_SCREEN_TIMEOUT,
+                        };
+                      },
+
+                      componentDidMount() {
+                        this.timer = setInterval(() => {
+                          if (this.state.timeout > 1) {
+                            this.setState({
+                              timeout: this.state.timeout - 1,
+                            });
+                          } else {
+                            this.resumePlayback();
+                          }
+                        }, 1000);
+                      },
+
+                      componentWillUnmount() {
+                        if (this.timer) clearInterval(this.timer);
+                      },
+
+                      resumePlayback() {
+                        if (this.timer) clearInterval(this.timer);
+
+                        /**
+                         * Also we need to manually unmount previously created
+                         * document.
+                         */
+                        player.interactiveOverlayDocument.destroyComponent();
+                        player.interactiveOverlayDocument = null;
+                        player.play();
+                      },
+
+                      render() {
+                        const { timeout } = this.state;
+
+                        return (
+                          <document>
+                            <ratingTemplate style="background-color: rgba(0,0,0,0.8)">
+                              <title>
+                                {i18n('episode-rate-title', { timeout })}
+                              </title>
+                              <ratingBadge
+                                onChange={event => {
+                                  onRateChange(currentEpisode, event).then(
+                                    () => {
+                                      this.resumePlayback();
+                                    },
+                                  );
+                                }}
+                              />
+                            </ratingTemplate>
+                          </document>
+                        );
+                      },
+                    }),
+                  )
+                    .pipe(payload => {
+                      const { parsedDocument: document } = payload;
+                      player.interactiveOverlayDocument = document;
+                      overlayDocument = document;
+
+                      /**
+                       * Because we created document bypassing normal rendering
+                       * pipeline we need to mount document manually by invoking
+                       * `didMount` method.
+                       */
+                      document.didMount();
+                    })
+                    .sink();
+                }
+              },
+              { interval: 1 },
+            );
+
+            player.addEventListener('stateWillChange', event => {
+              console.log("addEventListener", event)
+              const { currentMediaItem } = player;
+              const isEnded = event.state === 'end';
+              const isPaused = event.state === 'paused';
+              const isProperState = isEnded || isPaused;
+              const shouldSaveTime =
+                currentMediaItem &&
+                !currentMediaItem.markedAsWatched &&
+                isProperState;
+
+              if (isEnded && overlayDocument) {
+                overlayDocument.destroyComponent();
+              }
+
+              // if (shouldSaveTime) {
+              //   const { id, currentTime } = currentMediaItem;
+
+              //   const [, , currentEpisodeNumber] = id.split('-');
+              //   const currentEpisode = getEpisode(
+              //     currentEpisodeNumber,
+              //     episodes,
+              //   );
+              //   const { eid } = getEpisodeMedia(currentEpisode, translation);
+
+              //   saveElapsedTime(eid, currentTime);
+              // }
+            });
+
+            // Loading and starting playback.
+            getMovieMediaStream(slug).then((response) => {
+              console.log("getMovieMediaStream response", response)
+              const { streams, backdrop_url, title, id, poster_url } = response;
+              let movie = {
+                id,
+                title,
+                description: overview,
+                streams,
+                artworkImageURL: backdrop_url || poster_url || poster,
+                resumeTime: 0
+              }
+              console.log("movie", movie)
+                let videoQuality = settings.getPreferredVideoQuality();
+                let movieMediaItem =  createMediaItems(movie, videoQuality);
+
+                console.log("movieMediaItem", movieMediaItem)
+                player.playlist.push(movieMediaItem);
+                console.log(player.playlist)
+                player.play();
+              });
+          },
+
           renderStatus() {
-            const { categories_ids } = this.state.tvshow;
+            const { categories_ids } = this.state.movie;
             const { status } = this.state.tmdb;
 
             return (
               <infoList>
                 <info>
                   <header>
-                    <title>{i18n('tvshow-status')}</title>
+                    <title>{i18n('movie-status')}</title>
                   </header>
                   <text>
                     {i18n(tmdbTVShowStatusStrings[status])}
@@ -237,7 +463,7 @@ export default function tvShowRoute() {
                 </info>
                 <info>
                   <header>
-                    <title>{i18n('tvshow-genres')}</title>
+                    <title>{i18n('movie-genres')}</title>
                   </header>
                   {categories_ids.map(id => {
                       let genre = settings.getGenresById(id);
@@ -251,27 +477,25 @@ export default function tvShowRoute() {
 
           renderInfo() {
 
-            const { title, year, quality } = this.state.tvshow;
+            const { title, year, quality } = this.state.movie;
             const { 
               overview: description, 
               vote_average: rating,
-              episode_run_time,
-              last_episode_to_air
+              runtime
             } = this.state.tmdb;
 
-            const episodeRuntime = episode_run_time[0] || last_episode_to_air.runtime;
             // const hasTrailers = !!this.state.trailers.length;
             // const hasMultipleTrailers = this.state.trailers.length > 1;
 
             let buttons = <row />;
-
-            const continueWatchingBtn = (
+            const onSelectPlay = this.playMovie.bind(this);
+            const playBtn = (
               <buttonLockup
-                onPlay={this.onContinueWatchingAndPlay}
-                onSelect={this.onContinueWatching}
+                onPlay={onSelectPlay}
+                onSelect={onSelectPlay}
               >
                 <badge src="resource://button-play" />
-                <title>{i18n('tvshow-control-continue-watching')}</title>
+                <title>{i18n('movie-control-start-watching')}</title>
               </buttonLockup>
             );
 
@@ -332,11 +556,10 @@ export default function tvShowRoute() {
             // } else {
               //   );
               // }
-            // buttons = (
-            //   <row>
-            //     {startWatchingBtn}
-            //     {/* {moreBtn} */}
-            //   </row>)
+            buttons = (
+              <row>
+                {playBtn}
+              </row>)
 
             return (
               <stack>
@@ -344,7 +567,7 @@ export default function tvShowRoute() {
                 <row>
                   <ratingBadge value={rating / 10} />
                   <text>{`${i18n('tvshow-information-year').toUpperCase()}: ${year}`}</text>
-                  <text>{`${i18n('tvshow-information-runtime').toUpperCase()}: ${moment.duration(+episodeRuntime, 'minutes').humanize()}`}</text>
+                  <text>{`${i18n('movie-information-runtime').toUpperCase()}: ${moment.duration(+runtime, 'minutes').humanize()}`}</text>
                 </row>
                 <description
                   allowsZooming="true"
@@ -356,175 +579,13 @@ export default function tvShowRoute() {
                 >
                   {description}
                 </description>
+                {playBtn}
               </stack>
             );
           },
 
-          renderSeasons() {
-            const { seasons: origTmdbSeasons } = this.state.tmdb;
-            const tmdbSeasons = origTmdbSeasons.filter(elem => elem.season_number != 0);
-            const {sid, slug, tmdb_id, poster, imdb_id } = this.props;
-            const seasons = this.state.seasons;
-            const title = i18n('tvshow-title', this.state.tvshow);
-
-            // const scheduleDiff = this.state.schedule
-            //   .slice(this.state.seasons.length)
-            //   .map(season => ({
-            //     covers,
-            //     begins: season.episodes[0].date,
-            //     ...season,
-            //   }));
-
-            // const seasons = this.state.seasons.concat(scheduleDiff);
-
-            // const currentMoment = moment();
-
-            // const nextDay = currentMoment
-            //   .clone()
-            //   .add(moment.relativeTimeThreshold('h'), 'hour');
-
-            // const nextMonth = currentMoment
-            //   .clone()
-            //   .add(moment.relativeTimeThreshold('d'), 'day');
-
-            if (!seasons.length) return null;
-
-            return (
-              <shelf>
-                <header>
-                  <title>{i18n('tvshow-seasons')}</title>
-                </header>
-                <section>
-                  {seasons.map((season, i) => {
-                    let seasonPoster = tmdbSeasons[i].poster_path ? getTmdbImageUrl(tmdbSeasons[i].poster_path) : poster;
-                    // const {
-                    //   season: i,
-                    //   covers: { big: poster},
-                    // } = season;
-
-                    //const { schedule } = this.state;
-
-                    const seasonHasPoster = !!seasonPoster;
-                    const seasonTitle = season.season_label;
-                    const totalEpisodes = season.episodes.length;
-                    //const unwatched = calculateUnwatchedCount(season);
-
-                    const { episodes: seasonEpisodes } = season;
-                    // const { episodes: scheduleEpisodes } = schedule[i] || {
-                    //   episodes: [],
-                    // };
-
-                    // const [scheduleEpisode] = scheduleEpisodes
-                    //   .slice(seasonEpisodes.length)
-                    //   .filter(episode => {
-                    //     const episodeDate = moment(episode.date, 'DD.MM.YYYY');
-                    //     return episodeDate > currentMoment;
-                    //   });
-
-                    // const isUHD = seasonEpisodes
-                    //   .map(({ files }) => files)
-                    //   .filter(Boolean)
-                    //   .some(files =>
-                    //     files.some(({ quality }) => {
-                    //       const mqCode = mediaQualities[quality];
-                    //       return mqCode === UHD;
-                    //     }),
-                    //   );
-
-                    let isWatched = false;
-                    // let dateTitle;
-                    // let date;
-
-                    // if (scheduleEpisode) {
-                    //   date = moment(scheduleEpisode.date, 'DD.MM.YYYY');
-
-                    //   if (!date.isValid() || nextMonth < date) {
-                    //     dateTitle = i18n('new-episode-soon');
-                    //   } else if (nextDay > date) {
-                    //     dateTitle = i18n('new-episode-day');
-                    //   } else {
-                    //     dateTitle = i18n('new-episode-custom-date', {
-                    //       date: date.fromNow(),
-                    //     });
-                    //   }
-                    //   if (currentMoment < date) isWatched = false;
-                    // }
-
-                    // if (begins) {
-                    //   date = moment(begins, 'DD.MM.YYYY');
-
-                    //   if (!date.isValid() || nextMonth < date) {
-                    //     dateTitle = i18n('new-season-soon');
-                    //   } else if (nextDay > date) {
-                    //     dateTitle = i18n('new-season-day');
-                    //   } else {
-                    //     dateTitle = i18n('new-season-custom-date', {
-                    //       date: date.fromNow(),
-                    //     });
-                    //   }
-                    //   isWatched = false;
-                    // }
-
-                    const payload = {
-                      sid,
-                      tmdb_id,
-                      imdb_id,
-                      slug,
-                      season,
-                      poster: seasonPoster,
-                      id: tmdbSeasons[i].season_number,
-                      title,
-                    };
-                    return (
-                      <Tile
-                        key={sid+"_"+i}
-                        title={seasonTitle}
-                        route="season"
-                        poster={seasonHasPoster && seasonPoster}
-                        counter={totalEpisodes || unwatched || dateTitle}
-                        isWatched={isWatched}
-                        isUHD={false}
-                        payload={payload}
-                        isTmdbPoster={true}
-                        // eslint-disable-next-line react/jsx-no-bind
-                        onHoldselect={this.onSeasonOptions.bind(
-                          ...[this, payload.id, payload.title, payload.season, payload.tmdb_id, payload.imdb_id, isWatched],
-                        )}
-                      />
-                    );
-                  })}
-                </section>
-              </shelf>
-            );
-          },
-
-          onSeasonOptions(id, title, isWatched) {
-            TVDML.renderModal(
-              <document>
-                <alertTemplate>
-                  <title>{title}</title>
-                  {isWatched ? (
-                    <button
-                      // eslint-disable-next-line react/jsx-no-bind
-                      onSelect={this.onMarkSeasonAsUnwatched.bind(this, id)}
-                    >
-                      <text>{i18n('season-mark-as-unwatched')}</text>
-                    </button>
-                  ) : (
-                    <button
-                      // eslint-disable-next-line react/jsx-no-bind
-                      onSelect={this.onMarkSeasonAsWatched.bind(this, id)}
-                    >
-                      <text>{i18n('season-mark-as-watched')}</text>
-                    </button>
-                  )}
-                </alertTemplate>
-              </document>,
-            ).sink();
-          },
-
           onMarkSeasonAsWatched(id) {
-            const { sid } = this.state.tvshow;
+            const { sid } = this.state.movie;
 
             return markSeasonAsWatched(sid, id)
               .then(this.loadData.bind(this))
@@ -533,7 +594,7 @@ export default function tvShowRoute() {
           },
 
           onMarkSeasonAsUnwatched(id) {
-            const { sid } = this.state.tvshow;
+            const { sid } = this.state.movie;
 
             return markSeasonAsUnwatched(sid, id)
               .then(this.loadData.bind(this))
@@ -550,172 +611,31 @@ export default function tvShowRoute() {
                   <title>{i18n('tvshow-also-watched')}</title>
                 </header>
                 <section>
-                  {this.state.recomendations.map(tvshow => {
+                  {this.state.recomendations.map(movie => {
                     const {
                       sid,
                       poster,
                       quality,
                       isUpdated
-                    } = tvshow;
+                    } = movie;
 
-                    const title = i18n('tvshow-title', tvshow);
+                    const title = i18n('tvshow-title', movie);
 
                     return (
                       <Tile
                         key={sid}
                         title={title}
                         poster={poster}
-                        route="tvshow"
+                        route="movie"
                         quality={quality}
                         isUpdated={isUpdated}
-                        payload={tvshow}
+                        payload={movie}
                       />
                     );
                   })}
                 </section>
               </shelf>
             );
-          },
-
-          renderRatings() {
-            const {
-              soap_votes: soapVotes,
-              soap_rating: soapRating,
-              imdb_votes: imdbVotes,
-              imdb_rating: imdbRating,
-              kinopoisk_votes: kinopoiskVotes,
-              kinopoisk_rating: kinopoiskRating,
-            } = this.state.tvshow;
-
-            return (
-              <shelf>
-                <header>
-                  <title>{i18n('tvshow-ratings')}</title>
-                </header>
-                <section>
-                  {!!+imdbRating && (
-                    <ratingCard>
-                      <title>{`${imdbRating}`.slice(0, 3)} / 10</title>
-                      <ratingBadge value={imdbRating / 10} />
-                      <description>
-                        {i18n('tvshow-average-imdb', {
-                          amount: formatNumber(+imdbVotes, {
-                            fractionDigits: 0,
-                          }),
-                        })}
-                      </description>
-                    </ratingCard>
-                  )}
-                  {!!+kinopoiskRating && (
-                    <ratingCard>
-                      <title>{`${kinopoiskRating}`.slice(0, 3)} / 10</title>
-                      <ratingBadge value={kinopoiskRating / 10} />
-                      <description>
-                        {i18n('tvshow-average-kinopoisk', {
-                          amount: formatNumber(+kinopoiskVotes, {
-                            fractionDigits: 0,
-                          }),
-                        })}
-                      </description>
-                    </ratingCard>
-                  )}
-                  {!!+soapRating && (
-                    <ratingCard>
-                      <title>{`${soapRating}`.slice(0, 3)} / 10</title>
-                      <ratingBadge value={soapRating / 10} />
-                      <description>
-                        {i18n('tvshow-average-soap', {
-                          amount: formatNumber(+soapVotes, {
-                            fractionDigits: 0,
-                          }),
-                        })}
-                      </description>
-                    </ratingCard>
-                  )}
-                  {this.state.reviews.map(review => {
-                    const {
-                      id,
-                      date,
-                      text,
-                      user: userName,
-                      review_likes: likes,
-                      review_dislikes: dislikes,
-                    } = review;
-
-                    return (
-                      <reviewCard
-                        // eslint-disable-next-line react/jsx-no-bind
-                        onSelect={this.onShowFullReview.bind(this, review)}
-                        key={id}
-                      >
-                        <title>{userName}</title>
-                        <description>
-                          {moment(date * 1000).format('lll')}
-                          {'\n\n'}
-                          {processEntitiesInString(text)}
-                        </description>
-                        <text>
-                          {likes} 👍 / {dislikes} 👎
-                        </text>
-                      </reviewCard>
-                    );
-                  })}
-                </section>
-              </shelf>
-            );
-          },
-
-          renderCrew() {
-            if (!this.state.tvshow.actors.length) return null;
-
-            return (
-              <shelf>
-                <header>
-                  <title>{i18n('tvshow-cast-crew')}</title>
-                </header>
-                <section>
-                  {this.state.tvshow.actors.map(actor => {
-                    const {
-                      person_id: personId,
-                      person_en: personName,
-                      person_image_original: personImage,
-                      character_en: characterName,
-                      character_image_original: characterImage,
-                    } = actor;
-
-                    const [firstName, lastName] = personName.split(' ');
-                    const poster = personImage || characterImage;
-
-                    return (
-                      <monogramLockup
-                        key={personId}
-                        onSelect={link('actor', {
-                          id: personId,
-                          actor: personName,
-                          poster,
-                        })}
-                      >
-                        <monogram
-                          style="tv-placeholder: monogram;"
-                          src={getMonogramImageUrl(poster)}
-                          firstName={firstName}
-                          lastName={lastName}
-                        />
-                        <title>{personName}</title>
-                        <subtitle>{characterName}</subtitle>
-                      </monogramLockup>
-                    );
-                  })}
-                </section>
-              </shelf>
-            );
-          },
-
-          getSeasonToWatch(seasons = []) {
-            return seasons.reduce((result, season) => {
-              if (!result && calculateUnwatchedCount(season)) return season;
-              return result;
-            }, null);
           },
 
           canContinueWatching() {
@@ -727,49 +647,25 @@ export default function tvShowRoute() {
           },
 
           onContinueWatching(event, shouldPlayImmediately) {
-            const uncompletedSeason = this.getSeasonToWatch(this.state.seasons);
-            const {
-              season: seasonNumber,
-              covers: { big: poster },
-            } = uncompletedSeason;
-
-            const seasonTitle = i18n('tvshow-season', { seasonNumber });
-            const title = i18n('tvshow-title', this.state.tvshow);
-            const { sid } = this.state.tvshow;
-
-            TVDML.navigate('season', {
-              sid,
-              poster,
-              id: seasonNumber,
-              title: `${title} — ${seasonTitle}`,
-              shouldPlayImmediately,
-            }).then(() => this.setState({ loading: false }));
+            this.setState({ loading: false });
           },
 
           onShowTrailer() {
-            const { trailers } = this.state;
-
-            if (trailers.length < 2) {
-              this.onShowFirstTrailer();
-            } else {
-              const title = i18n('tvshow-title', this.state.tvshow);
+              const title = i18n('tvshow-title', this.state.movie);
 
               TVDML.renderModal(
                 <document>
                   <alertTemplate>
                     <title>{title}</title>
-                    {trailers.map(trailer => (
                       <button
                         // eslint-disable-next-line react/jsx-no-bind
                         onSelect={this.playTrailer.bind(this, trailer)}
                       >
-                        <text>{trailer.name}</text>
+                        <text>Play</text>
                       </button>
-                    ))}
                   </alertTemplate>
-                </document>,
+                </document>
               ).sink();
-            }
           },
 
           onShowFirstTrailer() {
@@ -801,7 +697,7 @@ export default function tvShowRoute() {
           onAddToSubscriptions() {
             const {
               authorized,
-              tvshow: { sid },
+              movie: { sid },
             } = this.state;
 
             if (!authorized) {
@@ -836,7 +732,7 @@ export default function tvShowRoute() {
           },
 
           onRemoveFromSubscription() {
-            const { sid } = this.state.tvshow;
+            const { sid } = this.state.movie;
 
             this.setState({
               watching: false,
@@ -847,7 +743,7 @@ export default function tvShowRoute() {
           },
 
           onShowFullDescription() {
-            const title = i18n('tvshow-title', this.state.tvshow);
+            const title = i18n('tvshow-title', this.state.movie);
             const { overview: description } = this.state.tmdb;
 
             TVDML.renderModal(
@@ -936,8 +832,8 @@ export default function tvShowRoute() {
               }))
               .then(processedRating =>
                 this.setState({
-                  tvshow: {
-                    ...this.state.tvshow,
+                  movie: {
+                    ...this.state.movie,
                     ...processedRating,
                   },
                 }),

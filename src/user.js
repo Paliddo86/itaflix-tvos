@@ -75,6 +75,10 @@ export function isFamily() {
 
 export function isSessionValid() {
   let verifiedDate = get().verified_at;
+  if(process.env.NODE_ENV === 'development') {
+    console.log("Verified Data", verifiedDate);
+    console.log("Actual Token", getToken())
+  }
   if(!verifiedDate) return false;
   return new Date(new Date(verifiedDate).getTime() + 60 * 60 * 23 * 1000) > new Date() && getToken() !== "";
 }

@@ -66,7 +66,7 @@ export default function searchRoute() {
                   return (
                     <Tile
                       title={title}
-                      route="tvshow"
+                      route="movie"
                       poster={poster}
                       quality={quality}
                       isUpdated={isUpdated}
@@ -166,7 +166,7 @@ export default function searchRoute() {
                   return (
                     <Tile
                       title={title}
-                      route="tvshow"
+                      route="movie"
                       poster={poster}
                       quality={quality}
                       isUpdated={isUpdated}

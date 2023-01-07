@@ -140,12 +140,20 @@ export default {
   'tv-show-updates': 'Aggiornamenti Serie TV',
 
   'movie-updates': 'Aggiornamenti Film',
+  'movie-status': 'Stato',
+  'movie-genres': 'Generi',
+  'movie-actors': 'Attori',
+  'movie-seasons': 'Stagioni',
+  'movie-also-watched': 'Simili',
+  'movie-ratings': 'Voti e recensioni',
+  'movie-cast-crew': 'Attori e Cast',
+  'movie-quality': 'Qualità',
 
   'tvshow-status': 'Stato',
   'tvshow-genres': 'Generi',
   'tvshow-actors': 'Attori',
   'tvshow-seasons': 'Stagioni',
-  'tvshow-also-watched': 'Correlati',
+  'tvshow-also-watched': 'Simili',
   'tvshow-ratings': 'Voti e recensioni',
   'tvshow-cast-crew': 'Attori e Cast',
   'tvshow-quality': 'Qualità',
@@ -153,6 +161,7 @@ export default {
   'tvshow-information': 'Informazioni',
   'tvshow-information-year': 'Anno',
   'tvshow-information-runtime': 'Durata Episodio',
+  'movie-information-runtime': 'Durata',
   'tvshow-information-country': 'Paese',
   'tvshow-information-network': 'Distributore',
 
@@ -181,6 +190,7 @@ export default {
   'tvshow-status-pilot': 'Pilota',
   'tvshow-status-planned': 'Pianificata',
   'tvshow-status-production': 'In Produzione',
+  'tvshow-status-released': 'Rilasciato',
 
   'tvshow-control-continue-watching': 'Continua a guardare',
   'tvshow-control-show-trailer': 'Play\nTrailer',
@@ -190,6 +200,8 @@ export default {
   'tvshow-control-stop-watching': 'Ferma di guardare',
   'tvshow-control-rate': 'Vota Serie Tv',
   'tvshow-control-more': 'Altro',
+
+  'movie-control-start-watching': 'Guarda',
 
   'new-episode-soon': 'Prossimi',
   'new-episode-day': 'Nuovi episodi del giorno',

@@ -15,6 +15,7 @@ export const tmdbTVShowStatusStrings = {
   'Pilot': 'tvshow-status-pilot',
   'Planned': 'tvshow-status-planned',
   'In Production': 'tvshow-status-production',
+  'Released': 'tvshow-status-released'
 };
 
 function requestLogger(...params) {
@@ -77,6 +78,15 @@ export function getTmdbShowDetails(id, imdbId) {
     })
   }
   return get(`${API_URL}/tv/${id}?api_key=${API_KEY}&language=it-IT`);
+}
+
+export function getTmdbMovieDetails(id, imdbId) {
+  if (!id) {
+    return getTmdbIdFromImdbId(imdbId).then(tmIdId => {
+      return get(`${API_URL}/movie/${tmIdId}?api_key=${API_KEY}&language=it-IT`);
+    })
+  }
+  return get(`${API_URL}/movie/${id}?api_key=${API_KEY}&language=it-IT`);
 }
 
 export function getTmdbImageUrl(posterPath, episode = false) {
