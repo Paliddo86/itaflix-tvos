@@ -122,7 +122,7 @@ function requestLogger(...params) {
 
 function headers(token = '', noToken = false) {
   const authToken = token || getToken();
-  const userAgent = `Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36`;
+  const userAgent = "iPlayTV/3.3.10 (Apple TV; iOS 16.1; Scale/2.00)";
 
   let headers = {
     'User-Agent': userAgent,

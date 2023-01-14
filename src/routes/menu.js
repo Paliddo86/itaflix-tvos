@@ -88,6 +88,7 @@ export default function menuRoute(items) {
 
                     return (
                       <menuItem
+                        style="tv-highlight-color:rgb(255,0,0)"
                         key={route}
                         route={route}
                         // eslint-disable-next-line no-mixed-operators
@@ -97,7 +98,7 @@ export default function menuRoute(items) {
                       </menuItem>
                     );
                   })}
-                  <menuItem key="nickname" route="user">
+                  <menuItem style="tv-highlight-color:rgb(255,0)" key="nickname" route="user">
                     {authorized ? (
                       <title>
                         <title>{localization.get('menu-account-auth')}</title>

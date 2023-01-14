@@ -34,6 +34,13 @@ export default (
         tv-tint-color: rgb(84, 82, 80);
         margin: 0 0 5 0;
       }
+      
+      .text-highlight-primary {
+        tv-text-style: none;
+        color: #ffffff;
+        font-size: 38;
+        tv-highlight-color: #ff2222;
+    }
     `}
   />
 );
