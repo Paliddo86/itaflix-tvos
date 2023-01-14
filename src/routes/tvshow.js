@@ -481,7 +481,7 @@ export default function tvShowRoute() {
                         title={seasonTitle}
                         route="season"
                         poster={seasonHasPoster && seasonPoster}
-                        counter={totalEpisodes || unwatched || dateTitle}
+                        counter={totalEpisodes}
                         isWatched={isWatched}
                         isUHD={false}
                         payload={payload}
