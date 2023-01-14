@@ -58,19 +58,6 @@ TVDML.handleRoute('get-token')
   })
   .pipe(() => {
     TVDML.redirect('main');
-
-    // if (!isQello()) {
-    //   // register openURLHandler after "main" screen goes on top of the stack
-    //   // and call it synchronously if app opened with url
-    //   // to instantly show proper screen
-    //   global.openURLHandler = openURLHandler;
-
-    //   const { openURL } = getStartParams();
-
-    //   if (openURL) {
-    //     global.openURLHandler(openURL);
-    //   }
-    // }
   });
 
 TVDML.handleRoute('main').pipe(
@@ -80,21 +67,21 @@ TVDML.handleRoute('main').pipe(
       active: AUTH,
       active: GUEST,
     },
-    {
-      route: 'movies',
-      active: GUEST,
-    },
-    {
-      route: 'tvshows',
-      active: GUEST,
-    },
+    // {
+    //   route: 'movies',
+    //   active: GUEST,
+    // },
+    // {
+    //   route: 'tvshows',
+    //   active: GUEST,
+    // },
     // {
     //   route: 'recomendations',
     //   hidden: [GUEST, BASIC],
     // },
-    {
-      route: 'genres',
-    },
+    // {
+    //   route: 'genres',
+    // },
     {
       route: 'settings',
     },
