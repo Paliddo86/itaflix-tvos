@@ -22,6 +22,8 @@
 	<string>1</string>
 	<key>NSExtension</key>
 	<dict>
+		<key>Item 0</key>
+		<string>TVTopShelfProvider</string>
 		<key>NSExtensionAttributes</key>
 		<dict>
 			<key>TVExtensionProtocols</key>
@@ -33,6 +35,8 @@
 		<string>com.apple.tv-services</string>
 		<key>NSExtensionPrincipalClass</key>
 		<string>$(PRODUCT_MODULE_NAME).ServiceProvider</string>
+		<key>TVExtensionProtocols</key>
+		<string></string>
 	</dict>
 	<key>UIRequiredDeviceCapabilities</key>
 	<array>
