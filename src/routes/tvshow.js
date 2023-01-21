@@ -351,7 +351,7 @@ export default function tvShowRoute() {
                   handlesOverflow="true"
                   onSelect={this.onShowFullDescription}
                   style={`
-                    tv-text-max-lines: 2;
+                    tv-text-max-lines: 1;
                   `}
                 >
                   {description}

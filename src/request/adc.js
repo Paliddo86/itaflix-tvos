@@ -670,8 +670,16 @@ export function getUiData() {
 }
 
 export function getRelated(slug) {
-  return get(`${API_URL}/posts/related/${slug}?page=1`).then((response) => {
-    return { relatedData: response.data.map(topShelf.mapBaseTile) };
+  return new Promise(resolve => {
+    let timeout = setTimeout(() => {
+      return resolve({ relatedData: []});
+    }, 2000)
+    get(`${API_URL}/posts/related/${slug}?page=1`).then((response) => {
+      clearTimeout(timeout);
+      return resolve({ relatedData: response.data.map(topShelf.mapBaseTile) });
+    }).catch(() => {
+      resolve({relatedData: []})
+    })
   })
 }
 
