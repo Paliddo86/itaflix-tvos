@@ -122,7 +122,7 @@ function requestLogger(...params) {
 
 function headers(token = '', noToken = false) {
   const authToken = token || getToken();
-  const userAgent = "iPlayTV/3.3.10 (Apple TV; iOS 16.1; Scale/2.00)";
+  const userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.1.2 Safari/605.1.15";
 
   let headers = {
     'User-Agent': userAgent,
@@ -256,9 +256,13 @@ export function checkSession() {
 
   return login(email, password, FINGERPRINT).then(result => {
     if(isSessionValid()) return Promise.resolve({...result});
-      return reAuthorize(result).then((auth) => {
-        return Promise.resolve({...result, email_verified_at: auth.user.email_verified_at});
-    });
+      return logout().then(() => {
+        login(email, password, FINGERPRINT).then(result => {
+          return reAuthorize(result).then((auth) => {
+            return Promise.resolve({...result, email_verified_at: auth.user.email_verified_at});
+          });
+        });
+      })
   });
 }
 
