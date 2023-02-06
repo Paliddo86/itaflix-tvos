@@ -254,7 +254,7 @@ export function checkSession() {
   if (!email) return Promise.resolve({logged: 0, token:""});
   if (!password) return Promise.resolve({logged: 0, token:""});
 
-    if(isSessionValid()) return Promise.resolve({...result});
+    //if(isSessionValid()) return Promise.resolve({...result});
     return login(email, password, FINGERPRINT).then(result => {
       return reAuthorize(result).then((auth) => {
         return Promise.resolve({...result, email_verified_at: auth.user.email_verified_at});
