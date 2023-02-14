@@ -723,3 +723,19 @@ export function getAllUpdates() {
     }
   })
 }
+
+export function getCollection(collection_slug) {
+  if (!collection_slug) return Promise.resolve({ collectionData: [] });
+  
+  return new Promise(resolve => {
+    let timeout = setTimeout(() => {
+      return resolve({ collectionData: [] });
+    }, 2000)
+    get(`${API_URL}/collection/${collection_slug}`).then((response) => {
+      clearTimeout(timeout);
+      return resolve({ collectionData: response.data.map(topShelf.mapBaseTile) });
+    }).catch(() => {
+      resolve({ collectionData: [] })
+    })
+  })
+}

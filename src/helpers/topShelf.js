@@ -46,6 +46,7 @@ export function mapBaseTile(item) {
     slug: item.slug,
     tmdb_id: item.tmdb_id,
     imdb_id: item.imdb_id,
-    updateType: item.update_type
+    updateType: item.update_type,
+    collection_slug: item.collection ? item.collection.slug : ""
   };
 }

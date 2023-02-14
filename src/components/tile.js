@@ -67,7 +67,7 @@ export default function Tile({ key, attrs = {}, events = {} }) {
               tv-align: right;
               tv-position: top;
               color: rgb(255, 255, 255);
-              background-color: rgb(51, 153, 255);
+              background-color: #b90505;
             `}
           >
             {quality}
@@ -81,7 +81,7 @@ export default function Tile({ key, attrs = {}, events = {} }) {
               tv-align: center;
               tv-position: bottom;
               color: rgb(255, 255, 255);
-              background-color: rgb(51, 153, 255);
+              background-color: #b90505;
             `}
           >
             {payload.updateType? payload.updateType : i18n('tvshow-next')}

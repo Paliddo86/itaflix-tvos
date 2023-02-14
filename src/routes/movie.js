@@ -40,6 +40,7 @@ import {
   getRelated,
   getMovieDescription,
   getMovieMediaStream,
+  getCollection,
 } from '../request/adc';
 
 import Tile from '../components/tile';
@@ -71,13 +72,14 @@ export default function movieRoute() {
   return TVDML.createPipeline()
     .pipe(
       TVDML.passthrough(
-        ({ navigation: { sid, title, poster, slug, tmdb_id, imdb_id, continueWatchingAndPlay } }) => ({
+        ({ navigation: { sid, title, poster, slug, tmdb_id, imdb_id, collection_slug, continueWatchingAndPlay } }) => ({
           sid,
           title,
           poster,
           slug,
           tmdb_id,
           imdb_id,
+          collection_slug,
           continueWatchingAndPlay: continueWatchingAndPlay === '1'
         }),
       ),
@@ -152,23 +154,26 @@ export default function movieRoute() {
           shouldComponentUpdate: deepEqualShouldUpdate,
 
           loadData() {
-            const { sid, slug, tmdb_id, imdb_id } = this.props;
+            const { sid, slug, tmdb_id, imdb_id, collection_slug } = this.props;
             return Promise.all([
               getMovieDescription(sid),
               getTmdbMovieDetails(tmdb_id, imdb_id),
-              getRelated(slug)
+              getRelated(slug),
+              getCollection(collection_slug)
             ])
               .then(payload => {
                 const [
                   movieResponse,
                   tmdbMovieResponse,
                   recomendations,
+                  collection
                 ] = payload;
 
                 return {
                   movie: movieResponse.result, 
                   tmdb: tmdbMovieResponse,
-                  recomendations: recomendations.relatedData
+                  recomendations: recomendations.relatedData,
+                  collection: collection.collectionData
                 };
 
               //   return Promise.all([
@@ -206,6 +211,7 @@ export default function movieRoute() {
                     {this.renderInfo()}
                     <heroImg src={this.props.poster.replace("/thumbnail_241/", "/original/")} />
                   </banner>
+                  {this.renderCollection()}
                   {this.renderRecomendations()}
                 </productTemplate>
               </document>
@@ -612,6 +618,42 @@ export default function movieRoute() {
                 </header>
                 <section>
                   {this.state.recomendations.map(movie => {
+                    const {
+                      sid,
+                      poster,
+                      quality,
+                      isUpdated
+                    } = movie;
+
+                    const title = i18n('tvshow-title', movie);
+
+                    return (
+                      <Tile
+                        key={sid}
+                        title={title}
+                        poster={poster}
+                        route="movie"
+                        quality={quality}
+                        isUpdated={isUpdated}
+                        payload={movie}
+                      />
+                    );
+                  })}
+                </section>
+              </shelf>
+            );
+          },
+
+          renderCollection() {
+            if (!this.state.collection.length) return null;
+
+            return (
+              <shelf>
+                <header>
+                  <title>{i18n('movie-collection')}</title>
+                </header>
+                <section>
+                  {this.state.collection.map(movie => {
                     const {
                       sid,
                       poster,

@@ -152,6 +152,7 @@ export default {
   'movie-ratings': 'Voti e recensioni',
   'movie-cast-crew': 'Attori e Cast',
   'movie-quality': 'Qualità',
+  'movie-collection': 'Collezione',
 
   'tvshow-status': 'Stato',
   'tvshow-genres': 'Generi',
