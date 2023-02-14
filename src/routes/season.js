@@ -364,6 +364,7 @@ export default function seasonRoute() {
                     </segmentBarHeader>
                     <section>
                       {season.episodes.map((episode, index) => {
+                        console.log("episode", episode)
                         // const {
                         //   rating,
                         //   spoiler,
@@ -450,15 +451,9 @@ export default function seasonRoute() {
                           >
                             <ordinal minLength="3">{tmdbEpisodes[index].episode_number}</ordinal>
                             <title class="title">{epTitle}</title>
-                            {/* <decorationLabel>
-                              {badges
-                                .filter(Boolean)
-                                .reduce((result, item, i) => {
-                                  if (i) result.push('  ');
-                                  result.push(item);
-                                  return result;
-                                }, [])}
-                            </decorationLabel> */}
+                            {episode.is_new && <decorationLabel>
+                              <text>{i18n('tvshow-new')}</text>
+                            </decorationLabel>}
                             <relatedContent>
                               <lockup class="item-content">
                                 {this.renderPoster(episodePoster, true)}

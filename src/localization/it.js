@@ -142,6 +142,7 @@ export default {
   'tvshow-season': ({ seasonNumber }) => `Stagione ${seasonNumber}`,
   'tvshow-next': 'Nuovi Episodi',
   'tv-show-updates': 'Aggiornamenti Serie TV',
+  'tvshow-new': 'Nuovo',
 
   'movie-updates': 'Aggiornamenti Film',
   'movie-status': 'Stato',
