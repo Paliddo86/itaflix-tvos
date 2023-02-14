@@ -21,6 +21,7 @@ import genresRoute from './routes/genres';
 import settingsRoute from './routes/settings';
 import speedTestRoute from './routes/speedtest';
 import movieRoute from './routes/movie';
+import homeRoute from './routes/home';
 import myRecomendations from './routes/recomendations';
 
 import { AUTH, BASIC, GUEST } from './routes/menu/constants';
@@ -62,6 +63,11 @@ TVDML.handleRoute('get-token')
 
 TVDML.handleRoute('main').pipe(
   menuRoute([
+    {
+      route: 'home',
+      active: AUTH,
+      active: GUEST,
+    },
     {
       route: 'search',
       active: AUTH,
@@ -111,5 +117,7 @@ TVDML.handleRoute('speedtest').pipe(speedTestRoute());
 TVDML.handleRoute('user').pipe(userRoute());
 
 TVDML.handleRoute('genres').pipe(genresRoute());
+
+TVDML.handleRoute('home').pipe(homeRoute());
 
 //TVDML.handleRoute('recomendations').pipe(myRecomendations());

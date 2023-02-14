@@ -5,16 +5,20 @@ import { supportUHD } from '../request/adc';
 export default {
   'auth-checking': 'Verifica sottoscrizione...',
 
+  'menu-home': 'Home',
   'menu-my': 'My',
   'menu-tvshows': 'Serie TV',
   'menu-movies': 'Film',
-  'menu-search': 'Home',
+  'menu-search': 'Cerca',
   'menu-genres': 'Generi',
   'menu-account': 'Utente',
   'menu-account-auth': 'Utente Connesso',
   'menu-user': 'Utente',
   'menu-settings': 'Impostazioni',
   'menu-recomendations': 'Raccomandati',
+
+  'home-caption': 'Pagina Iniziale',
+  'home-desc': 'Ultimi aggiornamneti Serie Tv e Film in ordine di aggiornamento',
 
   'genres-caption': 'Genere',
 

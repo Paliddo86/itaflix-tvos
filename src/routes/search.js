@@ -3,8 +3,7 @@ import * as TVDML from 'tvdml';
 import { get as i18n } from '../localization';
 
 import {
-  getSearchResults,
-  getAllUpdates,
+  getSearchResults
 } from '../request/adc';
 
 import Tile from '../components/tile';
@@ -22,8 +21,6 @@ export default function searchRoute() {
             loading: false,
             updating: false,
             searchResults: {tvshowFounded: [], moviesFounded: []},
-            seriesUpdate: [],
-            moviesUpdate: [],
           };
         },
 
@@ -37,79 +34,11 @@ export default function searchRoute() {
                   showSpinner={this.state.loading ? 'true' : undefined}
                 />
                 <collectionList>
-                  {this.renderMoviesUpdate()}
-                  {this.renderSeriesUpdate()}
                   {this.renderSearchMovies()}
                   {this.renderSearchTvShow()}
                 </collectionList>
               </searchTemplate>
             </document>
-          );
-        },
-
-        renderMoviesUpdate() {
-          if (!this.state.moviesUpdate.values.length || this.state.value) return null;
-          return (
-            <shelf>
-              <header>
-                <title>{this.state.moviesUpdate.name}</title>
-              </header>
-              <section>
-                {this.state.moviesUpdate.values.map(movie => {
-                  const {
-                    title,
-                    poster,
-                    quality,
-                    isUpdated,
-                  } = movie;
-
-                  return (
-                    <Tile
-                      title={title}
-                      route="movie"
-                      poster={poster}
-                      quality={quality}
-                      isUpdated={isUpdated}
-                      payload={movie}
-                    />
-                  );
-                })}
-              </section>
-            </shelf>
-          );
-        },
-
-        renderSeriesUpdate() {
-          if (!this.state.seriesUpdate.values.length || this.state.value) return null;
-          return (
-            <shelf>
-              <header>
-                <title>{this.state.seriesUpdate.name}</title>
-              </header>
-              <section>
-                {this.state.seriesUpdate.values.map(tvshow => {
-                  const {
-                    title,
-                    poster,
-                    quality,
-                    isUpdated,
-                    sid
-                  } = tvshow;
-
-                  return (
-                    <Tile
-                      key={sid}
-                      title={title}
-                      route="tvshow"
-                      poster={poster}
-                      quality={quality}
-                      isUpdated={isUpdated}
-                      payload={tvshow}
-                    />
-                  );
-                })}
-              </section>
-            </shelf>
           );
         },
 
@@ -183,29 +112,10 @@ export default function searchRoute() {
           const keyboard = this.searchField.getFeature('Keyboard');
 
           keyboard.onTextChange = () => this.search(keyboard.text);
-
-          this.loadData().then(payload => {
-            this.setState({ loading: false, ...payload });
-          });
         },
 
         componentWillReceiveProps() {
           this.setState({ updating: true });
-        },
-
-        componentDidUpdate(prevProps, prevState) {
-          if (
-            this.state.updating &&
-            prevState.updating !== this.state.updating
-          ) {
-            this.loadData().then(payload => {
-              this.setState({ updating: false, ...payload });
-            });
-          }
-        },
-
-        loadData() {
-          return getAllUpdates();
         },
 
         search(query) {
