@@ -17,7 +17,7 @@ const TOP_SHELF_MIN_ITEMS = 4;
 const HOST = 'https://altadefinizionecommunity.online';
 const ONLY_HOST = 'altadefinizionecommunity.online';
 const API_URL = `${HOST}/api`;
-const FINGERPRINT = 1313464847774033;
+const FINGERPRINT = 1313464847774034;
 
 function getLatest(tvshows, count = 10) {
   return tvshows.sort(({ sid: a }, { sid: b }) => b - a).slice(0, count);
@@ -109,7 +109,7 @@ function resolveCodeToIndex(code, collection = []) {
 function requestLogger(...params) {
   return [
     response => {
-      if(process.env.NODE_ENV === 'development') console.info(...params, response);
+      if (process.env.NODE_ENV === 'development') console.info(...params, response);
       return response;
     },
 
@@ -148,35 +148,35 @@ function addHeaders(dict) {
 
 // Generates a random "Gmail"
 function generateRandomEmail() {
-	const chars = 'abcdefghijklmnopqrstuvwxyz1234567890.';
-	let email = '';
+  const chars = 'abcdefghijklmnopqrstuvwxyz1234567890.';
+  let email = '';
   let ii = 0;
   for (ii = 0; ii < 15; ii++) {
-		email += chars[Math.floor(Math.random() * chars.length)];
-	}
-	return email + '@gmail.com';
+    email += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return email + '@gmail.com';
 }
 
 // Generates a random password
 function generateRandomPass() {
-	const chars = 'abcdefghijklmnopqrstuvwxyz1234567890.$-';
-	let pass = '';
+  const chars = 'abcdefghijklmnopqrstuvwxyz1234567890.$-';
+  let pass = '';
   let ii = 0;
-	for (ii = 0; ii < 10; ii++) {
-		pass += chars[Math.floor(Math.random() * chars.length)];
-	}
-	return pass;
+  for (ii = 0; ii < 10; ii++) {
+    pass += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return pass;
 }
 
 // Generates a fake fingerprint
 function generateFakeFingerPrint() {
-	const chars = '1234567890';
-	let finger = '';
+  const chars = '1234567890';
+  let finger = '';
   let ii = 0;
-	for (ii = 0; ii < 16; ii++) {
-		finger += chars[Math.floor(Math.random() * chars.length)];
-	}
-	return finger;
+  for (ii = 0; ii < 16; ii++) {
+    finger += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return finger;
 }
 
 export function get(url, token = '', noToken = false) {
@@ -241,7 +241,7 @@ export function authorizeAccount() {
       password: pass
     }
     return verifyMail(result.user_id, response.user.verification_code, result.token).then(verifyRes => {
-      if(!verifyRes.status) return Promise.reject(new Error("Fail to verify email"));
+      if (!verifyRes.status) return Promise.reject(new Error("Fail to verify email"));
       return Promise.resolve(result);
     }).catch(error => {
       console.error("errore", error)
@@ -249,17 +249,32 @@ export function authorizeAccount() {
   })
 }
 
-export function checkSession() {
-  let {email, password} = getLoginData();
-  if (!email) return Promise.resolve({logged: 0, token:""});
-  if (!password) return Promise.resolve({logged: 0, token:""});
+function check() {
+  return get(`${API_URL}/check?fingerprint=${FINGERPRINT}`).then(result => {
+    return Promise.resolve(true);
+  }).catch(result => {
+    return Promise.resolve(false);
+  })
+}
 
-    //if(isSessionValid()) return Promise.resolve({...result});
-    return login(email, password, FINGERPRINT).then(result => {
-      return reAuthorize(result).then((auth) => {
-        return Promise.resolve({...result, email_verified_at: auth.user.email_verified_at});
+export function checkSession() {
+  let { email, password } = getLoginData();
+  if (!email) return Promise.resolve({ logged: 0, token: "" });
+  if (!password) return Promise.resolve({ logged: 0, token: "" });
+
+  return check().then(checked => {
+    if (!checked) {
+      return login(email, password, FINGERPRINT).then(result => {
+        return reAuthorize(result).then((auth) => {
+          return Promise.resolve({ ...result, verified_at: auth.user.email_verified_at });
+        });
+      })
+    } else {
+      return reAuthorize({token:""}).then((auth) => {
+        return Promise.resolve({ verified_at: auth.user.email_verified_at });
       });
-    })
+    }
+  })
 }
 
 export function authorize({ email, password }) {
@@ -421,11 +436,11 @@ export function getTVShowsByGenre(genre) {
 }
 
 export function getTVShowDescription(sid) {
-  return get(`${API_URL}/posts/id/${sid}`).then(response => {return {result: response.post}});
+  return get(`${API_URL}/posts/id/${sid}`).then(response => { return { result: response.post } });
 }
 
 export function getMovieDescription(sid) {
-  return get(`${API_URL}/posts/id/${sid}`).then(response => {return {result: response.post}});
+  return get(`${API_URL}/posts/id/${sid}`).then(response => { return { result: response.post } });
 }
 
 export function getCountriesList() {
@@ -488,7 +503,7 @@ export function getTVShowTrailers(sid) {
 }
 
 export function getTVShowSeasons(slug) {
-  return get(`${API_URL}/posts/seasons/${slug}`).then(response => {return response.seasons});
+  return get(`${API_URL}/posts/seasons/${slug}`).then(response => { return response.seasons });
 }
 
 export function getTVShowSeason(sid, id) {
@@ -614,18 +629,20 @@ export function getSearchResults(query, page = 1) {
     let moviesFounded = [];
     let tvshowFounded = [];
 
-    for(let data of response.data) {
-      if(data.type === "tvshow") {
+    for (let data of response.data) {
+      if (data.type === "tvshow") {
         tvshowFounded.push(topShelf.mapBaseTile(data));
-      } else if(data.type === "movie"){
+      } else if (data.type === "movie") {
         moviesFounded.push(topShelf.mapBaseTile(data));
       }
     }
 
-    return { searchResults: {
-      moviesFounded,
-      tvshowFounded
-    } };
+    return {
+      searchResults: {
+        moviesFounded,
+        tvshowFounded
+      }
+    };
   })
 
 }
@@ -649,13 +666,13 @@ export function getUiData() {
   return get(`${API_URL}/generic/ui`).then(response => {
     let genres = {};
     let keys = [
-      "featured_categories", 
+      "featured_categories",
       "movie_categories",
       "tvshow_categories",
       "tvprogram_categories"
     ];
 
-    for(let key of keys) {
+    for (let key of keys) {
       response[key].forEach(elem => {
         genres[elem.id] = elem.name;
       });
@@ -668,13 +685,13 @@ export function getUiData() {
 export function getRelated(slug) {
   return new Promise(resolve => {
     let timeout = setTimeout(() => {
-      return resolve({ relatedData: []});
+      return resolve({ relatedData: [] });
     }, 2000)
     get(`${API_URL}/posts/related/${slug}?page=1`).then((response) => {
       clearTimeout(timeout);
       return resolve({ relatedData: response.data.map(topShelf.mapBaseTile) });
     }).catch(() => {
-      resolve({relatedData: []})
+      resolve({ relatedData: [] })
     })
   })
 }
@@ -684,12 +701,12 @@ export function getAllUpdates() {
     let moviesUpdates = [];
     let tvshowUpdates = [];
 
-    for(let key in response.updates) {
-      for(let data of response.updates[key]) {
-        if(data.post.type === "tvshow") {
-          tvshowUpdates.push(topShelf.mapBaseTile({...data.post, update_type: data.update_type}));
-        } else if(data.post.type === "movie"){
-          moviesUpdates.push(topShelf.mapBaseTile({...data.post, update_type: data.update_type}));
+    for (let key in response.updates) {
+      for (let data of response.updates[key]) {
+        if (data.post.type === "tvshow") {
+          tvshowUpdates.push(topShelf.mapBaseTile({ ...data.post, update_type: data.update_type }));
+        } else if (data.post.type === "movie") {
+          moviesUpdates.push(topShelf.mapBaseTile({ ...data.post, update_type: data.update_type }));
         }
       }
     }
