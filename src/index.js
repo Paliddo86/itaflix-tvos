@@ -18,10 +18,12 @@ import seasonRoute from './routes/season';
 import tvShowRoute from './routes/tvshow';
 import searchRoute from './routes/search';
 import genresRoute from './routes/genres';
+import moviesGenresRoute from './routes/moviesGenres';
 import settingsRoute from './routes/settings';
 import speedTestRoute from './routes/speedtest';
 import movieRoute from './routes/movie';
 import homeRoute from './routes/home';
+import tvShowsGenresRoute from './routes/tvShowsGenres';
 import myRecomendations from './routes/recomendations';
 
 import { AUTH, BASIC, GUEST } from './routes/menu/constants';
@@ -85,9 +87,12 @@ TVDML.handleRoute('main').pipe(
     //   route: 'recomendations',
     //   hidden: [GUEST, BASIC],
     // },
-    // {
-    //   route: 'genres',
-    // },
+    {
+      route: 'moviesGenres',
+    },
+    {
+      route: 'tvShowsGenres',
+    },
     {
       route: 'settings',
     },
@@ -116,7 +121,11 @@ TVDML.handleRoute('speedtest').pipe(speedTestRoute());
 
 TVDML.handleRoute('user').pipe(userRoute());
 
-TVDML.handleRoute('genres').pipe(genresRoute());
+TVDML.handleRoute('moviesGenres').pipe(moviesGenresRoute());
+
+TVDML.handleRoute('tvShowsGenres').pipe(tvShowsGenresRoute());
+
+//TVDML.handleRoute('genres').pipe(genresRoute());
 
 TVDML.handleRoute('home').pipe(homeRoute());
 

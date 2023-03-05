@@ -44,7 +44,8 @@ export const params = {
   TRANSLATION: 'translation',
   VIDEO_PLAYBACK: 'video-playback',
   LANGUAGE: 'language',
-  GENRES: 'genres'
+  MOVIE_CATEGORIES: 'movie_categories',
+  TV_SHOW_CATEGORIES: 'tvshow_categories'
 };
 
 export const values = {
@@ -52,7 +53,8 @@ export const values = {
   [params.TRANSLATION]: translation,
   [params.VIDEO_PLAYBACK]: playback,
   [params.LANGUAGE]: language,
-  [params.GENRES]: {},
+  [params.MOVIE_CATEGORIES]: {},
+  [params.TV_SHOW_CATEGORIES]: {},
 };
 
 const defaults = {
@@ -94,7 +96,7 @@ const settings = getSettingsFromStorage(defaults);
 
 export function set(key, value) {
   const hasParam = checkKeyValidity(key);
-  const hasValue = key === params.GENRES ? true : checkKeyValueValidity(key, value);
+  const hasValue = ((key === params.MOVIE_CATEGORIES) || (key === params.TV_SHOW_CATEGORIES))? true : checkKeyValueValidity(key, value);
 
   if (!hasParam) throw new Error(`Unsupported settings param "${key}"`);
   if (!hasValue) {
@@ -115,17 +117,31 @@ export function get(key) {
 export function getAll() {
   let setting = {}
   for (let key in settings) {
-    if(key === params.GENRES) continue;
+    if(key === params.MOVIE_CATEGORIES || key === params.TV_SHOW_CATEGORIES) continue;
     setting[key] = settings[key];
   }
   return setting;
 }
 
-export function getGenresById(id) {
-  return settings[params.GENRES][id];
+export function getTvShowGenresById(id) {
+  if(!settings[params.TV_SHOW_CATEGORIES][id]) return null;
+  return settings[params.TV_SHOW_CATEGORIES][id].name;
+}
+
+export function getMovieGenresById(id) {
+  if(!settings[params.MOVIE_CATEGORIES][id]) return null;
+  return settings[params.MOVIE_CATEGORIES][id].name;
 }
 
 export function getPreferredVideoQuality() {
   let quality = streamQuality[settings[params.VIDEO_QUALITY].toUpperCase()];
   return quality;
+}
+
+export function getAllMovieGenres() {
+  return settings[params.MOVIE_CATEGORIES];
+}
+
+export function getAllTvShowGenres() {
+  return settings[params.TV_SHOW_CATEGORIES];
 }

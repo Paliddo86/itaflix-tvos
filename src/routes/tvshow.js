@@ -240,7 +240,8 @@ export default function tvShowRoute() {
                     <title>{i18n('tvshow-genres')}</title>
                   </header>
                   {categories_ids.map(id => {
-                      let genre = settings.getGenresById(id);
+                      let genre = settings.getTvShowGenresById(id);
+                      if(!genre) return null;
                       return (<text key={genre}>{genre}</text>);
                     })
                   }

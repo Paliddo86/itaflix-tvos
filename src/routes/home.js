@@ -9,6 +9,9 @@ import {
 import Tile from '../components/tile';
 import styles from '../common/styles';
 
+import { getStartParams } from '../utils';
+import logo from '../assets/img/logo.png';
+
 export default function homeRoute() {
   return TVDML.createPipeline().pipe(
     TVDML.render(
@@ -24,12 +27,22 @@ export default function homeRoute() {
         },
 
         render() {
+          const { BASEURL } = getStartParams();
+
           return (
             <document>
               <head> {styles} </head>
               <stackTemplate>
                 <banner>
-                  <title>{i18n('home-caption')}</title>
+                  <img
+                    style="tv-align:left;tv-position:top-left"
+                    src={BASEURL + logo}
+                    width="200"
+                    height="75"
+                  />
+                  <title style="tv-align:center;tv-position:top">
+                    {i18n('home-caption')}
+                  </title>
                   <description>{i18n('home-desc')}</description>
                 </banner>
                 <collectionList>

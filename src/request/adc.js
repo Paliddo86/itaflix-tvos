@@ -388,6 +388,21 @@ export function getAllTVShows() {
   });
 }
 
+export function getAllMovies(page = 1) {
+  return get(`${API_URL}/category/film?type=movie&page=${page}`).then(({data}) => {
+    topShelf.set({
+      sections: [
+        {
+          id: 'latest',
+          title: i18n('all-group-latest'),
+          items: data.map(topShelf.mapBaseTile),
+        },
+      ],
+    });
+    return data;
+  });
+}
+
 export function getLatestUpdates() {
   return get(`${API_URL}/home/posts/categories?page=1`).then(response => {
     let data = response.categories.data;
@@ -431,8 +446,20 @@ export function getPopularTVShows(count = 10) {
   );
 }
 
-export function getTVShowsByGenre(genre) {
-  return get(`${API_URL}/soap/genre/${genreToId(genre)}/`);
+export function getTVShowsByGenre(genre, page = 1) {
+  return get(`${API_URL}/category/${genre}?type=tvshow&page=${page}`).then(response => {
+    const data = response.data;
+    let tvshows = data.map(topShelf.mapBaseTile);
+    return {total: response.total, current_page: response.current_page, last_page: response.last_page, tvshows};
+  });
+}
+
+export function getMoviesByGenre(genre, page = 1) {
+  return get(`${API_URL}/category/${genre}?type=movie&page=${page}`).then(response => {
+    const data = response.data;
+    let movies = data.map(topShelf.mapBaseTile);
+    return {total: response.total, current_page: response.current_page, last_page: response.last_page, movies};
+  });
 }
 
 export function getTVShowDescription(sid) {
@@ -664,21 +691,30 @@ export function saveSpeedTestResults(results) {
 
 export function getUiData() {
   return get(`${API_URL}/generic/ui`).then(response => {
-    let genres = {};
-    let keys = [
-      "featured_categories",
-      "movie_categories",
-      "tvshow_categories",
-      "tvprogram_categories"
-    ];
+    let genresMovie = {};
+    let genresTvShows = {};
+    // let keys = [
+    //   "featured_categories",
+    //   "movie_categories",
+    //   "tvshow_categories",
+    //   "tvprogram_categories"
+    // ];
+    
+    // MOVIES GENRES
+    response[settings.params.MOVIE_CATEGORIES].forEach(elem => {
+      if(elem.name === "Film") return;
+      genresMovie[elem.id] = {name: elem.homepage_name, slug: elem.slug};
+    });
 
-    for (let key of keys) {
-      response[key].forEach(elem => {
-        genres[elem.id] = elem.name;
-      });
-    }
+    settings.set(settings.params.MOVIE_CATEGORIES, genresMovie);
 
-    settings.set(settings.params.GENRES, genres);
+    // TV SHOW GENRES
+    response[settings.params.TV_SHOW_CATEGORIES].forEach(elem => {
+      if(elem.name === "Serie TV") return;
+      genresTvShows[elem.id] = {name: elem.homepage_name, slug: elem.slug};
+    });
+
+    settings.set(settings.params.TV_SHOW_CATEGORIES, genresTvShows);
   });
 }
 

@@ -2,7 +2,6 @@
 
 import moment from 'moment';
 import * as TVDML from 'tvdml';
-import formatNumber from 'simple-format-number';
 
 import * as user from '../user';
 import { processFamilyAccount } from '../user/utils';
@@ -13,9 +12,7 @@ import authFactory from '../helpers/auth';
 import { defaultErrorHandlers } from '../helpers/auth/handlers';
 
 import {
-  link,
   createMediaItem,
-  getMonogramImageUrl,
   isMenuButtonPressNavigatedTo,
   createMediaItems,
 } from '../utils';
@@ -472,7 +469,8 @@ export default function movieRoute() {
                     <title>{i18n('movie-genres')}</title>
                   </header>
                   {categories_ids.map(id => {
-                      let genre = settings.getGenresById(id);
+                      let genre = settings.getMovieGenresById(id);
+                      if(!genre) return null;
                       return (<text key={genre}>{genre}</text>);
                     })
                   }

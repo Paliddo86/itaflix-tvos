@@ -8,7 +8,8 @@ export default {
   'menu-home': 'Home',
   'menu-my': 'My',
   'menu-tvshows': 'Serie TV',
-  'menu-movies': 'Film',
+  'menu-moviesGenres': 'Film',
+  'menu-tvShowsGenres': 'Serie TV',
   'menu-search': 'Cerca',
   'menu-genres': 'Generi',
   'menu-account': 'Utente',
@@ -18,9 +19,11 @@ export default {
   'menu-recomendations': 'Raccomandati',
 
   'home-caption': 'Pagina Iniziale',
-  'home-desc': 'Ultimi aggiornamneti Serie Tv e Film in ordine di aggiornamento',
+  'home-desc': 'Aggiornamenti Serie TV e Film recenti',
 
   'genres-caption': 'Genere',
+  'movie-caption': 'Film',
+  'genre-all': "Tutti",
 
   'user-caption': 'Utente',
   'user-description': ({ till }) => `Scadenza sottoscrizione ${till}`,
@@ -149,7 +152,7 @@ export default {
   'movie-genres': 'Generi',
   'movie-actors': 'Attori',
   'movie-seasons': 'Stagioni',
-  'movie-also-watched': 'Simili',
+  'movie-also-watched': 'Raccomandati',
   'movie-ratings': 'Voti e recensioni',
   'movie-cast-crew': 'Attori e Cast',
   'movie-quality': 'Qualità',
@@ -159,7 +162,7 @@ export default {
   'tvshow-genres': 'Generi',
   'tvshow-actors': 'Attori',
   'tvshow-seasons': 'Stagioni',
-  'tvshow-also-watched': 'Simili',
+  'tvshow-also-watched': 'Raccomandati',
   'tvshow-ratings': 'Voti e recensioni',
   'tvshow-cast-crew': 'Attori e Cast',
   'tvshow-quality': 'Qualità',
@@ -233,6 +236,7 @@ export default {
 
   'all-caption': 'Serie TV',
 
+  'all-group-latest': 'Recenti',
   'all-group-by': 'Raggruppa per',
   'all-group-by-title': ({ title }) => `Raggruppa per ${title}`,
 

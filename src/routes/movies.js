@@ -3,7 +3,8 @@ import * as TVDML from 'tvdml';
 import * as user from '../user';
 import { get as i18n } from '../localization';
 
-import { getAllTVShows, getCountriesList } from '../request/soap';
+import { getAllMovies } from '../request/adc';
+import * as settings from '../settings';
 
 import {
   getStartParams,
@@ -24,8 +25,16 @@ const LIKES = 'likes';
 const RATING = 'rating';
 const COUNTRY = 'country';
 const COMPLETENESS = 'completeness';
+const LATEST = 'latest';
 
 const sections = {
+  [LATEST]: {
+    title: i18n('all-group-latest'),
+    items: []
+  },
+};
+
+const sections1 = {
   [NAME]: {
     title: 'all-group-title-name',
     reducer(list) {
@@ -178,8 +187,8 @@ export default function allRoute() {
           return {
             token,
             loading: true,
-            groupId: NAME,
-            updating: false,
+            groupId: LATEST,
+            updating: false
           };
         },
 
@@ -203,7 +212,19 @@ export default function allRoute() {
             }
           });
 
+          const genres = settings.getAllMovieGenres();
+          Object.values(genres).forEach(element => {
+            sections[element] = {
+              title: element,
+              items: []
+            }
+          });
+
           this.loadData().then(payload => {
+            sections[LATEST] = { 
+              title: i18n('all-group-latest'),
+              items: payload
+            };
             this.setState({ loading: false, ...payload });
           });
         },
@@ -231,9 +252,7 @@ export default function allRoute() {
         shouldComponentUpdate: deepEqualShouldUpdate,
 
         loadData() {
-          return Promise.all([getAllTVShows(), getCountriesList()]).then(
-            ([series, contries]) => ({ series, contries }),
-          );
+          return getAllMovies();
         },
 
         render() {
@@ -241,11 +260,12 @@ export default function allRoute() {
             return <Loader />;
           }
 
-          const { series, groupId, contries } = this.state;
+          const { groupId } = this.state;
+          console.log("state", this.state);
+          console.log("movies", sections, groupId)
 
-          const { title: titleCode, reducer } = sections[groupId];
-          const groups = reducer(series, { contries });
-          const title = i18n(titleCode);
+          const { title: titleCode } = sections[groupId];
+          const groups = Object.values(sections);
 
           const { BASEURL } = getStartParams();
 
@@ -281,14 +301,14 @@ export default function allRoute() {
                     height="75"
                   />
                   <title style="tv-align:center;tv-position:top">
-                    {i18n('all-caption')}
+                    {i18n('movie-caption')}
                   </title>
                 </banner>
                 <collectionList>
                   <separator>
                     <button onSelect={this.onSwitchGroup}>
                       <text>
-                        {i18n('all-group-by-title', { title })}{' '}
+                        {titleCode}
                         <badge
                           width="31"
                           height="14"
@@ -304,30 +324,28 @@ export default function allRoute() {
                         <title>{groupTitle}</title>
                       </header>
                       <section>
-                        {items.map(tvshow => {
+                        {items.map(movie => {
                           const {
                             sid,
                             watching,
                             unwatched,
                             covers: { big: poster },
-                          } = tvshow;
+                          } = movie;
 
-                          const isUHD = !!tvshow['4k'];
-                          const tvShowTitle = i18n('tvshow-title', tvshow);
+                          const movieTitle = i18n('movie-title', movie);
 
                           return (
                             <Tile
                               key={sid}
-                              title={tvShowTitle}
-                              route="tvshow"
+                              title={movieTitle}
+                              route="movie"
                               poster={poster}
                               counter={unwatched}
                               isWatched={watching > 0 && !unwatched}
-                              isUHD={isUHD}
                               payload={{
                                 sid,
                                 poster,
-                                title: tvShowTitle,
+                                title: movieTitle,
                               }}
                             />
                           );
