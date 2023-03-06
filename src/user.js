@@ -10,7 +10,7 @@ const cache = {
   payload: JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'),
 };
 
-const contract = ['till', 'token', 'logged', 'family', 'selected', 'fingerprint', 'verified_at', 'user_id', 'email', 'password'];
+const contract = ['till', 'token', 'logged', 'family', 'selected', 'fingerprint', 'verified_at', 'user_id', 'email', 'password', 'list_id'];
 
 export const subscription = bus.subscription.bind(bus);
 
@@ -89,4 +89,8 @@ export function getLoginData() {
     password: get().password,
     fingerprint: getFingerprint()
   }
+}
+
+export function getListId() {
+  return get().list_id;
 }

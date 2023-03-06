@@ -94,12 +94,15 @@ TVDML.handleRoute('main').pipe(
       route: 'tvShowsGenres',
     },
     {
+      route: 'my',
+    },
+    {
       route: 'settings',
     },
   ]),
 );
 
-//TVDML.handleRoute('my').pipe(myRoute());
+TVDML.handleRoute('my').pipe(myRoute());
 
 TVDML.handleRoute('tvshows').pipe(tvShows());
 

@@ -2,7 +2,7 @@
 
 import config from '../../package.json';
 
-import { getLoginData, getToken, isAuthorized, isSessionValid } from '../user';
+import { getListId, getLoginData, getToken, isAuthorized, isSessionValid } from '../user';
 import * as request from '../request';
 import * as settings from '../settings';
 import * as topShelf from '../helpers/topShelf';
@@ -193,6 +193,13 @@ export function post(url, parameters, token = "", noToken = false) {
     .then(...requestLogger('POST', url, parameters));
 }
 
+export function del(url, parameters, token = "", noToken = false) {
+  return request
+    .del(url, parameters, { prepare: addHeaders(headers(token, noToken)) })
+    .then(request.toJSON())
+    .then(...requestLogger('DELETE', url, parameters));
+}
+
 export function verifyMail(userId, verifyCode, token) {
   return get(`${API_URL}/verify/email/${userId}/${verifyCode}`, token);
 }
@@ -222,7 +229,8 @@ export function login(email, password, fingerprint) {
       verified_at: response.user.email_verified_at,
       email,
       password,
-      logged: response.status ? 1 : 0
+      logged: response.status ? 1 : 0,
+      list_id: response.user_lists[0].id
     }
     return Promise.resolve(result);
   });
@@ -259,11 +267,12 @@ function check() {
 
 export function checkSession() {
   let { email, password } = getLoginData();
+  let list_id = getListId();
   if (!email) return Promise.resolve({ logged: 0, token: "" });
   if (!password) return Promise.resolve({ logged: 0, token: "" });
 
   return check().then(checked => {
-    if (!checked) {
+    if (!checked || !list_id) {
       return login(email, password, FINGERPRINT).then(result => {
         return reAuthorize(result).then((auth) => {
           return Promise.resolve({ ...result, verified_at: auth.user.email_verified_at });
@@ -773,5 +782,37 @@ export function getCollection(collection_slug) {
     }).catch(() => {
       resolve({ collectionData: [] })
     })
+  })
+}
+
+export function getMyListCollection(listId) {
+  return new Promise(resolve => {
+    get(`${API_URL}/user/list/${listId}/posts`).then(response => {
+      let myMovies = [];
+      let myTvShows = [];
+  
+      for (let element of response.data) {
+        if (element.type === "tvshow") {
+          myTvShows.push(topShelf.mapBaseTile(element));
+        } else if (element.type === "movie") {
+          myMovies.push(topShelf.mapBaseTile(element));
+        }
+      }
+      resolve({ myMovies, myTvShows });
+    })
+  })
+}
+
+export function addToMyList(listId, itemId) {
+  return post(`${API_URL}/user/list/post/${listId}/${itemId}`);
+}
+
+export function removeFromMyList(listId, itemId) {
+  return del(`${API_URL}/user/list/post/${listId}/${itemId}`);
+}
+
+export function isPreferred(itemId) {
+  return get(`${API_URL}/user/lists/posts/${itemId}`).then(result => {
+    return result.lists.length > 0;
   })
 }

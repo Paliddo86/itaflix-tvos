@@ -38,6 +38,9 @@ import {
   getMovieDescription,
   getMovieMediaStream,
   getCollection,
+  isPreferred,
+  addToMyList,
+  removeFromMyList,
 } from '../request/adc';
 
 import Tile from '../components/tile';
@@ -156,21 +159,24 @@ export default function movieRoute() {
               getMovieDescription(sid),
               getTmdbMovieDetails(tmdb_id, imdb_id),
               getRelated(slug),
-              getCollection(collection_slug)
+              getCollection(collection_slug),
+              isPreferred(sid)
             ])
               .then(payload => {
                 const [
                   movieResponse,
                   tmdbMovieResponse,
                   recomendations,
-                  collection
+                  collection,
+                  isPreferred
                 ] = payload;
 
                 return {
                   movie: movieResponse.result, 
                   tmdb: tmdbMovieResponse,
                   recomendations: recomendations.relatedData,
-                  collection: collection.collectionData
+                  collection: collection.collectionData,
+                  isPreferred
                 };
 
               //   return Promise.all([
@@ -487,6 +493,7 @@ export default function movieRoute() {
               vote_average: rating,
               runtime
             } = this.state.tmdb;
+            const isPreferred = this.state.isPreferred;
 
             // const hasTrailers = !!this.state.trailers.length;
             // const hasMultipleTrailers = this.state.trailers.length > 1;
@@ -540,10 +547,17 @@ export default function movieRoute() {
               </buttonLockup>
             );
 
-            const rateBtn = (
-              <buttonLockup onSelect={this.onRate}>
+            const addToMyBtn = (
+              <buttonLockup onSelect={this.onMy}>
                 <badge src="resource://button-rate" />
-                <title>{i18n('tvshow-control-rate')}</title>
+                <title>{i18n('add-to-my')}</title>
+              </buttonLockup>
+            );
+
+            const isOnMyBtn = (
+              <buttonLockup onSelect={this.removeFromMy}>
+                <badge src="resource://button-rated" />
+                <title>{i18n('remove-from-my')}</title>
               </buttonLockup>
             );
 
@@ -560,9 +574,10 @@ export default function movieRoute() {
             // } else {
               //   );
               // }
-            buttons = (
-              <row>
+              buttons = (
+                <row>
                 {playBtn}
+                {isPreferred ? isOnMyBtn : addToMyBtn}
               </row>)
 
             return (
@@ -583,7 +598,7 @@ export default function movieRoute() {
                 >
                   {description}
                 </description>
-                {playBtn}
+                {buttons}
               </stack>
             );
           },
@@ -856,6 +871,20 @@ export default function movieRoute() {
                 </ratingTemplate>
               </document>,
             ).sink();
+          },
+
+          onMy() {
+            const { sid } = this.props;
+            const listId = user.getListId();
+
+            addToMyList(listId, sid).then(() => this.setState({isPreferred: true}));
+          },
+
+          removeFromMy() {
+            const { sid } = this.props;
+            const listId = user.getListId();
+
+            removeFromMyList(listId, sid).then(() => this.setState({isPreferred: false}));
           },
 
           onRateChange(event) {

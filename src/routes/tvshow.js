@@ -39,6 +39,9 @@ import {
   removeFromMyTVShows,
   rateTVShow,
   getRelated,
+  isPreferred,
+  addToMyList,
+  removeFromMyList,
 } from '../request/adc';
 
 import Tile from '../components/tile';
@@ -156,7 +159,8 @@ export default function tvShowRoute() {
               getTVShowDescription(sid),
               getTmdbShowDetails(tmdb_id, imdb_id),
               getTVShowSeasons(slug),
-              getRelated(slug)
+              getRelated(slug),
+              isPreferred(sid)
               // getCountriesList(),
               // getTVShowSchedule(sid),
               //getTVShowRecommendations(sid),
@@ -167,13 +171,15 @@ export default function tvShowRoute() {
                   tmdbShowResponse,
                   seasons,
                   recomendations,
+                  isPreferred
                 ] = payload;
 
                 return {
                   tvshow: tvshowResponse.result, 
                   tmdb: tmdbShowResponse,
                   seasons,
-                  recomendations: recomendations.relatedData
+                  recomendations: recomendations.relatedData,
+                  isPreferred
                 };
 
               //   return Promise.all([
@@ -259,6 +265,7 @@ export default function tvShowRoute() {
               episode_run_time,
               last_episode_to_air
             } = this.state.tmdb;
+            const isPreferred = this.state.isPreferred
 
             const episodeRuntime = episode_run_time[0] || last_episode_to_air.runtime;
             // const hasTrailers = !!this.state.trailers.length;
@@ -320,6 +327,20 @@ export default function tvShowRoute() {
               </buttonLockup>
             );
 
+            const addToMyBtn = (
+              <buttonLockup onSelect={this.onMy}>
+                <badge src="resource://button-rate" />
+                <title>{i18n('add-to-my')}</title>
+              </buttonLockup>
+            );
+
+            const isOnMyBtn = (
+              <buttonLockup onSelect={this.removeFromMy}>
+                <badge src="resource://button-rated" />
+                <title>{i18n('remove-from-my')}</title>
+              </buttonLockup>
+            );
+
             // if (this.state.watching) {
             //   buttons = (
             //     <row>
@@ -333,11 +354,10 @@ export default function tvShowRoute() {
             // } else {
               //   );
               // }
-            // buttons = (
-            //   <row>
-            //     {startWatchingBtn}
-            //     {/* {moreBtn} */}
-            //   </row>)
+              buttons = (
+                <row>
+                {isPreferred ? isOnMyBtn : addToMyBtn}
+              </row>)
 
             return (
               <stack>
@@ -357,6 +377,7 @@ export default function tvShowRoute() {
                 >
                   {description}
                 </description>
+                {buttons}
               </stack>
             );
           },
@@ -921,6 +942,20 @@ export default function tvShowRoute() {
                 </ratingTemplate>
               </document>,
             ).sink();
+          },
+
+          onMy() {
+            const { sid } = this.props;
+            const listId = user.getListId();
+
+            addToMyList(listId, sid).then(() => this.setState({isPreferred: true}));
+          },
+
+          removeFromMy() {
+            const { sid } = this.props;
+            const listId = user.getListId();
+
+            removeFromMyList(listId, sid).then(() => this.setState({isPreferred: false}));
           },
 
           onRateChange(event) {

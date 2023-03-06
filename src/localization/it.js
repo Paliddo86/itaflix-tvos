@@ -6,7 +6,7 @@ export default {
   'auth-checking': 'Verifica sottoscrizione...',
 
   'menu-home': 'Home',
-  'menu-my': 'My',
+  'menu-my': 'Preferiti',
   'menu-tvshows': 'Serie TV',
   'menu-moviesGenres': 'Film',
   'menu-tvShowsGenres': 'Serie TV',
@@ -207,9 +207,11 @@ export default {
   'tvshow-control-start-watching': 'Guarda',
   'tvshow-control-play': ({quality}) => `Guarda in ${quality}`,
   'tvshow-control-stop-watching': 'Ferma di guardare',
-  'tvshow-control-rate': 'Vota Serie Tv',
   'tvshow-control-more': 'Altro',
-
+  
+  'add-to-my': 'Aggiungi ai preferiti',
+  'remove-from-my': 'Rimuovi dai preferiti',
+  
   'movie-control-start-watching': 'Guarda',
 
   'new-episode-soon': 'Prossimi',
@@ -225,6 +227,8 @@ export default {
   'my-closed': 'Conclusa',
   'my-watched': 'Vista',
   'my-new-episodes': 'Nuovi Episodi',
+  'my-movies': 'Film Preferiti',
+  'my-tv-show': 'Serie TV Preferite',
 
   'my-empty-list-title': 'Non possiedi una sottoscrizione',
   'my-empty-list-description':

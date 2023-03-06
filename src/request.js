@@ -2,6 +2,7 @@
 
 const GET = 'GET';
 const POST = 'POST';
+const DELETE = 'DELETE';
 
 function result(handler) {
   return ({ target }) => handler(target);
@@ -76,6 +77,14 @@ export function get(url, params = {}) {
 export function post(url, data, params = {}) {
   return request(url, {
     method: POST,
+    data,
+    ...params,
+  });
+}
+
+export function del(url, data, params = {}) {
+  return request(url, {
+    method: DELETE,
     data,
     ...params,
   });

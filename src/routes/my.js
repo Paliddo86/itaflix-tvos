@@ -4,14 +4,17 @@ import * as TVDML from 'tvdml';
 import * as user from '../user';
 import { get as i18n } from '../localization';
 
-import { getMyTVShows, getMySchedule } from '../request/soap';
+import { getMyListCollection } from '../request/adc';
 
 import {
   link,
   groupSeriesByCategory,
   isMenuButtonPressNavigatedTo,
   sortTvShows,
+  getStartParams,
 } from '../utils';
+
+import logo from '../assets/img/logo.png';
 
 import { deepEqualShouldUpdate } from '../utils/components';
 
@@ -32,7 +35,7 @@ export default function myRoute() {
             token,
             authorized,
             updating: false,
-            loading: !!authorized,
+            loading: !!authorized
           };
         },
 
@@ -73,6 +76,7 @@ export default function myRoute() {
             this.state.updating &&
             prevState.updating !== this.state.updating
           ) {
+            console.log("componentDidUpdate")
             this.loadData().then(payload => {
               this.setState({ updating: false, ...payload });
             });
@@ -91,47 +95,59 @@ export default function myRoute() {
           if (!user.isAuthorized()) {
             return Promise.resolve({});
           }
-
-          return Promise.all([getMyTVShows(), getMySchedule()]).then(
-            ([series, schedule]) => ({ series, schedule }),
-          );
+          
+          const listId = user.getListId();
+          if (!listId) {
+            return Promise.resolve({});
+          }
+          
+          return getMyListCollection(listId);
         },
 
         render() {
-          const { series, loading, schedule } = this.state;
-
+          console.log("render", this.state)
+          const { myMovies, myTvShows, loading } = this.state;
           if (loading) {
             return <Loader />;
           }
+          
+          const { BASEURL } = getStartParams();
+          // if ( !myMovies || !myMovies.length) {
+          //   return (
+          //     <document>
+          //       <head>{commonStyles}</head>
+          //       <alertTemplate>
+          //         <title class="grey_text">{i18n('my-empty-list-title')}</title>
+          //         <description class="grey_description">
+          //           {i18n('my-empty-list-description')}
+          //         </description>
+          //       </alertTemplate>
+          //     </document>
+          //   );
+          // }
 
-          if (!series.length) {
-            return (
-              <document>
-                <head>{commonStyles}</head>
-                <alertTemplate>
-                  <title class="grey_text">{i18n('my-empty-list-title')}</title>
-                  <description class="grey_description">
-                    {i18n('my-empty-list-description')}
-                  </description>
-                  <button onSelect={link('all')}>
-                    <text>{i18n('my-empty-list-button')}</text>
-                  </button>
-                </alertTemplate>
-              </document>
-            );
-          }
-
-          const { unwatched, watched, closed } = groupSeriesByCategory(series);
+          //const { unwatched, watched, closed } = groupSeriesByCategory(series);
 
           return (
             <document>
               <stackTemplate>
+              <banner>
+                  <img
+                    style="tv-align:left; tv-position:top-left"
+                    src={BASEURL + logo}
+                    width="200"
+                    height="75"
+                  />
+                  <title style="tv-align:center; tv-position:top">
+                    {i18n('my-caption')}
+                  </title>
+                </banner>
                 <collectionList>
-                  {unwatched.length &&
-                    this.renderSectionGrid(unwatched, 'my-new-episodes')}
-                  {watched.length &&
-                    this.renderSectionGrid(watched, 'my-watched', schedule)}
-                  {closed.length && this.renderSectionGrid(closed, 'my-closed')}
+                  {myMovies && myMovies.length &&
+                    this.renderSectionGrid(myMovies, 'my-movies')}
+                  {myTvShows && myTvShows.length &&
+                    this.renderSectionGrid(myTvShows, 'my-tv-show')}
+                  {/* {closed.length && this.renderSectionGrid(closed, 'my-closed')} */}
                 </collectionList>
               </stackTemplate>
             </document>
@@ -139,23 +155,23 @@ export default function myRoute() {
         },
 
         renderSectionGrid(collection, title, schedule = []) {
-          const scheduleDictionary = schedule.reduce((result, item) => {
-            // eslint-disable-next-line no-param-reassign
-            result[item.sid] = item;
-            return result;
-          }, {});
+          // const scheduleDictionary = schedule.reduce((result, item) => {
+          //   // eslint-disable-next-line no-param-reassign
+          //   result[item.sid] = item;
+          //   return result;
+          // }, {});
 
-          const currentMoment = moment();
+          // const currentMoment = moment();
 
-          const nextDay = currentMoment
-            .clone()
-            .add(moment.relativeTimeThreshold('h'), 'hour');
+          // const nextDay = currentMoment
+          //   .clone()
+          //   .add(moment.relativeTimeThreshold('h'), 'hour');
 
-          const nextMonth = currentMoment
-            .clone()
-            .add(moment.relativeTimeThreshold('d'), 'day');
+          // const nextMonth = currentMoment
+          //   .clone()
+          //   .add(moment.relativeTimeThreshold('d'), 'day');
 
-          const sortedCollection = sortTvShows(collection);
+          //const sortedCollection = sortTvShows(collection);
 
           return (
             <grid>
@@ -165,50 +181,40 @@ export default function myRoute() {
                 </header>
               )}
               <section>
-                {sortedCollection.map(tvshow => {
-                  const {
-                    sid,
-                    unwatched,
-                    covers: { big: poster },
-                  } = tvshow;
+                {collection.map(element => {
 
-                  const isUHD = !!tvshow['4k'];
-                  const tvShowTitle = i18n('tvshow-title', tvshow);
-                  const scheduleEpisode = scheduleDictionary[sid];
+                  // const isUHD = !!tvshow['4k'];
+                  // const tvShowTitle = i18n('tvshow-title', tvshow);
+                  // const scheduleEpisode = scheduleDictionary[sid];
 
-                  let isWatched = !unwatched;
-                  let dateTitle;
-                  let date;
+                  // let isWatched = !unwatched;
+                  // let dateTitle;
+                  // let date;
 
-                  if (scheduleEpisode) {
-                    date = moment(scheduleEpisode.date, 'DD.MM.YYYY');
+                  // if (scheduleEpisode) {
+                  //   date = moment(scheduleEpisode.date, 'DD.MM.YYYY');
 
-                    if (!date.isValid() || nextMonth < date) {
-                      dateTitle = i18n('new-episode-soon');
-                    } else if (nextDay > date) {
-                      dateTitle = i18n('new-episode-day');
-                    } else {
-                      dateTitle = i18n('new-episode-custom-date', {
-                        date: date.fromNow(),
-                      });
-                    }
-                    if (currentMoment < date) isWatched = false;
-                  }
+                  //   if (!date.isValid() || nextMonth < date) {
+                  //     dateTitle = i18n('new-episode-soon');
+                  //   } else if (nextDay > date) {
+                  //     dateTitle = i18n('new-episode-day');
+                  //   } else {
+                  //     dateTitle = i18n('new-episode-custom-date', {
+                  //       date: date.fromNow(),
+                  //     });
+                  //   }
+                  //   if (currentMoment < date) isWatched = false;
+                  // }
 
                   return (
                     <Tile
-                      key={sid}
-                      title={tvShowTitle}
-                      route="tvshow"
-                      poster={poster}
-                      counter={unwatched || dateTitle}
-                      isWatched={isWatched}
-                      isUHD={isUHD}
-                      payload={{
-                        sid,
-                        poster,
-                        title: tvShowTitle,
-                      }}
+                      key={element.sid}
+                      title={element.title}
+                      quality={element.quality}
+                      isUpdated={element.isUpdated}
+                      route={element.type}
+                      poster={element.poster}
+                      payload={element}
                     />
                   );
                 })}
