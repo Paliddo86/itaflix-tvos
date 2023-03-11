@@ -105,7 +105,6 @@ export default function myRoute() {
         },
 
         render() {
-          console.log("render", this.state)
           const { myMovies, myTvShows, loading } = this.state;
           if (loading) {
             return <Loader />;

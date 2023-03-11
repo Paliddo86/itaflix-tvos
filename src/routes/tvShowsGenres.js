@@ -223,7 +223,7 @@ export default function tvShowsGenresRoute() {
           let genre = genres[active];
           let activeSection = this.state[active];
           
-          if (index >= (activeSection.tvshows.length - 10) && activeSection.current_page < activeSection.last_page) {
+          if (index >= (activeSection.tvshows.length - 4) && activeSection.current_page < activeSection.last_page) {
             let page = activeSection.current_page + 1;
             if(page === activeSection.current_page) return;
             
