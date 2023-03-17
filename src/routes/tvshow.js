@@ -389,6 +389,8 @@ export default function tvShowRoute() {
             const seasons = this.state.seasons;
             const title = i18n('tvshow-title', this.state.tvshow);
 
+            console.log("tmdbSeasons", tmdbSeasons)
+
             // const scheduleDiff = this.state.schedule
             //   .slice(this.state.seasons.length)
             //   .map(season => ({
@@ -418,6 +420,8 @@ export default function tvShowRoute() {
                 </header>
                 <section>
                   {seasons.map((season, i) => {
+                    if(!tmdbSeasons[i]) return null;
+
                     let seasonPoster = tmdbSeasons[i].poster_path ? getTmdbImageUrl(tmdbSeasons[i].poster_path) : poster;
                     // const {
                     //   season: i,

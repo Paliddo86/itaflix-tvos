@@ -539,7 +539,12 @@ export function getTVShowTrailers(sid) {
 }
 
 export function getTVShowSeasons(slug) {
-  return get(`${API_URL}/posts/seasons/${slug}`).then(response => { return response.seasons });
+  return get(`${API_URL}/posts/seasons/${slug}`).then(response => { 
+    if(Array.isArray(response.seasons)) return response.seasons;
+    else {
+      return Object.values(response.seasons);
+    }
+  });
 }
 
 export function getTVShowSeason(sid, id) {
