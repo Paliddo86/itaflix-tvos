@@ -14,8 +14,8 @@ const { SD, HD, FULLHD, UHD } = settings.values[VIDEO_QUALITY];
 const { LOCALIZATION, SUBTITLES } = settings.values[TRANSLATION];
 
 const TOP_SHELF_MIN_ITEMS = 4;
-const HOST = 'https://altadefinizionecommunity.online';
-const ONLY_HOST = 'altadefinizionecommunity.online';
+const HOST = 'https://altadefinizionecommunity.one';
+const ONLY_HOST = 'altadefinizionecommunity.one';
 const API_URL = `${HOST}/api`;
 const FINGERPRINT = 1313464847774034;
 
