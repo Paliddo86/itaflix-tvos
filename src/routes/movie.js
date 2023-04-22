@@ -202,17 +202,16 @@ export default function movieRoute() {
           render() {
             if (this.state.loading) {
               return (
-                <Loader title={this.props.title} heroImg={this.props.poster} />
+                <Loader title={this.props.title} />
               );
             }
-
             return (
               <document>
                 <productTemplate>
                   <banner>
                     {this.renderStatus()}
                     {this.renderInfo()}
-                    <heroImg src={this.props.poster.replace("/thumbnail_241/", "/original/")} />
+                    <heroImg src={this.props.poster.split("?")[0]} />
                   </banner>
                   {this.renderCollection()}
                   {this.renderRecomendations()}

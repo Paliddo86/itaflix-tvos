@@ -17,6 +17,8 @@ export default function Tile({ key, attrs = {}, events = {} }) {
     isTmdbPoster
   } = attrs;
 
+  const tilePoster = isTmdbPoster ? poster : poster.split("?")[0]+"?width=200";
+
   const { onPlay, onSelect, onHighlight, onHoldselect } = events;
 
   const showTopShadow = quality;
@@ -32,11 +34,12 @@ export default function Tile({ key, attrs = {}, events = {} }) {
       autoHighlight={autoHighlight ? 'true' : undefined}
     >
       <img
-        src={poster}
-        width={isTmdbPoster ? "185" : "200"}
-        height={isTmdbPoster ? "277" : "285"}
+        src={tilePoster}
+        width={isTmdbPoster ? "190" : "190"}
+        height={isTmdbPoster ? "285" : "285"}
         class="tile-img"
         contentsMode="aspectFitBB"
+        aspectRatio="0.75:1"
         style={`
           tv-placeholder: tv;
           tv-tint-color: linear-gradient(

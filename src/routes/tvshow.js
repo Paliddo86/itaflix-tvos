@@ -209,14 +209,13 @@ export default function tvShowRoute() {
                 <Loader title={this.props.title} heroImg={this.props.poster} />
               );
             }
-
             return (
               <document>
                 <productTemplate>
                   <banner>
                     {this.renderStatus()}
                     {this.renderInfo()}
-                    <heroImg src={this.props.poster.replace("/thumbnail_241/", "/original/")} />
+                    <heroImg src={this.props.poster.split("?")[0]} />
                   </banner>
                   {this.renderSeasons()}
                   {this.renderRecomendations()}
