@@ -51,17 +51,29 @@ function getEpisodeItem(slug, seasonId, episodeId, poster, tmdbEpisode) {
     overview
   } = tmdbEpisode;
 
-  return getMediaStream(slug, seasonId - 1, episodeId).then((response) => {
-    const { streams, backdrop_url, title, id } = response;
-    return {
-      id,
-      title: `${title} - ${name}`,
-      description: overview,
-      streams,
-      artworkImageURL: backdrop_url || poster || episodePoster,
-      resumeTime: 0
-    }
-  });
+  const grabMediaData = () => {
+    return getMediaStream(slug, seasonId - 1, episodeId).then((response) => {
+      const { streams, backdrop_url, title, id } = response;
+      return {
+        id,
+        title: `${title} - ${name}`,
+        description: overview,
+        streams,
+        artworkImageURL: backdrop_url || poster || episodePoster,
+        resumeTime: 0
+      }
+    });
+
+  } 
+
+  if(user.isSessionValid()) {
+    return grabMediaData();
+  } else {
+    checkSession().then(payload => {
+      user.set({ ...payload });
+      return grabMediaData();
+    })
+  }
 }
 
 function getScheduleEpsForSeason(schedule, season) {
@@ -364,7 +376,6 @@ export default function seasonRoute() {
                     </segmentBarHeader>
                     <section>
                       {season.episodes.map((episode, index) => {
-                        console.log("episode", episode)
                         // const {
                         //   rating,
                         //   spoiler,

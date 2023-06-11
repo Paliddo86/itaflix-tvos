@@ -2,20 +2,20 @@
 
 import config from '../../package.json';
 
-import { getListId, getLoginData, getToken, isAuthorized, isSessionValid } from '../user';
+import { getListId, getLoginData, getToken, isAuthorized } from '../user';
 import * as request from '../request';
 import * as settings from '../settings';
 import * as topShelf from '../helpers/topShelf';
 import { get as i18n } from '../localization';
-import { genreToId, isQello, groupSeriesByCategory } from '../utils';
+import { isQello, groupSeriesByCategory } from '../utils';
 
 const { VIDEO_QUALITY, TRANSLATION } = settings.params;
 const { SD, HD, FULLHD, UHD } = settings.values[VIDEO_QUALITY];
 const { LOCALIZATION, SUBTITLES } = settings.values[TRANSLATION];
 
 const TOP_SHELF_MIN_ITEMS = 4;
-const HOST = 'https://altadefinizione-originale.online';
-const ONLY_HOST = 'altadefinizione-originale.online';
+const HOST = 'https://altadefinizionecommunity.one';
+const ONLY_HOST = 'altadefinizionecommunity.one';
 const API_URL = `${HOST}/api`;
 const FINGERPRINT = 1313464847774034;
 

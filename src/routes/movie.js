@@ -41,6 +41,7 @@ import {
   isPreferred,
   addToMyList,
   removeFromMyList,
+  checkSession,
 } from '../request/adc';
 
 import Tile from '../components/tile';
@@ -433,8 +434,7 @@ export default function movieRoute() {
             });
 
             // Loading and starting playback.
-            getMovieMediaStream(slug).then((response) => {
-              console.log("getMovieMediaStream response", response)
+            const preparePlayer = (response) => {
               const { streams, backdrop_url, title, id, poster_url } = response;
               let movie = {
                 id,
@@ -444,15 +444,21 @@ export default function movieRoute() {
                 artworkImageURL: backdrop_url || poster_url || poster,
                 resumeTime: 0
               }
-              console.log("movie", movie)
                 let videoQuality = settings.getPreferredVideoQuality();
                 let movieMediaItem =  createMediaItems(movie, videoQuality);
 
-                console.log("movieMediaItem", movieMediaItem)
                 player.playlist.push(movieMediaItem);
-                console.log(player.playlist)
                 player.play();
-              });
+            }
+
+            if(user.isSessionValid()) {
+              getMovieMediaStream(slug).then((response) => { preparePlayer(response)});
+            } else {
+              checkSession().then(payload => {
+                user.set({ ...payload });
+                getMovieMediaStream(slug).then((response) => { preparePlayer(response)});
+              })
+            }
           },
 
           renderStatus() {
