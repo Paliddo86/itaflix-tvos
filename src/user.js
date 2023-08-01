@@ -80,7 +80,7 @@ export function isSessionValid() {
     console.log("Actual Token", getToken())
   }
   if(!verifiedDate) return false;
-  return new Date(new Date(verifiedDate).getTime() + 60 * 60 * 23 * 1000) > new Date() && getToken() !== "";
+  return new Date(new Date(verifiedDate).getTime() + 60 * 60 * 24 * 1000) > new Date() && getToken() !== "";
 }
 
 export function getLoginData() {
