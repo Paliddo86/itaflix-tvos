@@ -2,7 +2,7 @@
 
 import config from '../../package.json';
 
-import { getListId, getLoginData, getToken, isAuthorized } from '../user';
+import { getFingerprint, getListId, getLoginData, getToken, isAuthorized, set } from '../user';
 import * as request from '../request';
 import * as settings from '../settings';
 import * as topShelf from '../helpers/topShelf';
@@ -17,7 +17,6 @@ const TOP_SHELF_MIN_ITEMS = 4;
 const HOST = 'https://altadefinizionecommunity.one';
 const ONLY_HOST = 'altadefinizionecommunity.one';
 const API_URL = `${HOST}/api`;
-const FINGERPRINT = 1313464847774034;
 
 function getLatest(tvshows, count = 10) {
   return tvshows.sort(({ sid: a }, { sid: b }) => b - a).slice(0, count);
@@ -176,6 +175,7 @@ function generateFakeFingerPrint() {
   for (ii = 0; ii < 16; ii++) {
     finger += chars[Math.floor(Math.random() * chars.length)];
   }
+  set({fingerprint: finger});
   return finger;
 }
 
@@ -258,9 +258,13 @@ export function authorizeAccount() {
 }
 
 function check() {
-  return get(`${API_URL}/check?fingerprint=${FINGERPRINT}`).then(result => {
+  let fingerprint = getFingerprint() || generateFakeFingerPrint();
+  return get(`${API_URL}/check?fingerprint=${fingerprint}`).then(result => {
     return Promise.resolve(true);
   }).catch(result => {
+    if(process.env.NODE_ENV === "development") {
+      console.log("Check Failed, fingerprint= %s", fingerprint);
+    }
     return Promise.resolve(false);
   })
 }
@@ -273,7 +277,8 @@ export function checkSession() {
 
   return check().then(checked => {
     if (!checked || !list_id) {
-      return login(email, password, FINGERPRINT).then(result => {
+      let fingerprint = getFingerprint() || generateFakeFingerPrint();
+      return login(email, password, fingerprint).then(result => {
         return reAuthorize(result).then((auth) => {
           return Promise.resolve({ ...result, verified_at: auth.user.email_verified_at });
         });
@@ -287,7 +292,8 @@ export function checkSession() {
 }
 
 export function authorize({ email, password }) {
-  return login(email, password, FINGERPRINT).catch(xhr => {
+  let fingerprint = getFingerprint() || generateFakeFingerPrint();
+  return login(email, password, fingerprint).catch(xhr => {
     if (xhr.status === 403) {
       return request.toJSON()(xhr);
     }

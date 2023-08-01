@@ -56,6 +56,7 @@ TVDML.handleRoute('get-token')
   .pipe(getUiData)
   .pipe(checkSession)
   .pipe(payload => {
+    if(process.env.NODE_ENV === "development") console.log("Paylod User", payload); 
     user.set({ ...payload });
     return payload;
   })

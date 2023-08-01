@@ -84,6 +84,10 @@ export function isSessionValid() {
 }
 
 export function getLoginData() {
+  if(process.env.NODE_ENV === "development") {
+    console.log("Email", get().email);
+    console.log("Actual Fingerprint", getFingerprint())
+  }
   return {
     email: get().email,
     password: get().password,
