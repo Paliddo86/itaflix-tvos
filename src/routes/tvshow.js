@@ -429,6 +429,7 @@ export default function tvShowRoute() {
 
                     //const { schedule } = this.state;
 
+                    if(!Array.isArray(season.episodes)) season.episodes = Object.values(season.episodes);
                     const seasonHasPoster = !!seasonPoster;
                     const seasonTitle = season.season_label;
                     const totalEpisodes = season.episodes.length;
