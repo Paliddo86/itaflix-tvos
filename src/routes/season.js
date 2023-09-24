@@ -46,18 +46,16 @@ const { LOCALIZATION, SUBTITLES } = settings.values[TRANSLATION];
 const translationOrder = [LOCALIZATION, SUBTITLES];
 
 function getEpisodeItem(slug, seasonId, episodeId, poster, tmdbEpisode) {
-  const {
-    name,
-    overview
-  } = tmdbEpisode;
+  const name = tmdbEpisode ? tmdbEpisode.name : "";
+  const overview = tmdbEpisode ? tmdbEpisode.overview : "";
 
   const grabMediaData = () => {
     return getMediaStream(slug, seasonId - 1, episodeId).then((response) => {
       const { streams, backdrop_url, title, id } = response;
       return {
         id,
-        title: `${title} - ${name}`,
-        description: overview,
+        title: `${title} - ${name || episodeId + 1}`,
+        description: overview || "",
         streams,
         artworkImageURL: backdrop_url || poster || episodePoster,
         resumeTime: 0
@@ -444,7 +442,7 @@ export default function seasonRoute() {
                           episode,
                         );
 
-                        const onSelectEpisode = this.playEpisode.bind(this, index);
+                        const onSelectEpisode = this.playEpisode.bind(this, episode.number);
 
                         const listItemRef = highlight
                           ? // eslint-disable-next-line react/jsx-no-bind
