@@ -388,7 +388,7 @@ export default function tvShowRoute() {
               if (elem.season_number === 0) return;
               tmdbSeasons[elem.season_number] = elem;
             });
-ì
+
             const {sid, slug, tmdb_id, poster, imdb_id } = this.props;
             const seasons = this.state.seasons;
             const title = i18n('tvshow-title', this.state.tvshow);
