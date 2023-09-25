@@ -217,6 +217,7 @@ export default {
   'new-episode-soon': 'Prossimi',
   'new-episode-day': 'Nuovi episodi del giorno',
   'new-episode-custom-date': ({ date }) => `Episodio ${date}`,
+  'episode-number': ({ epLabel }) => `Episodio ${epLabel}`,
 
   'new-season-soon': 'Prossima',
   'new-season-day': 'Stagione del giorno',

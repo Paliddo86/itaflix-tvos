@@ -548,7 +548,12 @@ export function getTVShowSeasons(slug) {
   return get(`${API_URL}/posts/seasons/${slug}`).then(response => { 
     if(Array.isArray(response.seasons)) return response.seasons;
     else {
-      return Object.values(response.seasons);
+      let seasons = [];
+      for (let [key, value] of Object.entries(response.seasons)) {
+        value.seasonId = (parseInt(key) + 1).toString();
+        seasons.push(value);
+      }
+      return seasons;
     }
   });
 }

@@ -383,7 +383,12 @@ export default function tvShowRoute() {
 
           renderSeasons() {
             const { seasons: origTmdbSeasons } = this.state.tmdb;
-            const tmdbSeasons = origTmdbSeasons.filter(elem => elem.season_number != 0);
+            const tmdbSeasons = {};
+            origTmdbSeasons.forEach(elem => {
+              if (elem.season_number === 0) return;
+              tmdbSeasons[elem.season_number] = elem;
+            });
+ì
             const {sid, slug, tmdb_id, poster, imdb_id } = this.props;
             const seasons = this.state.seasons;
             const title = i18n('tvshow-title', this.state.tvshow);
@@ -417,9 +422,9 @@ export default function tvShowRoute() {
                 </header>
                 <section>
                   {seasons.map((season, i) => {
-                    if(!tmdbSeasons[i]) return null;
-
-                    let seasonPoster = tmdbSeasons[i].poster_path ? getTmdbImageUrl(tmdbSeasons[i].poster_path) : poster;
+                    const hasTmdbSeasons = Object.keys(tmdbSeasons).length ? true : false;
+                    const seasonId = season.seasonId || i +1;
+                    let seasonPoster = hasTmdbSeasons ? getTmdbImageUrl(tmdbSeasons[seasonId].poster_path) : poster;
                     // const {
                     //   season: i,
                     //   covers: { big: poster},
@@ -496,7 +501,7 @@ export default function tvShowRoute() {
                       slug,
                       season,
                       poster: seasonPoster,
-                      id: tmdbSeasons[i].season_number,
+                      id: seasonId,
                       title,
                     };
                     return (

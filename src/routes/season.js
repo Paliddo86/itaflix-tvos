@@ -400,7 +400,8 @@ export default function seasonRoute() {
                         //   );
                         // }
 
-                        const episodePoster = tmdbEpisodes[index].still_path ? getTmdbImageUrl(tmdbEpisodes[index].still_path, true) : poster;
+                        const foundTmdb = tmdbEpisodes[index] ? true : false;
+                        const episodePoster = foundTmdb ? getTmdbImageUrl(tmdbEpisodes[index].still_path, true) : poster;
 
                         // const file = getEpisodeMedia(episode, translation);
                         // const mqCode = file && mediaQualities[file.quality];
@@ -413,8 +414,8 @@ export default function seasonRoute() {
 
                         const highlight = index === highlightEpisode;
 
-                        const epTitle = tmdbEpisodes[index].name;
-                        const description = tmdbEpisodes[index].overview;
+                        const epTitle = foundTmdb ? tmdbEpisodes[index].name : i18n('episode-number', {epLabel: episode.label || ""});
+                        const description = foundTmdb ? tmdbEpisodes[index].overview : "";
 
                         const epId = `eid-${index}`;
 
@@ -458,7 +459,7 @@ export default function seasonRoute() {
                             onHoldselect={onSelectDesc}
                             autoHighlight={highlight ? 'true' : undefined}
                           >
-                            <ordinal minLength="3">{tmdbEpisodes[index].episode_number}</ordinal>
+                            <ordinal minLength="3">{foundTmdb ? tmdbEpisodes[index].episode_number : episode.label}</ordinal>
                             <title class="title">{epTitle}</title>
                             {episode.is_new && <decorationLabel>
                               <text>{i18n('tvshow-new')}</text>
@@ -469,7 +470,7 @@ export default function seasonRoute() {
                                 <row class="controls_container">
                                   <ratingBadge
                                     style="tv-rating-style: star-l"
-                                    value={tmdbEpisodes[index].vote_average / 10}
+                                    value={foundTmdb ? tmdbEpisodes[index].vote_average : 1 / 10}
                                   />
                                 </row>
                                 <description class="item-desc">
