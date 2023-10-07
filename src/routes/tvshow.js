@@ -422,9 +422,10 @@ export default function tvShowRoute() {
                 </header>
                 <section>
                   {seasons.map((season, i) => {
-                    const hasTmdbSeasons = Object.keys(tmdbSeasons).length ? true : false;
-                    const seasonId = season.seasonId || i +1;
-                    let seasonPoster = hasTmdbSeasons ? getTmdbImageUrl(tmdbSeasons[seasonId].poster_path) : poster;
+                    const hasTmdbSeasons = Object.keys(tmdbSeasons).length === seasons.length ? true : false;
+                    const seasonId = season.seasonId || season.season_number || i +1;
+                    let seasonPoster = hasTmdbSeasons && tmdbSeasons[seasonId] ? getTmdbImageUrl(tmdbSeasons[seasonId].poster_path) : poster;
+
                     // const {
                     //   season: i,
                     //   covers: { big: poster},
@@ -503,6 +504,7 @@ export default function tvShowRoute() {
                       poster: seasonPoster,
                       id: seasonId,
                       title,
+                      hasTmdbSeasons
                     };
                     return (
                       <Tile
@@ -514,7 +516,7 @@ export default function tvShowRoute() {
                         isWatched={isWatched}
                         isUHD={false}
                         payload={payload}
-                        isTmdbPoster={true}
+                        isTmdbPoster={hasTmdbSeasons}
                         // eslint-disable-next-line react/jsx-no-bind
                         onHoldselect={this.onSeasonOptions.bind(
                           ...[this, payload.id, payload.title, payload.season, payload.tmdb_id, payload.imdb_id, isWatched],

@@ -166,6 +166,7 @@ export default function seasonRoute() {
             episodeNumber,
             season,
             shouldPlayImmediately,
+            hasTmdbSeasons
           },
         }) => ({
           sid,
@@ -178,6 +179,7 @@ export default function seasonRoute() {
           episodeNumber,
           season,
           shouldPlayImmediately,
+          hasTmdbSeasons
         }),
       ),
     )
@@ -224,30 +226,39 @@ export default function seasonRoute() {
           shouldComponentUpdate: deepEqualShouldUpdate,
 
           loadData() {
-            const { id, tmdb_id, imdb_id } = this.props;
+            const { id, tmdb_id, imdb_id, hasTmdbSeasons, season } = this.props;
             const { extended, translation, highlightEpisode } = this.state;
 
-            return Promise.all([
-              getTmdbShowSeasonDetail(tmdb_id, id, imdb_id),
-              // getTVShowSeason(sid, id),
-              // getTVShowDescription(sid),
-            ])
-              .then(([tmdbSeason]) => {
-                // const episodes = season ? season.episodes : [];
-                // const firstUnwatchedEp = episodes.find(
-                //   ({ watched }) => !watched,
-                // );
-                // const firstUnwatchedEpNumber = (firstUnwatchedEp || {}).episode;
+            if (hasTmdbSeasons) {
+              return Promise.all([
+                getTmdbShowSeasonDetail(tmdb_id, id, imdb_id),
+                // getTVShowSeason(sid, id),
+                // getTVShowDescription(sid),
+              ])
+                .then(([tmdbSeason]) => {
+                  // const episodes = season ? season.episodes : [];
+                  // const firstUnwatchedEp = episodes.find(
+                  //   ({ watched }) => !watched,
+                  // );
+                  // const firstUnwatchedEpNumber = (firstUnwatchedEp || {}).episode;
+  
+                  // const highlight = highlightEpisode || firstUnwatchedEpNumber;
+  
+                  return {
+                    tmdbEpisodes: tmdbSeason.episodes,
+                    translation,
+                    highlightEpisode: 0,
+                    episodesHasSubtitles: false,
+                  };
+                });
+            }
 
-                // const highlight = highlightEpisode || firstUnwatchedEpNumber;
-
-                return {
-                  tmdbEpisodes: tmdbSeason.episodes,
-                  translation,
-                  highlightEpisode: 0,
-                  episodesHasSubtitles: false,
-                };
-              });
+            return {
+              tmdbEpisodes: [],
+              translation,
+              highlightEpisode: 0,
+              episodesHasSubtitles: false,
+            };
           },
 
           renderPoster(src, wide) {
