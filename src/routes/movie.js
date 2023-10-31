@@ -156,12 +156,20 @@ export default function movieRoute() {
 
           loadData() {
             const { sid, slug, tmdb_id, imdb_id, collection_slug } = this.props;
+
+            const preferred = () => {
+              return checkSession().then(payload => {
+                if(payload) user.set({...payload});
+                return isPreferred(sid);
+              })
+            }
+
             return Promise.all([
               getMovieDescription(sid),
               getTmdbMovieDetails(tmdb_id, imdb_id),
               getRelated(slug),
               getCollection(collection_slug),
-              isPreferred(sid)
+              preferred()
             ])
               .then(payload => {
                 const [
@@ -405,7 +413,6 @@ export default function movieRoute() {
             );
 
             player.addEventListener('stateWillChange', event => {
-              console.log("addEventListener", event)
               const { currentMediaItem } = player;
               const isEnded = event.state === 'end';
               const isPaused = event.state === 'paused';
@@ -451,14 +458,10 @@ export default function movieRoute() {
                 player.play();
             }
 
-            if(user.isSessionValid()) {
+            checkSession().then(payload => {
+              user.set({ ...payload });
               getMovieMediaStream(slug).then((response) => { preparePlayer(response)});
-            } else {
-              checkSession().then(payload => {
-                user.set({ ...payload });
-                getMovieMediaStream(slug).then((response) => { preparePlayer(response)});
-              })
-            }
+            })
           },
 
           renderStatus() {
@@ -882,14 +885,21 @@ export default function movieRoute() {
             const { sid } = this.props;
             const listId = user.getListId();
 
-            addToMyList(listId, sid).then(() => this.setState({isPreferred: true}));
+            checkSession().then(payload => {
+              if(payload) user.set({ ...payload });
+              addToMyList(listId, sid).then(() => this.setState({isPreferred: true}));
+            })
+
           },
 
           removeFromMy() {
             const { sid } = this.props;
             const listId = user.getListId();
 
-            removeFromMyList(listId, sid).then(() => this.setState({isPreferred: false}));
+            checkSession().then(payload => {
+              if(payload) user.set({ ...payload });
+              removeFromMyList(listId, sid).then(() => this.setState({isPreferred: false}));
+            })
           },
 
           onRateChange(event) {

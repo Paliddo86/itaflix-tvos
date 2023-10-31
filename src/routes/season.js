@@ -26,6 +26,7 @@ import {
   markEpisodeAsWatched,
   markEpisodeAsUnwatched,
   rateEpisode,
+  checkSession
 } from '../request/adc';
 
 import Loader from '../components/loader';
@@ -64,14 +65,10 @@ function getEpisodeItem(slug, seasonId, episodeId, poster, tmdbEpisode) {
 
   } 
 
-  if(user.isSessionValid()) {
+  return checkSession().then(payload => {
+    if(payload) user.set({ ...payload });
     return grabMediaData();
-  } else {
-    checkSession().then(payload => {
-      user.set({ ...payload });
-      return grabMediaData();
-    })
-  }
+  })
 }
 
 function getScheduleEpsForSeason(schedule, season) {

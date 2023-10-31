@@ -42,6 +42,7 @@ import {
   isPreferred,
   addToMyList,
   removeFromMyList,
+  checkSession,
 } from '../request/adc';
 
 import Tile from '../components/tile';
@@ -957,14 +958,20 @@ export default function tvShowRoute() {
             const { sid } = this.props;
             const listId = user.getListId();
 
-            addToMyList(listId, sid).then(() => this.setState({isPreferred: true}));
+            checkSession().then(payload => {
+              if(payload) user.set({ ...payload });
+              addToMyList(listId, sid).then(() => this.setState({isPreferred: true}));
+            })
           },
 
           removeFromMy() {
             const { sid } = this.props;
             const listId = user.getListId();
 
-            removeFromMyList(listId, sid).then(() => this.setState({isPreferred: false}));
+            checkSession().then(payload => {
+              if(payload) user.set({ ...payload });
+              removeFromMyList(listId, sid).then(() => this.setState({isPreferred: false}));
+            })
           },
 
           onRateChange(event) {

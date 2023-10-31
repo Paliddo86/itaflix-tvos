@@ -4,7 +4,7 @@ import * as TVDML from 'tvdml';
 import * as user from '../user';
 import { get as i18n } from '../localization';
 
-import { getMyListCollection } from '../request/adc';
+import { checkSession, getMyListCollection } from '../request/adc';
 
 import {
   link,
@@ -76,7 +76,6 @@ export default function myRoute() {
             this.state.updating &&
             prevState.updating !== this.state.updating
           ) {
-            console.log("componentDidUpdate")
             this.loadData().then(payload => {
               this.setState({ updating: false, ...payload });
             });
@@ -101,7 +100,10 @@ export default function myRoute() {
             return Promise.resolve({});
           }
           
-          return getMyListCollection(listId);
+          return checkSession().then(payload => {
+            if(payload) user.set({ ...payload });
+            return getMyListCollection(listId);
+          })
         },
 
         render() {

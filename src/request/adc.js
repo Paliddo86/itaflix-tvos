@@ -284,9 +284,8 @@ export function checkSession() {
         });
       })
     } else {
-      return reAuthorize({token:""}).then((auth) => {
-        return Promise.resolve({ verified_at: auth.user.email_verified_at });
-      });
+      // Autorizzato non faccio nulla
+      return Promise.resolve(null);
     }
   })
 }
@@ -802,21 +801,19 @@ export function getCollection(collection_slug) {
 }
 
 export function getMyListCollection(listId) {
-  return new Promise(resolve => {
-    get(`${API_URL}/user/list/${listId}/posts`).then(response => {
-      let myMovies = [];
-      let myTvShows = [];
-  
-      for (let element of response.data) {
-        if (element.type === "tvshow") {
-          myTvShows.push(topShelf.mapBaseTile(element));
-        } else if (element.type === "movie") {
-          myMovies.push(topShelf.mapBaseTile(element));
+      return get(`${API_URL}/user/list/${listId}/posts`).then(response => {
+        let myMovies = [];
+        let myTvShows = [];
+    
+        for (let element of response.data) {
+          if (element.type === "tvshow") {
+            myTvShows.push(topShelf.mapBaseTile(element));
+          } else if (element.type === "movie") {
+            myMovies.push(topShelf.mapBaseTile(element));
+          }
         }
-      }
-      resolve({ myMovies, myTvShows });
-    })
-  })
+        return { myMovies, myTvShows };
+      })
 }
 
 export function addToMyList(listId, itemId) {
@@ -830,5 +827,5 @@ export function removeFromMyList(listId, itemId) {
 export function isPreferred(itemId) {
   return get(`${API_URL}/user/lists/posts/${itemId}`).then(result => {
     return result.lists.length > 0;
-  })
+  });
 }
