@@ -260,8 +260,11 @@ export function authorizeAccount() {
 function check() {
   let fingerprint = getFingerprint() || generateFakeFingerPrint();
   return get(`${API_URL}/check?fingerprint=${fingerprint}`).then(result => {
-    return Promise.resolve(true);
-  }).catch(result => {
+    if(process.env.NODE_ENV === "development") {
+      console.log("Check On Free Time %s", result.user.on_free_time);
+    }
+    return Promise.resolve(result.user.on_free_time);
+  }).catch(() => {
     if(process.env.NODE_ENV === "development") {
       console.log("Check Failed, fingerprint= %s", fingerprint);
     }
