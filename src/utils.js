@@ -150,7 +150,13 @@ export function createMediaItems(episode, videoQuality) {
   })
 
   if(media.length) {
-    let mediaItem = new MediaItem('video', encodeURI(media[0].url));
+    let parsedurl = media[0].url;
+    
+    if(media[0].url.indexOf('%') == -1) {
+      parsedurl = encodeURI(media[0].url);
+    }
+
+    let mediaItem = new MediaItem('video', parsedurl);
     mediaItem.title = episode.title;
     mediaItem.description = episode.description;
     mediaItem.artworkImageURL = episode.artworkImageURL;

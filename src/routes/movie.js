@@ -266,17 +266,17 @@ export default function movieRoute() {
                   watchedPercent >= MARK_AS_WATCHED_PERCENTAGE;
 
                 if (passedBoundary && !currentMediaItem.markedAsWatched) {
-                  currentMediaItem.markedAsWatched = true;
+                  // currentMediaItem.markedAsWatched = true;
 
-                  const index = episodeNumber;
-                  const nextEpisodeNumber = (season.episodes[index + 1] || {}).number;
+                  // const index = episodeNumber;
+                  // const nextEpisodeNumber = (season.episodes[index + 1] || {}).number;
 
-                  this.onMarkAsWatched(episodeNumber);
+                  // this.onMarkAsWatched(episodeNumber);
 
-                  // Setting next episode as highlighted if exist
-                  if (nextEpisodeNumber) {
-                    this.setState({ highlightEpisode: nextEpisodeNumber });
-                  }
+                  // // Setting next episode as highlighted if exist
+                  // if (nextEpisodeNumber) {
+                  //   this.setState({ highlightEpisode: nextEpisodeNumber });
+                  // }
 
                   /**
                    * If user configured app for continues playback then loading next
