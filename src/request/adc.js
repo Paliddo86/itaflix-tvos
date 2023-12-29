@@ -279,17 +279,25 @@ export function checkSession() {
   if (!password) return Promise.resolve({ logged: 0, token: "" });
 
   return check().then(checked => {
+    return new Promise(resolve => {
     if (!checked || !list_id) {
       let fingerprint = getFingerprint() || generateFakeFingerPrint();
-      return login(email, password, fingerprint).then(result => {
-        return reAuthorize(result).then((auth) => {
-          return Promise.resolve({ ...result, verified_at: auth.user.email_verified_at });
-        });
-      })
-    } else {
-      // Autorizzato non faccio nulla
-      return Promise.resolve(null);
-    }
+        logout().catch(() => {
+          if(process.env.NODE_ENV === "development") {
+            console.log("Fail to logout relogin");
+          }
+        }).finally(() => {
+          login(email, password, fingerprint).then(result => {
+            return reAuthorize(result).then((auth) => {
+              return resolve({ ...result, verified_at: auth.user.email_verified_at });
+            });
+          })
+        })
+      } else {
+        // Autorizzato non faccio nulla
+        return resolve(null);
+      }
+    })
   })
 }
 
