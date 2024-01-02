@@ -31,7 +31,8 @@ export default function searchRoute() {
               <head> {styles} </head>
               <searchTemplate>
                 <searchField
-                  ref={node => (this.searchField = node)}
+                  id='searchField'
+                  //ref={node => (this.searchField = node)}
                   showSpinner={this.state.loading ? 'true' : undefined}
                 />
                 <collectionList>
@@ -110,7 +111,9 @@ export default function searchRoute() {
         },
 
         componentDidMount() {
-          const keyboard = this.searchField.getFeature('Keyboard');
+          const currentDocument = this._rootNode.ownerDocument;
+          console.log('document', currentDocument)
+          const keyboard = currentDocument.getElementById('searchField').getFeature('Keyboard');
 
           keyboard.onTextChange = () => {
             let error = new Error(keyboard.text);
