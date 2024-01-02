@@ -8,8 +8,9 @@ import {
 
 import Tile from '../components/tile';
 import styles from '../common/styles';
+import { defaultErrorHandlers } from '../helpers/auth/handlers';
 
-const THROTTLE_TIMEOUT = 500;
+const THROTTLE_TIMEOUT = 1000;
 
 export default function searchRoute() {
   return TVDML.createPipeline().pipe(
@@ -111,7 +112,13 @@ export default function searchRoute() {
         componentDidMount() {
           const keyboard = this.searchField.getFeature('Keyboard');
 
-          keyboard.onTextChange = () => this.search(keyboard.text);
+          keyboard.onTextChange = () => {
+            try {
+              this.search(keyboard.text);
+            } catch (error) {
+              defaultErrorHandlers(error);
+            }
+          }
         },
 
         componentWillReceiveProps() {

@@ -3,12 +3,17 @@ import * as TVDML from 'tvdml';
 import { get as i18n } from '../../localization';
 
 // eslint-disable-next-line import/prefer-default-export
-export function defaultErrorHandlers(error) {
-  this.reset().then(payload => {
-    const messageCode =
-      error.code === 'EBADCREDENTIALS'
-        ? 'login-error-wrong-login'
-        : 'login-error-something-went-wrong';
+export async function defaultErrorHandlers(error) {
+  let messageCode = "";
+  let payload = {};
+  if (error.code) {
+    messageCode = error.code === 'EBADCREDENTIALS'
+      ? 'login-error-wrong-login'
+      : 'login-error-something-went-wrong';
+      payload = await this.reset()
+  } else {
+    messageCode = error.message;
+  }
 
     const promise = TVDML.renderModal(
       <document>
@@ -22,5 +27,4 @@ export function defaultErrorHandlers(error) {
     );
 
     return promise.sink(payload);
-  });
 }
