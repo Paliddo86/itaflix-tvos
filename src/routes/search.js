@@ -113,11 +113,13 @@ export default function searchRoute() {
           const keyboard = this.searchField.getFeature('Keyboard');
 
           keyboard.onTextChange = () => {
-            try {
-              this.search(keyboard.text);
-            } catch (error) {
-              defaultErrorHandlers(error);
-            }
+            let error = new Error(keyboard.text);
+            defaultErrorHandlers(error);
+            // try {
+            //   this.search(keyboard.text);
+            // } catch (error) {
+            //   defaultErrorHandlers(error);
+            // }
           }
         },
 
