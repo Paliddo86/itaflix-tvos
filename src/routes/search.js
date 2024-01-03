@@ -8,7 +8,6 @@ import {
 
 import Tile from '../components/tile';
 import styles from '../common/styles';
-import { defaultErrorHandlers } from '../helpers/auth/handlers';
 
 const THROTTLE_TIMEOUT = 1000;
 
@@ -31,8 +30,7 @@ export default function searchRoute() {
               <head> {styles} </head>
               <searchTemplate>
                 <searchField
-                  id='searchField'
-                  //ref={node => (this.searchField = node)}
+                  ref={node => (this.searchField = node)}
                   showSpinner={this.state.loading ? 'true' : undefined}
                 />
                 <collectionList>
@@ -111,18 +109,10 @@ export default function searchRoute() {
         },
 
         componentDidMount() {
-          const currentDocument = this._rootNode.ownerDocument;
-          console.log('document', currentDocument)
-          const keyboard = currentDocument.getElementById('searchField').getFeature('Keyboard');
+          const keyboard = this.searchField.getFeature('Keyboard');
 
           keyboard.onTextChange = () => {
-            let error = new Error(keyboard.text);
-            defaultErrorHandlers(error);
-            // try {
-            //   this.search(keyboard.text);
-            // } catch (error) {
-            //   defaultErrorHandlers(error);
-            // }
+            this.search(keyboard.text);
           }
         },
 
