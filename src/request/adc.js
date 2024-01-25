@@ -14,8 +14,8 @@ const { SD, HD, FULLHD, UHD } = settings.values[VIDEO_QUALITY];
 const { LOCALIZATION, SUBTITLES } = settings.values[TRANSLATION];
 
 const TOP_SHELF_MIN_ITEMS = 4;
-const HOST = 'https://altadefinizione-originale.online';
-const ONLY_HOST = 'altadefinizione-originale.online';
+const HOST = 'https://altadefinizione-originale.com';
+const ONLY_HOST = 'altadefinizione-originale.com';
 const API_URL = `${HOST}/api`;
 
 function getLatest(tvshows, count = 10) {
