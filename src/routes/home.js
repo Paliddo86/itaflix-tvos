@@ -40,10 +40,6 @@ export default function homeRoute() {
                     width="200"
                     height="75"
                   />
-                  <title style="tv-align:center;tv-position:top">
-                    {i18n('home-caption')}
-                  </title>
-                  <description>{i18n('home-desc')}</description>
                 </banner>
                 <collectionList>
                   {this.renderMoviesUpdate()}
