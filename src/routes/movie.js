@@ -99,6 +99,7 @@ export default function movieRoute() {
               loading: true,
               watching: false,
               continueWatching: false,
+              error: null
             };
           },
 
@@ -143,7 +144,9 @@ export default function movieRoute() {
                   this.setState({ loading: false });
                 }
               },
-            );
+            ).catch(error => {
+              this.setState({ loading: false, error });
+            });
           },
 
           componentWillUnmount() {
@@ -212,6 +215,20 @@ export default function movieRoute() {
             if (this.state.loading) {
               return (
                 <Loader title={this.props.title} />
+              );
+            }
+            if (this.state.error) {
+              return (
+                TVDML.renderModal(
+                  <document>
+                    <alertTemplate>
+                      <title>{this.state.error.toString()}</title>
+                      <button onSelect={TVDML.removeModal}>
+                        <text>Ok</text>
+                      </button>
+                    </alertTemplate>
+                  </document>,
+                )
               );
             }
             return (
