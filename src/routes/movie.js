@@ -168,7 +168,7 @@ export default function movieRoute() {
             }
 
             return Promise.all([
-              getMovieDescription(sid),
+              getMovieDescription(slug),
               getRelated(slug),
               getCollection(collection_slug),
               preferred()
