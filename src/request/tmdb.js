@@ -2,7 +2,7 @@ import * as request from '../request';
 
 const HOST = 'https://api.themoviedb.org';
 const API_URL = `${HOST}/3`;
-const API_KEY = 'fdecbcda829d6945e9a630936a2294c6';
+const API_KEY = 'eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI1YTc1YjkwZmI1MjZjODdjMWYyNzQzNzUxY2VkMDA3YyIsIm5iZiI6MTcxOTMzNzE3OS44Mjk1ODMsInN1YiI6IjYxYzg3NDUyMDEwMmM5MDAxZDI1ZTg2YiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.OU8exXTrFiU_zopZSx5HfmIif9mB--KGVfdgiarmXCU';
 const TMDB_IMAGE_SRC = 'https://image.tmdb.org/t/p/';
 
 // TODO TMDB STATUS
