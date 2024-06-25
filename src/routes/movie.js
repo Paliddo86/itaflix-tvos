@@ -245,8 +245,8 @@ export default function movieRoute() {
           },
 
           playMovie() {
-            const { slug, poster } = this.props;
-            const { overview } = this.state.tmdb;
+            const { slug, poster, plot} = this.props;
+            // const { overview } = this.state.tmdb;
 
             // const {episodes, translation } = this.state;
 
@@ -461,7 +461,7 @@ export default function movieRoute() {
               let movie = {
                 id,
                 title,
-                description: overview,
+                description: plot,
                 streams,
                 artworkImageURL: backdrop_url || poster_url || poster,
                 resumeTime: 0
@@ -510,7 +510,7 @@ export default function movieRoute() {
 
           renderInfo() {
 
-            const { title, year, quality, plot: overview} = this.state.movie;
+            const { title, year, quality, plot} = this.state.movie;
             
             const isPreferred = this.state.isPreferred;
 
@@ -603,9 +603,9 @@ export default function movieRoute() {
               <stack>
                 <title>{title}</title>
                 <row>
-                  <ratingBadge value={rating / 10} />
+                  <ratingBadge value={0 / 10} />
                   <text>{`${i18n('tvshow-information-year').toUpperCase()}: ${year}`}</text>
-                  <text>{`${i18n('movie-information-runtime').toUpperCase()}: ${moment.duration(+runtime, 'minutes').humanize()}`}</text>
+                  <text>{`${i18n('movie-information-runtime').toUpperCase()}: ${moment.duration(0, 'minutes').humanize()}`}</text>
                 </row>
                 <description
                   allowsZooming="true"
@@ -818,7 +818,7 @@ export default function movieRoute() {
 
           onShowFullDescription() {
             const title = i18n('tvshow-title', this.state.movie);
-            const { overview: description } = this.state.tmdb;
+            const { plot: description } = this.state.movie;
 
             TVDML.renderModal(
               <document>
