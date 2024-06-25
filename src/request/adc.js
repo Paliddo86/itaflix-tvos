@@ -492,7 +492,7 @@ export function getTVShowDescription(sid) {
 }
 
 export function getMovieDescription(sid) {
-  return get(`${API_URL}/posts/id/${sid}`).then(response => { return { result: response.post } });
+  return get(`${API_URL}/posts/slug/${sid}`).then(response => { return { result: response.post } });
 }
 
 export function getCountriesList() {
