@@ -169,7 +169,6 @@ export default function movieRoute() {
 
             return Promise.all([
               getMovieDescription(sid),
-              getTmdbMovieDetails(tmdb_id, imdb_id),
               getRelated(slug),
               getCollection(collection_slug),
               preferred()
@@ -177,7 +176,6 @@ export default function movieRoute() {
               .then(payload => {
                 const [
                   movieResponse,
-                  tmdbMovieResponse,
                   recomendations,
                   collection,
                   isPreferred
@@ -185,7 +183,7 @@ export default function movieRoute() {
 
                 return {
                   movie: movieResponse.result, 
-                  tmdb: tmdbMovieResponse,
+                  tmdb: null,
                   recomendations: recomendations.relatedData,
                   collection: collection.collectionData,
                   isPreferred
@@ -483,7 +481,7 @@ export default function movieRoute() {
 
           renderStatus() {
             const { categories_ids } = this.state.movie;
-            const { status } = this.state.tmdb;
+            //const { status } = this.state.tmdb;
 
             return (
               <infoList>
@@ -492,7 +490,7 @@ export default function movieRoute() {
                     <title>{i18n('movie-status')}</title>
                   </header>
                   <text>
-                    {i18n(tmdbTVShowStatusStrings[status])}
+                    non disponibile
                   </text>
                 </info>
                 <info>
@@ -512,12 +510,8 @@ export default function movieRoute() {
 
           renderInfo() {
 
-            const { title, year, quality } = this.state.movie;
-            const { 
-              overview: description, 
-              vote_average: rating,
-              runtime
-            } = this.state.tmdb;
+            const { title, year, quality, plot: overview} = this.state.movie;
+            
             const isPreferred = this.state.isPreferred;
 
             // const hasTrailers = !!this.state.trailers.length;
