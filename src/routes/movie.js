@@ -135,6 +135,7 @@ export default function movieRoute() {
             Promise.all([this.loadData(), waitForAnimations]).then(
               ([payload]) => {
                 this.setState(payload);
+                this.setState({ loading: false });
                 if (
                   this.props.continueWatchingAndPlay &&
                   this.canContinueWatching()
@@ -145,7 +146,7 @@ export default function movieRoute() {
                 }
               },
             ).catch(error => {
-              this.setState({ loading: false, error });
+              this.setState({ loading: false });
             });
           },
 
