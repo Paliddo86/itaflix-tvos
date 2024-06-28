@@ -487,12 +487,12 @@ export function getMoviesByGenre(genre, page = 1) {
   });
 }
 
-export function getTVShowDescription(sid) {
-  return get(`${API_URL}/posts/id/${sid}`).then(response => { return { result: response.post } });
+export function getTVShowDescription(slug) {
+  return get(`${API_URL}/posts/slug/${slug}`).then(response => { return { result: response.post } });
 }
 
-export function getMovieDescription(sid) {
-  return get(`${API_URL}/posts/id/${sid}`).then(response => { return { result: response.post } });
+export function getMovieDescription(slug) {
+  return get(`${API_URL}/posts/slug/${slug}`).then(response => { return { result: response.post } });
 }
 
 export function getCountriesList() {

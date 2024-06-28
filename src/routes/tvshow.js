@@ -48,11 +48,6 @@ import {
 import Tile from '../components/tile';
 import Loader from '../components/loader';
 import Authorize from '../components/authorize';
-import { 
-  getTmdbShowDetails, 
-  tmdbTVShowStatusStrings,
-  getTmdbImageUrl
-} from '../request/tmdb';
 
 const { VIDEO_QUALITY } = settings.params;
 const { UHD } = settings.values[VIDEO_QUALITY];
@@ -155,13 +150,20 @@ export default function tvShowRoute() {
           shouldComponentUpdate: deepEqualShouldUpdate,
 
           loadData() {
-            const { sid, slug, tmdb_id, imdb_id } = this.props;
+            const { sid, slug } = this.props;
+
+            const preferred = () => {
+              return checkSession().then(payload => {
+                if(payload) user.set({...payload});
+                return isPreferred(sid);
+              })
+            }
+
             return Promise.all([
-              getTVShowDescription(sid),
-              getTmdbShowDetails(tmdb_id, imdb_id),
+              getTVShowDescription(slug),
               getTVShowSeasons(slug),
               getRelated(slug),
-              isPreferred(sid)
+              preferred
               // getCountriesList(),
               // getTVShowSchedule(sid),
               //getTVShowRecommendations(sid),
@@ -169,7 +171,6 @@ export default function tvShowRoute() {
               .then(payload => {
                 const [
                   tvshowResponse,
-                  tmdbShowResponse,
                   seasons,
                   recomendations,
                   isPreferred
@@ -177,37 +178,17 @@ export default function tvShowRoute() {
 
                 return {
                   tvshow: tvshowResponse.result, 
-                  tmdb: tmdbShowResponse,
                   seasons,
                   recomendations: recomendations.relatedData,
                   isPreferred
                 };
-
-              //   return Promise.all([
-              //     tvshow.reviews > 0 ? getTVShowReviews(sid) : [],
-              //     tvshow.trailers > 0 ? getTVShowTrailers(sid) : [],
-              //   ]).then(([reviews, trailers]) => ({
-              //     tvshow,
-              //     reviews,
-              //     seasons,
-              //     schedule,
-              //     trailers,
-              //     contries,
-              //     recomendations,
-              //   }));
-              // })
-              // .then(payload => ({
-              //   likes: +payload.tvshow.likes,
-              //   watching: payload.tvshow.watching > 0,
-              //   continueWatching: !!this.getSeasonToWatch(payload.seasons),
-              //   ...payload,
               });
           },
 
           render() {
             if (this.state.loading) {
               return (
-                <Loader title={this.props.title} heroImg={this.props.poster} />
+                <Loader title={this.props.title} heroImg={this.props.poster.split("?")[0]} />
               );
             }
             return (
@@ -229,18 +210,9 @@ export default function tvShowRoute() {
 
           renderStatus() {
             const { categories_ids } = this.state.tvshow;
-            const { status } = this.state.tmdb;
 
             return (
               <infoList>
-                <info>
-                  <header>
-                    <title>{i18n('tvshow-status')}</title>
-                  </header>
-                  <text>
-                    {i18n(tmdbTVShowStatusStrings[status])}
-                  </text>
-                </info>
                 <info>
                   <header>
                     <title>{i18n('tvshow-genres')}</title>
@@ -258,16 +230,8 @@ export default function tvShowRoute() {
 
           renderInfo() {
 
-            const { title, year, quality } = this.state.tvshow;
-            const { 
-              overview: description, 
-              vote_average: rating,
-              episode_run_time,
-              last_episode_to_air
-            } = this.state.tmdb;
+            const { title, year, quality, rating, plot: description, runtime: episodeRuntime } = this.state.tvshow;
             const isPreferred = this.state.isPreferred
-
-            const episodeRuntime = episode_run_time[0] || last_episode_to_air.runtime;
             // const hasTrailers = !!this.state.trailers.length;
             // const hasMultipleTrailers = this.state.trailers.length > 1;
 
@@ -383,13 +347,6 @@ export default function tvShowRoute() {
           },
 
           renderSeasons() {
-            const { seasons: origTmdbSeasons } = this.state.tmdb;
-            const tmdbSeasons = {};
-            origTmdbSeasons.forEach(elem => {
-              if (elem.season_number === 0) return;
-              tmdbSeasons[elem.season_number] = elem;
-            });
-
             const {sid, slug, tmdb_id, poster, imdb_id } = this.props;
             const seasons = this.state.seasons;
             const title = i18n('tvshow-title', this.state.tvshow);
@@ -423,9 +380,8 @@ export default function tvShowRoute() {
                 </header>
                 <section>
                   {seasons.map((season, i) => {
-                    const hasTmdbSeasons = Object.keys(tmdbSeasons).length === seasons.length ? true : false;
                     const seasonId = season.seasonId || season.season_number || i +1;
-                    let seasonPoster = hasTmdbSeasons && tmdbSeasons[seasonId] ? getTmdbImageUrl(tmdbSeasons[seasonId].poster_path) : poster;
+                    let seasonPoster = poster;
 
                     // const {
                     //   season: i,
@@ -505,7 +461,6 @@ export default function tvShowRoute() {
                       poster: seasonPoster,
                       id: seasonId,
                       title,
-                      hasTmdbSeasons
                     };
                     return (
                       <Tile
@@ -517,7 +472,6 @@ export default function tvShowRoute() {
                         isWatched={isWatched}
                         isUHD={false}
                         payload={payload}
-                        isTmdbPoster={hasTmdbSeasons}
                         // eslint-disable-next-line react/jsx-no-bind
                         onHoldselect={this.onSeasonOptions.bind(
                           ...[this, payload.id, payload.title, payload.season, payload.tmdb_id, payload.imdb_id, isWatched],
@@ -880,7 +834,7 @@ export default function tvShowRoute() {
 
           onShowFullDescription() {
             const title = i18n('tvshow-title', this.state.tvshow);
-            const { overview: description } = this.state.tmdb;
+            const { plot: description } = this.state.tvshow;
 
             TVDML.renderModal(
               <document>
