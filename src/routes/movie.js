@@ -47,10 +47,6 @@ import {
 import Tile from '../components/tile';
 import Loader from '../components/loader';
 import Authorize from '../components/authorize';
-import { 
-  tmdbTVShowStatusStrings,
-  getTmdbMovieDetails
-} from '../request/tmdb';
 
 const MARK_AS_WATCHED_PERCENTAGE = 90;
 const SHOW_RATING_PERCENTAGE = 50;
@@ -159,7 +155,7 @@ export default function movieRoute() {
           shouldComponentUpdate: deepEqualShouldUpdate,
 
           loadData() {
-            const { sid, slug, tmdb_id, imdb_id, collection_slug } = this.props;
+            const { sid, slug, collection_slug } = this.props;
 
             const preferred = () => {
               return checkSession().then(payload => {
@@ -169,6 +165,7 @@ export default function movieRoute() {
             }
 
             return Promise.all([
+              getMovieDescription(slug),
               getMovieDescription(slug),
               getRelated(slug),
               getCollection(collection_slug),
@@ -184,30 +181,10 @@ export default function movieRoute() {
 
                 return {
                   movie: movieResponse.result, 
-                  tmdb: null,
                   recomendations: recomendations.relatedData,
                   collection: collection.collectionData,
                   isPreferred
                 };
-
-              //   return Promise.all([
-              //     tvshow.reviews > 0 ? getTVShowReviews(sid) : [],
-              //     tvshow.trailers > 0 ? getTVShowTrailers(sid) : [],
-              //   ]).then(([reviews, trailers]) => ({
-              //     tvshow,
-              //     reviews,
-              //     seasons,
-              //     schedule,
-              //     trailers,
-              //     contries,
-              //     recomendations,
-              //   }));
-              // })
-              // .then(payload => ({
-              //   likes: +payload.tvshow.likes,
-              //   watching: payload.tvshow.watching > 0,
-              //   continueWatching: !!this.getSeasonToWatch(payload.seasons),
-              //   ...payload,
               });
           },
           render() {
@@ -246,10 +223,8 @@ export default function movieRoute() {
           },
 
           playMovie() {
-            const { slug, poster, plot} = this.props;
-            // const { overview } = this.state.tmdb;
-
-            // const {episodes, translation } = this.state;
+            const { slug, poster } = this.props;
+            const { plot: overview } = this.state.movie;
 
             const player = new Player();
 
@@ -268,14 +243,6 @@ export default function movieRoute() {
                 if (!currentMediaItem.duration) {
                   currentMediaItem.duration = currentMediaItemDuration;
                 }
-
-                // const [, , currentEpisodeNumber] = currentMediaItem.id.split(
-                //   '-',
-                // );
-                // const currentEpisode = getEpisode(
-                //   currentEpisodeNumber,
-                //   episodes,
-                // );
 
                 const watchedPercent = (time * 100) / currentMediaItemDuration;
                 const passedBoundary =
@@ -482,18 +449,10 @@ export default function movieRoute() {
 
           renderStatus() {
             const { categories_ids } = this.state.movie;
-            //const { status } = this.state.tmdb;
+
 
             return (
               <infoList>
-                <info>
-                  <header>
-                    <title>{i18n('movie-status')}</title>
-                  </header>
-                  <text>
-                    non disponibile
-                  </text>
-                </info>
                 <info>
                   <header>
                     <title>{i18n('movie-genres')}</title>
@@ -511,8 +470,7 @@ export default function movieRoute() {
 
           renderInfo() {
 
-            const { title, year, quality, plot} = this.state.movie;
-            
+            const { title, year, quality, rating, plot, runtime } = this.state.movie;
             const isPreferred = this.state.isPreferred;
 
             // const hasTrailers = !!this.state.trailers.length;
@@ -616,7 +574,7 @@ export default function movieRoute() {
                     tv-text-max-lines: 2;
                   `}
                 >
-                  {description}
+                  {plot}
                 </description>
                 {buttons}
               </stack>

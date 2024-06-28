@@ -1,9 +1,8 @@
 /* global Player Playlist */
 
-import moment from 'moment';
 import * as TVDML from 'tvdml';
 
-import { getStartParams, createMediaItem, createMediaItems } from '../utils';
+import { getStartParams, createMediaItems } from '../utils';
 import { processEntitiesInString } from '../utils/parser';
 import { deepEqualShouldUpdate } from '../utils/components';
 
@@ -14,15 +13,9 @@ import { get as i18n } from '../localization';
 
 import {
   localization,
-  mediaQualities,
   mediaLocalizations,
   addToMyTVShows,
-  saveElapsedTime,
   getMediaStream,
-  getEpisodeMedia,
-  getTVShowSeason,
-  getTVShowSchedule,
-  getTVShowDescription,
   markEpisodeAsWatched,
   markEpisodeAsUnwatched,
   rateEpisode,
@@ -33,7 +26,6 @@ import Loader from '../components/loader';
 
 import hand from '../assets/icons/hand.png';
 import hand2x from '../assets/icons/hand@2x.png';
-import { getTmdbImageUrl, getTmdbShowSeasonDetail } from '../request/tmdb';
 
 const MARK_AS_WATCHED_PERCENTAGE = 90;
 const SHOW_RATING_PERCENTAGE = 50;
@@ -46,9 +38,9 @@ const { LOCALIZATION, SUBTITLES } = settings.values[TRANSLATION];
 
 const translationOrder = [LOCALIZATION, SUBTITLES];
 
-function getEpisodeItem(slug, seasonId, episodeId, poster, tmdbEpisode) {
-  const name = tmdbEpisode ? tmdbEpisode.name : "";
-  const overview = tmdbEpisode ? tmdbEpisode.overview : "";
+function getEpisodeItem(slug, seasonId, episodeId, poster) {
+  const name = "";
+  const overview = "";
 
   const grabMediaData = () => {
     return getMediaStream(slug, seasonId - 1, episodeId).then((response) => {
@@ -223,35 +215,9 @@ export default function seasonRoute() {
           shouldComponentUpdate: deepEqualShouldUpdate,
 
           loadData() {
-            const { id, tmdb_id, imdb_id, hasTmdbSeasons, season } = this.props;
             const { extended, translation, highlightEpisode } = this.state;
 
-            if (hasTmdbSeasons) {
-              return Promise.all([
-                getTmdbShowSeasonDetail(tmdb_id, id, imdb_id),
-                // getTVShowSeason(sid, id),
-                // getTVShowDescription(sid),
-              ])
-                .then(([tmdbSeason]) => {
-                  // const episodes = season ? season.episodes : [];
-                  // const firstUnwatchedEp = episodes.find(
-                  //   ({ watched }) => !watched,
-                  // );
-                  // const firstUnwatchedEpNumber = (firstUnwatchedEp || {}).episode;
-  
-                  // const highlight = highlightEpisode || firstUnwatchedEpNumber;
-  
-                  return {
-                    tmdbEpisodes: tmdbSeason.episodes,
-                    translation,
-                    highlightEpisode: 0,
-                    episodesHasSubtitles: false,
-                  };
-                });
-            }
-
             return {
-              tmdbEpisodes: [],
               translation,
               highlightEpisode: 0,
               episodesHasSubtitles: false,
@@ -282,7 +248,6 @@ export default function seasonRoute() {
             }
 
             const {
-              tmdbEpisodes,
               translation,
               highlightEpisode,
               episodesHasSubtitles,
@@ -408,8 +373,7 @@ export default function seasonRoute() {
                         //   );
                         // }
 
-                        const foundTmdb = tmdbEpisodes[index] ? true : false;
-                        const episodePoster = foundTmdb ? getTmdbImageUrl(tmdbEpisodes[index].still_path, true) : poster;
+                        const episodePoster = poster;
 
                         // const file = getEpisodeMedia(episode, translation);
                         // const mqCode = file && mediaQualities[file.quality];
@@ -422,8 +386,8 @@ export default function seasonRoute() {
 
                         const highlight = index === highlightEpisode;
 
-                        const epTitle = foundTmdb ? tmdbEpisodes[index].name : i18n('episode-number', {epLabel: episode.label || ""});
-                        const description = foundTmdb ? tmdbEpisodes[index].overview : "";
+                        const epTitle = i18n('episode-number', {epLabel: episode.label || ""});
+                        const description = "";
 
                         const epId = `eid-${index}`;
 
@@ -467,7 +431,7 @@ export default function seasonRoute() {
                             onHoldselect={onSelectDesc}
                             autoHighlight={highlight ? 'true' : undefined}
                           >
-                            <ordinal minLength="3">{foundTmdb ? tmdbEpisodes[index].episode_number : episode.label}</ordinal>
+                            <ordinal minLength="3">{episode.label}</ordinal>
                             <title class="title">{epTitle}</title>
                             {episode.is_new && <decorationLabel>
                               <text>{i18n('tvshow-new')}</text>
@@ -478,7 +442,7 @@ export default function seasonRoute() {
                                 <row class="controls_container">
                                   <ratingBadge
                                     style="tv-rating-style: star-l"
-                                    value={foundTmdb ? tmdbEpisodes[index].vote_average : 1 / 10}
+                                    value={1 / 10}
                                   />
                                 </row>
                                 <description class="item-desc">
@@ -759,8 +723,7 @@ export default function seasonRoute() {
             //const episode = getEpisode(episodeNumber, episodes);
 
             // Loading initial episode and starting playback.
-            const {tmdbEpisodes} = this.state
-            getEpisodeItem(slug, seasonId, episodeNumber, poster , tmdbEpisodes[episodeNumber])
+            getEpisodeItem(slug, seasonId, episodeNumber, poster)
               .then(episode => {
                 let videoQuality = settings.getPreferredVideoQuality();
                 return createMediaItems(episode, videoQuality);
