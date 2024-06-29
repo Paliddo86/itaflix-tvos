@@ -166,7 +166,6 @@ export default function movieRoute() {
 
             return Promise.all([
               getMovieDescription(slug),
-              getMovieDescription(slug),
               getRelated(slug),
               getCollection(collection_slug),
               preferred()
@@ -562,9 +561,9 @@ export default function movieRoute() {
               <stack>
                 <title>{title}</title>
                 <row>
-                  <ratingBadge value={0 / 10} />
+                  <ratingBadge value={rating / 10} />
                   <text>{`${i18n('tvshow-information-year').toUpperCase()}: ${year}`}</text>
-                  <text>{`${i18n('movie-information-runtime').toUpperCase()}: ${moment.duration(0, 'minutes').humanize()}`}</text>
+                  <text>{`${i18n('movie-information-runtime').toUpperCase()}: ${moment.duration(+runtime, 'minutes').humanize()}`}</text>
                 </row>
                 <description
                   allowsZooming="true"
