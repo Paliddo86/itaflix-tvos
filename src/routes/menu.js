@@ -94,11 +94,11 @@ export default function menuRoute(items) {
                         // eslint-disable-next-line no-mixed-operators
                         autoHighlight={(!rendered && isActive) || undefined}
                       >
-                        <title>{localization.get(`menu-${route}`)}</title>
+                        <title style="tv-highlight-color:rgb(255,255,255)">{localization.get(`menu-${route}`)}</title>
                       </menuItem>
                     );
                   })}
-                  <menuItem style="tv-highlight-color:rgb(255,0)" key="nickname" route="user">
+                  <menuItem style="tv-highlight-color:rgb(255,0,0)" key="nickname" route="user">
                     {authorized ? (
                       <title>
                         <title>{localization.get('menu-account-auth')}</title>
