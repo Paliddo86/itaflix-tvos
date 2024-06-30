@@ -223,7 +223,7 @@ export default function movieRoute() {
 
           playMovie() {
             const { slug, poster } = this.props;
-            const { plot: overview } = this.state.movie;
+            const { plot } = this.state.movie;
 
             const player = new Player();
 
@@ -435,7 +435,6 @@ export default function movieRoute() {
               }
                 let videoQuality = settings.getPreferredVideoQuality();
                 let movieMediaItem =  createMediaItems(movie, videoQuality);
-
                 player.playlist.push(movieMediaItem);
                 player.play();
             }
