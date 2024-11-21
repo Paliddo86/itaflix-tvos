@@ -14,8 +14,8 @@ const { SD, HD, FULLHD, UHD } = settings.values[VIDEO_QUALITY];
 const { LOCALIZATION, SUBTITLES } = settings.values[TRANSLATION];
 
 const TOP_SHELF_MIN_ITEMS = 4;
-const HOST = 'https://altadefinizionepremium.net';
-const ONLY_HOST = 'altadefinizionepremium.net';
+const HOST = 'https://altadefinizioneapp.com';
+const ONLY_HOST = 'altadefinizioneapp.com';
 const API_URL = `${HOST}/api`;
 
 function getLatest(tvshows, count = 10) {
