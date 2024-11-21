@@ -1,6 +1,6 @@
 {
   "name": "itaflix-tvos",
-  "version": "2.3.4",
+  "version": "2.3.5",
   "description": "tvOS app for itaflix service",
   "main": "src",
   "engine-strict": true,
