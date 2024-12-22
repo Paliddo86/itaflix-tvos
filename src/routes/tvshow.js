@@ -96,7 +96,6 @@ export default function tvShowRoute() {
               continueWatching: false,
             };
           },
-
           componentDidMount() {
             const setState = this.setState.bind(this);
 
@@ -163,7 +162,7 @@ export default function tvShowRoute() {
               getTVShowDescription(slug),
               getTVShowSeasons(slug),
               getRelated(slug),
-              preferred
+              preferred()
               // getCountriesList(),
               // getTVShowSchedule(sid),
               //getTVShowRecommendations(sid),
