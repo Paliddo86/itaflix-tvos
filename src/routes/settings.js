@@ -4,10 +4,10 @@ import * as user from '../user';
 import * as settings from '../settings';
 import * as localization from '../localization';
 
-import { link, getStartParams } from '../utils';
+import { getStartParams } from '../utils';
 import { deepEqualShouldUpdate } from '../utils/components';
 
-import { version } from '../request/adc';
+import { version } from '../helpers/constants';
 
 import poster from '../assets/img/poster.png';
 
@@ -201,18 +201,6 @@ export default function settingsRoute() {
                         )}
                       </listItemLockup>
                     ))}
-                  </section>
-                  <section>
-                    <header>
-                      <title>{i18n('settings-titles-network')}</title>
-                    </header>
-                    <listItemLockup
-                      class="item"
-                      onSelect={link('speedtest')}
-                      disabled={!(authorized && extended)}
-                    >
-                      <title>{i18n('settings-labels-speedtest')}</title>
-                    </listItemLockup>
                   </section>
                   <section>
                     <header>

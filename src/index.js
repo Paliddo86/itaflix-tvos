@@ -8,23 +8,17 @@ import { get as i18n } from './localization';
 import { checkSession, getUiData } from './request/adc';
 import { getOpenURLParams } from './utils';
 
-import myRoute from './routes/my';
-import tvShows from './routes/tvshows';
-import movies from './routes/movies';
 import menuRoute from './routes/menu';
+import myRoute from './routes/my';
 import userRoute from './routes/user';
-import actorRoute from './routes/actor';
 import seasonRoute from './routes/season';
 import tvShowRoute from './routes/tvshow';
 import searchRoute from './routes/search';
-import genresRoute from './routes/genres';
 import moviesGenresRoute from './routes/moviesGenres';
 import settingsRoute from './routes/settings';
-import speedTestRoute from './routes/speedtest';
 import movieRoute from './routes/movie';
-import homeRoute from './routes/home';
 import tvShowsGenresRoute from './routes/tvShowsGenres';
-import myRecomendations from './routes/recomendations';
+import homeRoute from './routes/home';
 
 import { AUTH, BASIC, GUEST } from './routes/menu/constants';
 
@@ -76,18 +70,6 @@ TVDML.handleRoute('main').pipe(
       active: AUTH,
       active: GUEST,
     },
-    // {
-    //   route: 'movies',
-    //   active: GUEST,
-    // },
-    // {
-    //   route: 'tvshows',
-    //   active: GUEST,
-    // },
-    // {
-    //   route: 'recomendations',
-    //   hidden: [GUEST, BASIC],
-    // },
     {
       route: 'moviesGenres',
     },
@@ -105,10 +87,6 @@ TVDML.handleRoute('main').pipe(
 
 TVDML.handleRoute('my').pipe(myRoute());
 
-TVDML.handleRoute('tvshows').pipe(tvShows());
-
-TVDML.handleRoute('movies').pipe(movies());
-
 TVDML.handleRoute('search').pipe(searchRoute());
 
 TVDML.handleRoute('settings').pipe(settingsRoute());
@@ -119,18 +97,11 @@ TVDML.handleRoute('movie').pipe(movieRoute());
 
 TVDML.handleRoute('season').pipe(seasonRoute());
 
-TVDML.handleRoute('actor').pipe(actorRoute());
-
-TVDML.handleRoute('speedtest').pipe(speedTestRoute());
-
 TVDML.handleRoute('user').pipe(userRoute());
 
 TVDML.handleRoute('moviesGenres').pipe(moviesGenresRoute());
 
 TVDML.handleRoute('tvShowsGenres').pipe(tvShowsGenresRoute());
 
-//TVDML.handleRoute('genres').pipe(genresRoute());
-
 TVDML.handleRoute('home').pipe(homeRoute());
 
-//TVDML.handleRoute('recomendations').pipe(myRecomendations());

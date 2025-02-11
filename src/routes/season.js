@@ -14,7 +14,6 @@ import { get as i18n } from '../localization';
 import {
   localization,
   mediaLocalizations,
-  addToMyTVShows,
   getMediaStream,
   markEpisodeAsWatched,
   markEpisodeAsUnwatched,
@@ -810,7 +809,7 @@ export default function seasonRoute() {
 
             return Promise.all([
               markEpisodeAsWatched(sid, id, episodeNumber),
-              addShowToWatched ? addToMyTVShows(sid) : Promise.resolve(),
+              Promise.resolve(),
             ]).then(TVDML.removeModal);
           },
 

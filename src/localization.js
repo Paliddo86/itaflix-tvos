@@ -2,26 +2,21 @@
 
 import moment from 'moment';
 
-// Loading extra locales
-import 'moment/locale/ru';
-
 import EventBus from './event-bus';
 import * as settings from './settings';
 
 import English from './localization/en';
-import Russian from './localization/ru';
 import Italian from './localization/it';
 
 const bus = new EventBus();
 
 const { LANGUAGE } = settings.params;
-const { AUTO, IT, EN, RU } = settings.values[LANGUAGE];
+const { AUTO, IT, EN } = settings.values[LANGUAGE];
 
 const translations = {
   default: Italian,
   [IT]: Italian,
-  [EN]: English,
-  [RU]: Russian,
+  [EN]: English
 };
 
 export function getSystemLanguage() {

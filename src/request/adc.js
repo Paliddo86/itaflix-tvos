@@ -1,13 +1,12 @@
 /* global Device */
 
-import config from '../../package.json';
-
 import { getFingerprint, getListId, getLoginData, getToken, isAuthorized, set } from '../user';
 import * as request from '../request';
 import * as settings from '../settings';
 import * as topShelf from '../helpers/topShelf';
 import { get as i18n } from '../localization';
 import { isQello, groupSeriesByCategory } from '../utils';
+import { supportUHD } from '../helpers/constants';
 
 const { VIDEO_QUALITY, TRANSLATION } = settings.params;
 const { SD, HD, FULLHD, UHD } = settings.values[VIDEO_QUALITY];
@@ -21,10 +20,6 @@ const API_URL = `${HOST}/api`;
 function getLatest(tvshows, count = 10) {
   return tvshows.sort(({ sid: a }, { sid: b }) => b - a).slice(0, count);
 }
-
-export const supportUHD = Device.productType !== 'AppleTV5,3';
-
-export const version = `v${config.version}`;
 
 export const tvshow = {
   ENDED: 'ended',
@@ -352,67 +347,6 @@ export function logout() {
   return post(`${API_URL}/logout`);
 }
 
-export function getMyTVShows() {
-  return get(`${API_URL}/soap/my/`)
-    .then(...emptyOrErrorsResolvers([]))
-    .then(series => {
-      if (isAuthorized() && !isQello()) {
-        const { unwatched, watched, closed } = groupSeriesByCategory(series);
-        const sections = [];
-
-        if (unwatched.length) {
-          sections.push({
-            id: 'unwatched',
-            title: i18n('my-new-episodes'),
-            items: unwatched.map(topShelf.mapSeries),
-          });
-        }
-
-        if (unwatched.length < TOP_SHELF_MIN_ITEMS && watched.length) {
-          sections.push({
-            id: 'watched',
-            title: i18n('my-watched'),
-            items: watched.map(topShelf.mapSeries),
-          });
-        }
-
-        if (unwatched.length + watched.length < TOP_SHELF_MIN_ITEMS) {
-          if (closed.length) {
-            sections.push({
-              id: 'closed',
-              title: i18n('my-closed'),
-              items: closed.map(topShelf.mapSeries),
-            });
-          }
-        }
-
-        topShelf.set({ sections });
-      }
-
-      return series;
-    });
-}
-
-export function getAllTVShows() {
-  return get(`${API_URL}/soap/`).then(series => {
-    if (!isAuthorized() && !isQello()) {
-      const latest = getLatest(series);
-
-      topShelf.set({
-        sections: [
-          {
-            id: 'latest',
-            title: i18n('search-latest'),
-            items: latest.map(topShelf.mapSeries),
-          },
-        ],
-      });
-    }
-
-    return series;
-  });
-}
-
 export function getAllMovies(page = 1) {
   return get(`${API_URL}/category/film?type=movie&page=${page}`).then(({data}) => {
     topShelf.set({
@@ -495,28 +429,8 @@ export function getMovieDescription(slug) {
   return get(`${API_URL}/posts/slug/${slug}`).then(response => { return { result: response.post } });
 }
 
-export function getCountriesList() {
-  return get(`${API_URL}/soap/countrys/`);
-}
-
-export function getGenresList() {
-  return get(`${API_URL}/soap/genres/`);
-}
-
 export function getTVShowEpisodes(sid) {
   return get(`${API_URL}/episodes/${sid}/`);
-}
-
-export function getMyRecommendations() {
-  return get(`${API_URL}/soap/recommendations/personal/`).then(
-    ...emptyOrErrorsResolvers([]),
-  );
-}
-
-export function getTVShowRecommendations(sid) {
-  return get(`${API_URL}/soap/recommendations/${sid}/`).then(
-    ...emptyOrErrorsResolvers([]),
-  );
 }
 
 export function getTVShowReviews(sid) {
@@ -529,13 +443,6 @@ export function markReviewAsLiked(rid) {
 
 export function markReviewAsDisliked(rid) {
   return post(`${API_URL}/rate/review/${rid}/dislike/`);
-}
-
-export function rateTVShow(sid, rating) {
-  return post(`${API_URL}/rate/soap/${sid}/${rating}/`, {
-    sid,
-    rating,
-  });
 }
 
 export function rateEpisode(sid, season, episode, rating) {
@@ -595,10 +502,6 @@ export function getTVShowSchedule(sid) {
 
 export function getMySchedule() {
   return get(`${API_URL}/shedule/my/`).catch(() => []);
-}
-
-export function getActorInfo(id) {
-  return get(`${API_URL}/soap/person/${id}/`);
 }
 
 export function getEpisodeMedia({ files = [] }, translation) {
@@ -678,14 +581,6 @@ export function getTrailerStream(tid) {
   return post(`${API_URL}/play/trailer/${tid}/`);
 }
 
-export function addToMyTVShows(sid) {
-  return post(`${API_URL}/soap/watch/${sid}/`);
-}
-
-export function removeFromMyTVShows(sid) {
-  return post(`${API_URL}/soap/unwatch/${sid}/`);
-}
-
 export function getSearchResults(query, page = 1) {
   return get(`${API_URL}/search?search=${encodeURIComponent(query)}&page=${page}`).then(response => {
     let moviesFounded = [];
@@ -714,14 +609,6 @@ export function saveElapsedTime(eid, time) {
     eid,
     time,
   });
-}
-
-export function getSpeedTestServers() {
-  return get(`${API_URL}/speedtest/servers/`);
-}
-
-export function saveSpeedTestResults(results) {
-  return post(`${API_URL}/speedtest/save/`, results);
 }
 
 export function getUiData() {

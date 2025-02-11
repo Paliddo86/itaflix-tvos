@@ -1,6 +1,6 @@
 /* eslint camelcase: "off" */
 
-import { supportUHD } from '../request/adc';
+import { supportUHD } from '../helpers/constants';
 
 export default {
   'auth-checking': 'Verifica sottoscrizione...',
@@ -67,7 +67,6 @@ export default {
   'settings-labels-translation': 'Lingua',
   'settings-labels-video_playback': 'Video playback',
   'settings-labels-language': 'Lingua Interfaccia',
-  'settings-labels-speedtest': 'Speed test',
   'settings-labels-version': 'Versione',
 
   'settings-descriptions-video_quality': () =>
@@ -92,43 +91,9 @@ export default {
   'settings-values-ru': 'Русский',
   'settings-values-it': 'Italiano',
 
-  'speedtest-caption': 'Speed test',
-  'speedtest-loading': 'Caricamento dal server...',
-  'speedtest-begin': 'Inizio test',
-  'speedtest-testing': 'Test velocità di downlod...',
-  'speedtest-footnote':
-    'Attendi il risultato altrimenti non verranno applicate le modifiche',
-  'speedtest-error-title': 'Qualcosa è andato storto =(',
-  'speedtest-error-description':
-    'Verifica la connessione ad internet e riprova',
-
-  'speedtest-result': ({ speed }) => `${speed} Mb/s`,
-  'speedtest-result-too-slow': 'Molto lento. Saltato...',
-
-  'speedtest-country-fr': 'France',
-  'speedtest-country-de': 'Germany',
-  'speedtest-country-nl': 'Netherlands',
-  'speedtest-country-ru': 'Russian Federation',
-  'speedtest-country-lt': 'Lithuania',
-  'speedtest-country-by': 'Belarus',
-  'speedtest-country-ca': 'Canada',
-  'speedtest-country-es': 'Spain',
-  'speedtest-country-gb': 'United Kingdom',
-  'speedtest-country-it': 'Italy',
-  'speedtest-country-se': 'Sweden',
-  'speedtest-country-sg': 'Singapore',
-  'speedtest-country-us': 'United States',
-  'speedtest-country-il': 'Israel',
-  'speedtest-country-md': 'Moldova',
-  'speedtest-country-pl': 'Poland',
-  'speedtest-country-at': 'Austria',
-  'speedtest-country-bg': 'Bulgaria',
-  'speedtest-country-cz': 'Czech Republic',
-
   'episode-more': 'Altro',
   'episode-mark-as-watched': 'Setta come visto',
   'episode-mark-as-unwatched': 'Setta come non visto',
-  'episode-speedtest': 'Speed test',
   'episode-rate': 'Vota episodio',
   'episode-rate-title': ({ timeout }) =>
     `Vota episodio${timeout ? ` oppure aspetta ${timeout} secondi.` : ''}`,

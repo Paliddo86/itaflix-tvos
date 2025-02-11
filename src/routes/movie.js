@@ -4,7 +4,6 @@ import moment from 'moment';
 import * as TVDML from 'tvdml';
 
 import * as user from '../user';
-import { processFamilyAccount } from '../user/utils';
 
 import * as settings from '../settings';
 
@@ -31,9 +30,6 @@ import {
   markSeasonAsUnwatched,
   markReviewAsLiked,
   markReviewAsDisliked,
-  addToMyTVShows,
-  removeFromMyTVShows,
-  rateTVShow,
   getRelated,
   getMovieDescription,
   getMovieMediaStream,
@@ -736,13 +732,7 @@ export default function movieRoute() {
                 onError: defaultErrorHandlers,
                 onSuccess: ({ token, till, login }) => {
                   user.set({ token, till, logged: 1 });
-                  processFamilyAccount(login)
-                    .then(this.loadData.bind(this))
-                    .then(payload => {
-                      this.setState(payload);
-                      authHelper.dismiss();
-                      this.onAddToSubscriptions();
-                    });
+                  this.onAddToSubscriptions();
                 },
               });
 
@@ -758,8 +748,6 @@ export default function movieRoute() {
               watching: true,
               likes: this.state.likes + 1,
             });
-
-            return addToMyTVShows(sid);
           },
 
           onRemoveFromSubscription() {
@@ -769,8 +757,6 @@ export default function movieRoute() {
               watching: false,
               likes: this.state.likes - 1,
             });
-
-            return removeFromMyTVShows(sid);
           },
 
           onShowFullDescription() {
@@ -877,20 +863,20 @@ export default function movieRoute() {
           onRateTVShow(rating) {
             const { sid } = this.props;
 
-            return rateTVShow(sid, rating)
-              .then(({ votes: soap_votes, rating: soap_rating }) => ({
-                soap_votes,
-                soap_rating,
-              }))
-              .then(processedRating =>
-                this.setState({
-                  movie: {
-                    ...this.state.movie,
-                    ...processedRating,
-                  },
-                }),
-              )
-              .then(TVDML.removeModal);
+            // return rateTVShow(sid, rating)
+              // .then(({ votes: soap_votes, rating: soap_rating }) => ({
+              //   soap_votes,
+              //   soap_rating,
+              // }))
+              // .then(processedRating =>
+              //   this.setState({
+              //     movie: {
+              //       ...this.state.movie,
+              //       ...processedRating,
+              //     },
+              //   }),
+              // )
+              // .then(TVDML.removeModal);
           },
 
           onMore() {

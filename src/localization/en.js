@@ -1,6 +1,6 @@
 /* eslint camelcase: "off" */
 
-import { supportUHD } from '../request/soap';
+import { supportUHD } from '../helpers/constants';
 
 export default {
   'auth-checking': 'Checking authorization...',
@@ -58,7 +58,6 @@ export default {
   'settings-labels-translation': 'Translation',
   'settings-labels-video_playback': 'Video playback',
   'settings-labels-language': 'Interface language',
-  'settings-labels-speedtest': 'Speed test',
   'settings-labels-version': 'Version',
 
   'settings-descriptions-video_quality': () =>
@@ -82,44 +81,9 @@ export default {
   'settings-values-en': 'English',
   'settings-values-ru': 'Русский',
   'settings-values-it': 'Italian',
-
-  'speedtest-caption': 'Speed test',
-  'speedtest-loading': 'Loading servers info...',
-  'speedtest-begin': 'Begin test',
-  'speedtest-testing': 'Testing download speed...',
-  'speedtest-footnote':
-    'You must wait until the test is over otherwise the results will not be applicable',
-  'speedtest-error-title': 'Something went wrong =(',
-  'speedtest-error-description':
-    'Please check your internet connection and try again',
-
-  'speedtest-result': ({ speed }) => `${speed} Mb/s`,
-  'speedtest-result-too-slow': 'Too slow. Skipped...',
-
-  'speedtest-country-fr': 'France',
-  'speedtest-country-de': 'Germany',
-  'speedtest-country-nl': 'Netherlands',
-  'speedtest-country-ru': 'Russian Federation',
-  'speedtest-country-lt': 'Lithuania',
-  'speedtest-country-by': 'Belarus',
-  'speedtest-country-ca': 'Canada',
-  'speedtest-country-es': 'Spain',
-  'speedtest-country-gb': 'United Kingdom',
-  'speedtest-country-it': 'Italy',
-  'speedtest-country-se': 'Sweden',
-  'speedtest-country-sg': 'Singapore',
-  'speedtest-country-us': 'United States',
-  'speedtest-country-il': 'Israel',
-  'speedtest-country-md': 'Moldova',
-  'speedtest-country-pl': 'Poland',
-  'speedtest-country-at': 'Austria',
-  'speedtest-country-bg': 'Bulgaria',
-  'speedtest-country-cz': 'Czech Republic',
-
   'episode-more': 'More',
   'episode-mark-as-watched': 'Mark as Watched',
   'episode-mark-as-unwatched': 'Mark as Unwatched',
-  'episode-speedtest': 'Speed test',
   'episode-rate': 'Rate episode',
   'episode-rate-title': ({ timeout }) =>
     `Rate episode${timeout ? ` or wait ${timeout} sec.` : ''}`,
