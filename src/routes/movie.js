@@ -189,18 +189,8 @@ export default function movieRoute() {
               );
             }
             if (this.state.error) {
-              return (
-                TVDML.renderModal(
-                  <document>
-                    <alertTemplate>
-                      <title>{this.state.error.toString()}</title>
-                      <button onSelect={TVDML.removeModal}>
-                        <text>Ok</text>
-                      </button>
-                    </alertTemplate>
-                  </document>,
-                )
-              );
+              defaultErrorHandlers(this.state.error);
+              return null;
             }
             return (
               <document>

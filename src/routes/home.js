@@ -1,9 +1,5 @@
 import * as TVDML from 'tvdml';
 
-import {
-  getAllUpdates,
-} from '../request/adc';
-
 import Tile from '../components/tile';
 import styles from '../common/styles';
 
@@ -11,6 +7,8 @@ import { getStartParams } from '../utils';
 import logo from '../assets/img/logo.png';
 import { getHome } from '../request/sc';
 import { defaultErrorHandlers } from '../helpers/auth/handlers';
+import Loader from '../components/loader';
+import { get as i18n } from '../localization';
 
 export default function homeRoute() {
   return TVDML.createPipeline().pipe(
@@ -19,7 +17,7 @@ export default function homeRoute() {
         getInitialState() {
           return {
             value: '',
-            loading: false,
+            loading: true,
             updating: false,
             seriesUpdate: [],
             moviesUpdate: [],
@@ -28,6 +26,11 @@ export default function homeRoute() {
 
         render() {
           const { BASEURL } = getStartParams();
+            if (this.state.loading || this.state.updating) {
+              return (
+                <Loader title={i18n('loading')} />
+              );
+            }
 
           return (
             <document>
@@ -117,9 +120,7 @@ export default function homeRoute() {
         },
 
         componentDidMount() {
-          this.loadData().then(payload => {
-            this.setState({ loading: false, ...payload });
-          });
+          this.loadData();
         },
 
         componentWillReceiveProps() {
@@ -131,17 +132,16 @@ export default function homeRoute() {
             this.state.updating &&
             prevState.updating !== this.state.updating
           ) {
-            this.loadData().then(payload => {
-              this.setState({ updating: false, ...payload });
-            });
+            this.loadData(true);
           }
         },
 
-        loadData() {
-          //return getAllUpdates();
+        loadData(updating) {
+          let state = updating ? {updating: true} : {loading: true}
+          this.setState(state);
           return getHome().then(categories => {
-            console.log("CATEGORIES", categories)
-            return categories;
+            state = updating ? {updating: false, ...categories} : {loading: false, ...categories}
+            this.setState(state);
           }).catch(error => {
             defaultErrorHandlers(error);
           })

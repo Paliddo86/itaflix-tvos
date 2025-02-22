@@ -226,4 +226,5 @@ export default {
 
   'translation-localization': 'Localization',
   'translation-subtitles': 'Subtitles',
+  'loading': 'Loading...'
 };

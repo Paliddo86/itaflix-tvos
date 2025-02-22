@@ -268,5 +268,6 @@ export default {
   'translation-subtitles': 'Sottotitoli',
 
   'error': 'Errore',
-  'generic-error': 'Errore generico'
+  'generic-error': 'Errore generico',
+  'loading': 'Caricamento...'
 };

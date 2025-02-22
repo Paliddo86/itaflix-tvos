@@ -251,8 +251,6 @@ export async function getHome() {
 
     if (_version !== res.version) _version = res.version;
     
-    let mainTitles = res.props.sliders[2].titles;
-    console.log("res", res.props.sliders)
     let moviesUpdates = [];
     let tvshowUpdates = [];
 
