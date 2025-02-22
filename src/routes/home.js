@@ -1,7 +1,5 @@
 import * as TVDML from 'tvdml';
 
-import { get as i18n } from '../localization';
-
 import {
   getAllUpdates,
 } from '../request/adc';
@@ -11,6 +9,8 @@ import styles from '../common/styles';
 
 import { getStartParams } from '../utils';
 import logo from '../assets/img/logo.png';
+import { getHome } from '../request/sc';
+import { defaultErrorHandlers } from '../helpers/auth/handlers';
 
 export default function homeRoute() {
   return TVDML.createPipeline().pipe(
@@ -138,7 +138,13 @@ export default function homeRoute() {
         },
 
         loadData() {
-          return getAllUpdates();
+          //return getAllUpdates();
+          return getHome().then(categories => {
+            console.log("CATEGORIES", categories)
+            return categories;
+          }).catch(error => {
+            defaultErrorHandlers(error);
+          })
         }
       }),
     ),

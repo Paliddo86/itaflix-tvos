@@ -46,12 +46,12 @@ TVDML.subscribe(TVDML.event.LAUNCH).pipe(params => {
 });
 
 TVDML.handleRoute('get-token')
-  .pipe(TVDML.render(<Loader title={i18n('auth-checking')} />))
-  .pipe(getUiData)
-  .pipe(checkSession)
+  // .pipe(TVDML.render(<Loader title={i18n('auth-checking')} />))
+  // .pipe(getUiData)
+  // .pipe(checkSession)
   .pipe(payload => {
     if(process.env.NODE_ENV === "development") console.log("Paylod User", payload); 
-    user.set({ ...payload });
+    user.set({ logged: 0});
     return payload;
   })
   .pipe(() => {
@@ -62,12 +62,12 @@ TVDML.handleRoute('main').pipe(
   menuRoute([
     {
       route: 'home',
-      active: AUTH,
+      //active: AUTH,
       active: GUEST,
     },
     {
       route: 'search',
-      active: AUTH,
+      //active: AUTH,
       active: GUEST,
     },
     {

@@ -266,4 +266,7 @@ export default {
 
   'translation-localization': 'Lingua Interfaccia',
   'translation-subtitles': 'Sottotitoli',
+
+  'error': 'Errore',
+  'generic-error': 'Errore generico'
 };

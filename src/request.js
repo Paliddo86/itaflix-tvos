@@ -63,7 +63,9 @@ export function request(url, params = {}) {
       if ((status >= 200 && status < 300) || status === 304) {
         return xhr;
       }
-      return Promise.reject(xhr);
+      return Promise.reject(new Error("Status code: " + status));
+    }).catch(error =>{
+      return Promise.reject(error);
     });
 }
 
@@ -97,4 +99,9 @@ export function toString() {
 export function toJSON() {
   const stringify = toString();
   return xhr => JSON.parse(stringify(xhr));
+}
+
+export function cleanHTMLResponse() {
+  // Sostituisce \" con " per correggere il formato JSON
+  return ({responseText}) => responseText.replace(/\\"/g, '"');
 }

@@ -17,7 +17,7 @@ export default function Tile({ key, attrs = {}, events = {} }) {
     isTmdbPoster
   } = attrs;
 
-  const tilePoster = isTmdbPoster ? poster : poster.split("?")[0]+"?width=200";
+  const tilePoster = poster;
 
   const { onPlay, onSelect, onHighlight, onHoldselect } = events;
 
@@ -35,8 +35,8 @@ export default function Tile({ key, attrs = {}, events = {} }) {
     >
       <img
         src={tilePoster}
-        width={isTmdbPoster ? "190" : "190"}
-        height={isTmdbPoster ? "285" : "285"}
+        width={"190"}
+        height={"285"}
         class="tile-img"
         contentsMode="aspectFitBB"
         aspectRatio="0.75:1"

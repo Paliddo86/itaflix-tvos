@@ -505,7 +505,7 @@
 				135F90991D2D887B006ACB5B /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 		135F909A1D2D887B006ACB5B /* Build configuration list for PBXNativeTarget "itaflix" */ = {
 			isa = XCConfigurationList;
@@ -514,7 +514,7 @@
 				135F909C1D2D887B006ACB5B /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 		20C244062166C2CB0055C35F /* Build configuration list for PBXNativeTarget "TopShelf" */ = {
 			isa = XCConfigurationList;
@@ -523,7 +523,7 @@
 				20C244082166C2CB0055C35F /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
 	};
