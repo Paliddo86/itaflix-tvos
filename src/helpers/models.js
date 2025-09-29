@@ -1,13 +1,13 @@
 export class Category {
-    constructor({ name, list, shows }) {
+    constructor({ name, values, shows }) {
         this.name = name;
-        this.list = list;
+        this.values = values;
         this.shows = shows;
     }
 }
 
 export class Movie {
-    constructor({ id, title, overview, released, rating, poster, genres, cast, trailer, recommendations, banner, slug, isUpdated, updateType, quality, type }) {
+    constructor({ id, title, overview, released, rating, poster, genres, cast, trailer, recommendations, banner, slug, isUpdated, updateType, quality, type, cover }) {
         this.sid = id;
         this.title = title;
         this.overview = overview;
@@ -24,11 +24,12 @@ export class Movie {
         this.updateType = updateType;
         this.quality = quality;
         this.type = type;
+        this.cover = cover;
     }
 }
 
 export class TvShow {
-    constructor({ id, title, overview, released, rating, poster, genres, cast, trailer, recommendations, seasons, banner, slug, isUpdated, updateType, quality, type }) {
+    constructor({ id, title, overview, released, rating, poster, genres, cast, trailer, recommendations, seasons, banner, slug, isUpdated, updateType, quality, type, cover }) {
         this.sid = id;
         this.title = title;
         this.overview = overview;
@@ -46,6 +47,7 @@ export class TvShow {
         this.updateType = updateType;
         this.quality = quality;
         this.type = type;
+        this.cover = cover;
     }
 }
 
