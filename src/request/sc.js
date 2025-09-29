@@ -260,13 +260,14 @@ export async function getHome() {
     console.log("home", res.props.sliders)
 
     res.props.sliders.forEach(({titles, label}, index) => {
+        let isTopTen = index === 2;
         let current = new Category({
             name: label,
             values: titles.map(it => {
                 if (it.type === "movie") {
                     return new Movie({
                         id: it.id,
-                        title: it.name,
+                        title: isTopTen ? `${it.top10_index} - ${it.name}`: it.name,
                         poster: getFilenameFromImageLink(it, "poster"),
                         banner: getFilenameFromImageLink(it, "background"),
                         cover: getFilenameFromImageLink(it, "cover"),
@@ -278,7 +279,7 @@ export async function getHome() {
                 } else {
                     return new TvShow({
                         id: it.id,
-                        title: it.name,
+                        title: isTopTen ? `${it.top10_index} - ${it.name}`: it.name,
                         poster: getFilenameFromImageLink(it, "poster"),
                         banner: getFilenameFromImageLink(it, "background"),
                         cover: getFilenameFromImageLink(it, "cover"),

@@ -48,6 +48,7 @@ export default function homeRoute() {
                 <collectionList>
                   {this.renderCategory(this.state.tranding)}
                   {this.renderCategory(this.state.latest)}
+                  {this.renderCategory(this.state.topTen)}
                   {/* {this.renderMoviesUpdate()}
                   {this.renderSeriesUpdate()} */}
                 </collectionList>
