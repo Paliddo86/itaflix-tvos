@@ -160,8 +160,8 @@ class StreamingCommunityService {
     }
 }
 
-const DOMAIN =  "streamingcommunity.lu";
-const URL = "https://streamingcommunity.lu";
+const DOMAIN =  "streamingunity.co";
+const URL = "https://" + DOMAIN;
 const MAX_SEARCH_RESULTS = 60;
 const language = "it";
 const IMAGEKIT_URL = "https://ik.imagekit.io/itaflix/webp/"
@@ -254,101 +254,59 @@ export async function getHome() {
     let moviesUpdates = [];
     let tvshowUpdates = [];
 
-    res.props.sliders.forEach(({titles}, index) => {
-        titles.forEach(it => {
-            if (it.type === "movie") {
-                moviesUpdates.push(new Movie({
-                    id: it.id,
-                    title: it.name,
-                    poster: getFilenameFromImageLink(it, "poster"),
-                    banner: getFilenameFromImageLink(it, "background"),
-                    rating: it.score,
-                    slug: it.slug,
-                    isUpdated: it.last_air_date ? isMoreThanDaysAhead(it.last_air_date) : true,
-                    type: it.type
-                }));
-            } else {
-                tvshowUpdates.push(new TvShow({
-                    id: it.id,
-                    title: it.name,
-                    poster: getFilenameFromImageLink(it, "poster"),
-                    banner: getFilenameFromImageLink(it, "background"),
-                    rating: it.score,
-                    slug: it.slug,
-                    isUpdated: it.last_air_date ? isMoreThanDaysAhead(it.last_air_date) : false,
-                    type: "tvshow"
-                }));
-            }
+    let topTen = null;
+    let latest = null;
+    let tranding = null;
+    console.log("home", res.props.sliders)
+
+    res.props.sliders.forEach(({titles, label}, index) => {
+        let current = new Category({
+            name: label,
+            values: titles.map(it => {
+                if (it.type === "movie") {
+                    return new Movie({
+                        id: it.id,
+                        title: it.name,
+                        poster: getFilenameFromImageLink(it, "poster"),
+                        banner: getFilenameFromImageLink(it, "background"),
+                        cover: getFilenameFromImageLink(it, "cover"),
+                        rating: it.score,
+                        slug: it.slug,
+                        isUpdated: it.last_air_date ? isMoreThanDaysAhead(it.last_air_date) : true,
+                        type: it.type
+                    });
+                } else {
+                    return new TvShow({
+                        id: it.id,
+                        title: it.name,
+                        poster: getFilenameFromImageLink(it, "poster"),
+                        banner: getFilenameFromImageLink(it, "background"),
+                        cover: getFilenameFromImageLink(it, "cover"),
+                        rating: it.score,
+                        slug: it.slug,
+                        isUpdated: it.last_air_date ? isMoreThanDaysAhead(it.last_air_date) : false,
+                        type: "tvshow"
+                    });
+                }
+            })
         })
+        switch (index) {
+            case 0:
+                tranding = current;
+                break;
+            case 1:
+                latest = current;
+                break;
+            case 2:
+                topTen = current;
+                break;
+        }
     })
 
-    // 2: top10 (Featured)
-    // categories.push(new Category({
-    //     name: "FEATURED",
-    //     list: mainTitles.map(it => {
-    //         if (it.type === "movie") {
-    //             return new Movie({
-    //                 id: it.id,
-    //                 title: it.name,
-    //                 poster: getFilenameFromImageLink(it, "poster"),
-    //                 banner: getFilenameFromImageLink(it, "background"),
-    //                 rating: it.score,
-    //                 slug: it.slug,
-    //                 isUpdated: it.last_air_date ? isMoreThanDaysAhead(it.last_air_date) : false
-    //             });
-    //         } else {
-    //             return new TvShow({
-    //                 id: it.id,
-    //                 title: it.name,
-    //                 poster: getFilenameFromImageLink(it, "poster"),
-    //                 banner: getFilenameFromImageLink(it, "background"),
-    //                 rating: it.score,
-    //                 slug: it.slug,
-    //                 isUpdated: it.last_air_date ? isMoreThanDaysAhead(it.last_air_date) : false
-    //             });
-    //         }
-    //     })
-    // }));
-
-    // 0: trending, 1: latest
-    // let extraCategories = [0, 1].map(index => {
-    //     let slider = res.props.sliders[index];
-    //     return new Category({
-    //         name: slider.label,
-    //         list: slider.titles.map(it => {
-    //             if (it.type === "movie") {
-    //                 return new Movie({
-    //                     id: it.id + "-" + it.slug,
-    //                     title: it.name,
-    //                     released: it.lastAirDate,
-    //                     rating: it.score,
-    //                     poster: getFilenameFromImageLink(it, "poster"),
-    //                     banner: getFilenameFromImageLink(it, "background")
-    //                 });
-    //             } else {
-    //                 return new TvShow({
-    //                     id: it.id + "-" + it.slug,
-    //                     title: it.name,
-    //                     released: it.lastAirDate,
-    //                     rating: it.score,
-    //                     poster: getFilenameFromImageLink(it, "poster"),
-    //                     banner: getFilenameFromImageLink(it, "background")
-    //                 });
-    //             }
-    //         })
-    //     });
-    // });
-    //categories.push(...extraCategories);
-
         return {
-          moviesUpdate: {
-            name: i18n('movie-updates'),
-            values: moviesUpdates
-          },
-          seriesUpdate: {
-            name: i18n('tv-show-updates'),
-            values: tvshowUpdates
-          }
+        topTen,
+        latest,
+        tranding
         }
 }
 
