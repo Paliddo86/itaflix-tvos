@@ -1,42 +1,34 @@
 import { link } from '../utils';
 
 import { get as i18n } from '../localization';
+import { Movie, TvShow } from '../helpers/models';
 
+/**
+ * 
+ * @param {{key: string, attrs: Movie | TvShow | {asCover: boolean}, events: any}} param0 
+ * @returns 
+ */
 export default function Tile({ key, attrs = {}, events = {} }) {
-  const {
-    route,
-    title,
-    poster,
-    counter,
-    subtitle,
-    isUpdated,
-    quality,
-    isWatched,
-    payload = payload || {},
-    autoHighlight,
-    asCover
-  } = attrs;
-
-  const tilePoster = asCover ? payload.cover : poster;
+  const tilePoster = attrs.asCover ? attrs.cover : attrs.poster;
 
   const { onPlay, onSelect, onHighlight, onHoldselect } = events;
 
-  const showTopShadow = quality;
-  const showBottomShadow = counter || isWatched || isUpdated;
+  const showTopShadow = attrs.quality;
+  const showBottomShadow = attrs.counter || attrs.isWatched || attrs.isUpdated;
 
   return (
     <lockup
       key={key}
       onPlay={onPlay}
-      onSelect={onSelect || link(route, payload)}
+      onSelect={onSelect || link(attrs.type, attrs)}
       onHighlight={onHighlight}
       onHoldselect={onHoldselect}
-      autoHighlight={autoHighlight ? 'true' : undefined}
+      autoHighlight={undefined}
     >
       <img
         src={tilePoster}
-        width={asCover ? "400" : "190"}
-        height={asCover ? "225" : "285"}
+        width={attrs.asCover ? "400" : "190"}
+        height={attrs.asCover ? "225" : "285"}
         class="tile-img"
         contentsMode="aspectFitBB"
         aspectRatio="0.75:1"
@@ -58,11 +50,11 @@ export default function Tile({ key, attrs = {}, events = {} }) {
         class="tile-title"
         style="tv-text-highlight-style: marquee-on-highlight"
       >
-        {title}
+        {attrs.title}
       </title>
-      <subtitle class="tile-subtitle">{subtitle}</subtitle>
+      <subtitle class="tile-subtitle">{attrs.subtitle}</subtitle>
       <overlay style="margin: 0; padding: 0;">
-      {quality && (
+      {attrs.quality && (
             <textBadge
             style={`
               margin: 12 10 0 0;
@@ -73,10 +65,10 @@ export default function Tile({ key, attrs = {}, events = {} }) {
               background-color: #b90505;
             `}
           >
-            {quality}
+            {attrs.quality}
           </textBadge>
         )}
-      {(isUpdated || payload.updateType) && (
+      {(attrs.isUpdated || attrs.updateType) && (
             <textBadge
             style={`
               margin: 0 10 12 0;
@@ -87,10 +79,10 @@ export default function Tile({ key, attrs = {}, events = {} }) {
               background-color: #b90505;
             `}
           >
-            {payload.updateType? payload.updateType : i18n('tvshow-next')}
+            {attrs.updateType? attrs.updateType : i18n('tvshow-next')}
           </textBadge>
         )}
-        {!isWatched && counter && (
+        {!attrs.isWatched && attrs.counter && (
           <textBadge
             type="fill"
             style={`
@@ -103,10 +95,10 @@ export default function Tile({ key, attrs = {}, events = {} }) {
               tv-tint-color: rgb(255, 255, 255);
             `}
           >
-            {counter}
+            {attrs.counter}
           </textBadge>
         )}
-        {isWatched && (
+        {attrs.isWatched && (
           <textBadge
             type="fill"
             style={`
