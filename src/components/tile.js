@@ -14,10 +14,10 @@ export default function Tile({ key, attrs = {}, events = {} }) {
     isWatched,
     payload = payload || {},
     autoHighlight,
-    isTmdbPoster
+    asCover
   } = attrs;
 
-  const tilePoster = poster;
+  const tilePoster = asCover ? payload.cover : poster;
 
   const { onPlay, onSelect, onHighlight, onHoldselect } = events;
 
@@ -35,8 +35,8 @@ export default function Tile({ key, attrs = {}, events = {} }) {
     >
       <img
         src={tilePoster}
-        width={"190"}
-        height={"285"}
+        width={asCover ? "400" : "190"}
+        height={asCover ? "225" : "285"}
         class="tile-img"
         contentsMode="aspectFitBB"
         aspectRatio="0.75:1"
