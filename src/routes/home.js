@@ -65,23 +65,8 @@ export default function homeRoute() {
               </header>
               <section>
                 {category.values.map(item => {
-                  const {
-                    title,
-                    poster,
-                    quality,
-                    isUpdated,
-                  } = item;
-
                   return (
-                    <Tile
-                      title={title}
-                      route={item.type}
-                      poster={poster}
-                      quality={quality}
-                      isUpdated={isUpdated}
-                      asCover={true}
-                      payload={item}
-                    />
+                    <Tile {...{...item, asCover: true}}/>
                   );
                 })}
               </section>
