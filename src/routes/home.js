@@ -19,8 +19,9 @@ export default function homeRoute() {
             value: '',
             loading: true,
             updating: false,
-            seriesUpdate: [],
-            moviesUpdate: [],
+            topTen: null,
+            latest: null,
+            trading: null
           };
         },
 
@@ -45,11 +46,46 @@ export default function homeRoute() {
                   />
                 </banner>
                 <collectionList>
-                  {this.renderMoviesUpdate()}
-                  {this.renderSeriesUpdate()}
+                  {this.renderCategory(this.state.tranding)}
+                  {this.renderCategory(this.state.latest)}
+                  {/* {this.renderMoviesUpdate()}
+                  {this.renderSeriesUpdate()} */}
                 </collectionList>
               </stackTemplate>
             </document>
+          );
+        },
+
+        renderCategory(category) {
+          if (!category || !category.values.length) return null;
+          return (
+            <shelf>
+              <header>
+                <title>{category.name}</title>
+              </header>
+              <section>
+                {category.values.map(item => {
+                  const {
+                    title,
+                    poster,
+                    quality,
+                    isUpdated,
+                  } = item;
+
+                  return (
+                    <Tile
+                      title={title}
+                      route={item.type}
+                      poster={poster}
+                      quality={quality}
+                      isUpdated={isUpdated}
+                      asCover={true}
+                      payload={item}
+                    />
+                  );
+                })}
+              </section>
+            </shelf>
           );
         },
 
