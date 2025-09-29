@@ -46,7 +46,7 @@ TVDML.subscribe(TVDML.event.LAUNCH).pipe(params => {
 });
 
 TVDML.handleRoute('get-token')
-  // .pipe(TVDML.render(<Loader title={i18n('auth-checking')} />))
+  .pipe(TVDML.render(<Loader title={i18n('auth-checking')} />))
   // .pipe(getUiData)
   // .pipe(checkSession)
   .pipe(payload => {
