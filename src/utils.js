@@ -134,36 +134,12 @@ export function createMediaItem(episode) {
 
 const findQuality = ['720p', '1080p', '2k', '4k'];
 
-export function createMediaItems(episode, videoQuality) {
-  let qualityIndex = findQuality.indexOf(videoQuality);
-
-  if (episode.streams.length === 1) {
-    let mediaItem = new MediaItem('video', encodeURI(episode.streams[0].url));
-    mediaItem.title = episode.title;
-    mediaItem.description = episode.description;
-    mediaItem.artworkImageURL = episode.artworkImageURL;
+export function createMediaItems(item, videoQuality) {
+    let mediaItem = new MediaItem('video', encodeURI(item.stream));
+    mediaItem.title = item.title;
+    mediaItem.description = item.description;
+    mediaItem.artworkImageURL = item.artworkImageURL;
     return mediaItem;
-  }
-
-  let media = episode.streams.filter(stream => {
-    return stream.resolution.name === videoQuality;
-  })
-
-  if(media.length) {
-    let parsedurl = media[0].url;
-    
-    if(media[0].url.indexOf('%') == -1) {
-      parsedurl = encodeURI(media[0].url);
-    }
-
-    let mediaItem = new MediaItem('video', parsedurl);
-    mediaItem.title = episode.title;
-    mediaItem.description = episode.description;
-    mediaItem.artworkImageURL = episode.artworkImageURL;
-    return mediaItem;
-  };
-
-  return createMediaItems(episode, findQuality[qualityIndex - 1] || findQuality[0]);
 }
 
 export function getOpenURLParams(str) {
