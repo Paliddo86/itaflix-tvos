@@ -43,6 +43,8 @@ import {
 import Tile from '../components/tile';
 import Loader from '../components/loader';
 import Authorize from '../components/authorize';
+import { getMovieDetails } from '../request/sc';
+import { Movie } from '../helpers/models';
 
 const MARK_AS_WATCHED_PERCENTAGE = 90;
 const SHOW_RATING_PERCENTAGE = 50;
@@ -61,18 +63,19 @@ function getTrailerItem(trailer) {
   }));
 }
 
+// #region START
 export default function movieRoute() {
   return TVDML.createPipeline()
     .pipe(
       TVDML.passthrough(
-        ({ navigation: { sid, title, poster, slug, tmdb_id, imdb_id, collection_slug, continueWatchingAndPlay } }) => ({
+        ({ navigation: { sid, title, poster, slug, tmdb_id, imdb_id, banner, continueWatchingAndPlay } }) => ({
           sid,
           title,
           poster,
           slug,
           tmdb_id,
           imdb_id,
-          collection_slug,
+          banner,
           continueWatchingAndPlay: continueWatchingAndPlay === '1'
         }),
       ),
@@ -91,7 +94,11 @@ export default function movieRoute() {
               loading: true,
               watching: false,
               continueWatching: false,
-              error: null
+              error: null,
+              /**
+               * @type {Movie}
+               */
+              movie: undefined
             };
           },
 
@@ -126,6 +133,7 @@ export default function movieRoute() {
 
             Promise.all([this.loadData(), waitForAnimations]).then(
               ([payload]) => {
+                console.log("did mount", payload)
                 this.setState(payload);
                 this.setState({ loading: false });
                 if (
@@ -139,6 +147,7 @@ export default function movieRoute() {
               },
             ).catch(error => {
               this.setState({ loading: false });
+              defaultErrorHandlers(error);
             });
           },
 
@@ -151,37 +160,36 @@ export default function movieRoute() {
           shouldComponentUpdate: deepEqualShouldUpdate,
 
           loadData() {
-            const { sid, slug, collection_slug } = this.props;
+            const { sid, slug } = this.props;
 
-            const preferred = () => {
-              return checkSession().then(payload => {
-                if(payload) user.set({...payload});
-                return isPreferred(sid);
-              })
-            }
+            return getMovieDetails(sid, slug).then(movie => ({
+              movie
+            }));
 
-            return Promise.all([
-              getMovieDescription(slug),
-              getRelated(slug),
-              getCollection(collection_slug),
-              preferred()
-            ])
-              .then(payload => {
-                const [
-                  movieResponse,
-                  recomendations,
-                  collection,
-                  isPreferred
-                ] = payload;
+            // const preferred = () => {
+            //   return checkSession().then(payload => {
+            //     if(payload) user.set({...payload});
+            //     return isPreferred(sid);
+            //   })
+            // }
 
-                return {
-                  movie: movieResponse.result, 
-                  recomendations: recomendations.relatedData,
-                  collection: collection.collectionData,
-                  isPreferred
-                };
-              });
+            // return Promise.all([
+            //   getMovieDescription(slug),
+            //   getRelated(slug),
+            //   getCollection(collection_slug),
+            //   preferred()
+            // ])
+            //   .then(payload => {
+            //     const [
+            //       movieResponse,
+            //       recomendations,
+            //       collection,
+            //       isPreferred
+            //     ] = payload;
+
+            //   });
           },
+          // #region RENDER
           render() {
             if (this.state.loading) {
               return (
@@ -195,12 +203,20 @@ export default function movieRoute() {
             return (
               <document>
                 <productTemplate>
+                  {this.props.banner && (
+                    <background>
+                      <img
+                        src={this.props.banner}
+                        style="width: 100%; height: 100%; "
+                      />
+                    </background>
+                  )}
                   <banner>
                     {this.renderStatus()}
                     {this.renderInfo()}
-                    <heroImg src={this.props.poster.split("?")[0]} />
+                    {!this.props.banner && <heroImg src={this.props.poster} />}
                   </banner>
-                  {this.renderCollection()}
+                  {/* {this.renderCollection()}*/}
                   {this.renderRecomendations()}
                 </productTemplate>
               </document>
@@ -431,20 +447,29 @@ export default function movieRoute() {
             })
           },
 
+          // #region RENDER STATUS
           renderStatus() {
-            const { categories_ids } = this.state.movie;
+            /**@type {Movie} */
+            const movie = this.state.movie;
+            const { genres, status } = movie;
 
 
             return (
               <infoList>
                 <info>
                   <header>
+                    <title>{i18n('movie-status')}</title>
+                  </header>
+                  <text key={status}>{status ? i18n(`status-${status.toLowerCase()}`) || status: "N/A"}</text>
+                </info>
+                <info>
+                  <header>
                     <title>{i18n('movie-genres')}</title>
                   </header>
-                  {categories_ids.map(id => {
-                      let genre = settings.getMovieGenresById(id);
-                      if(!genre) return null;
-                      return (<text key={genre}>{genre}</text>);
+                  {genres.map(genre => {
+                    let genreName = settings.getMovieGenresById(genre.id);
+                    return (<text key={genre.id}>{genreName || genre.name}</text>);
+
                     })
                   }
                 </info>
@@ -452,13 +477,12 @@ export default function movieRoute() {
             );
           },
 
+          // #region RENDER INFO
           renderInfo() {
-
-            const { title, year, quality, rating, plot, runtime } = this.state.movie;
+            /**@type {Movie} */
+            const movie = this.state.movie;
+            const { title, released, rating, overview, runtime, quality} = movie;
             const isPreferred = this.state.isPreferred;
-
-            // const hasTrailers = !!this.state.trailers.length;
-            // const hasMultipleTrailers = this.state.trailers.length > 1;
 
             let buttons = <row />;
             const onSelectPlay = this.playMovie.bind(this);
@@ -469,43 +493,6 @@ export default function movieRoute() {
               >
                 <badge src="resource://button-play" />
                 <title>{i18n('movie-control-start-watching')}</title>
-              </buttonLockup>
-            );
-
-            // const trailerBtnTitleCode = hasMultipleTrailers
-            //   ? 'tvshow-control-show-trailers'
-            //   : 'tvshow-control-show-trailer';
-
-            // const showTrailerBtn = (
-            //   <buttonLockup
-            //     onPlay={this.onShowFirstTrailer}
-            //     onSelect={this.onShowTrailer}
-            //   >
-            //     <badge src="resource://button-preview" />
-            //     <title>{i18n(trailerBtnTitleCode)}</title>
-            //   </buttonLockup>
-            // );
-
-            const startWatchingBtn = quality.map((quality) => {
-                return (
-                  <buttonLockup onSelect={this.onAddToSubscriptions}>
-                    <badge src="resource://button-play" />
-                    <title>{i18n('tvshow-control-play', {quality})}</title>
-                  </buttonLockup>
-                );
-              });
-
-            const stopWatchingBtn = (
-              <buttonLockup onSelect={this.onRemoveFromSubscription}>
-                <badge src="resource://button-remove" />
-                <title>{i18n('tvshow-control-stop-watching')}</title>
-              </buttonLockup>
-            );
-
-            const moreBtn = (
-              <buttonLockup onSelect={this.onMore}>
-                <badge src="resource://button-more" />
-                <title>{i18n('tvshow-control-more')}</title>
               </buttonLockup>
             );
 
@@ -547,8 +534,9 @@ export default function movieRoute() {
                 <title>{title}</title>
                 <row>
                   <ratingBadge value={rating / 10} />
-                  <text>{`${i18n('tvshow-information-year').toUpperCase()}: ${year}`}</text>
+                  <text>{`${i18n('tvshow-information-year').toUpperCase()}: ${released}`}</text>
                   <text>{`${i18n('movie-information-runtime').toUpperCase()}: ${moment.duration(+runtime, 'minutes').humanize()}`}</text>
+                  <text>{`${i18n('movie-quality').toUpperCase()}:`}</text><textBadge style={`font-size: 20;`}>{quality}</textBadge>
                 </row>
                 <description
                   allowsZooming="true"
@@ -558,7 +546,7 @@ export default function movieRoute() {
                     tv-text-max-lines: 2;
                   `}
                 >
-                  {plot}
+                  {overview}
                 </description>
                 {buttons}
               </stack>
@@ -583,35 +571,22 @@ export default function movieRoute() {
               .then(TVDML.removeModal);
           },
 
+          // #region RENDER RECOMM
           renderRecomendations() {
-            if (!this.state.recomendations.length) return null;
+            /** @type {Movie} */
+            const movie = this.state.movie;
+            const {recommendations} = movie;
+            if (!recommendations.length) return null;
 
             return (
               <shelf>
                 <header>
-                  <title>{i18n('tvshow-also-watched')}</title>
+                  <title>{i18n('movie-also-watched')}</title>
                 </header>
                 <section>
-                  {this.state.recomendations.map(movie => {
-                    const {
-                      sid,
-                      poster,
-                      quality,
-                      isUpdated
-                    } = movie;
-
-                    const title = i18n('tvshow-title', movie);
-
+                  {recommendations.map(movie => {
                     return (
-                      <Tile
-                        key={sid}
-                        title={title}
-                        poster={poster}
-                        route="movie"
-                        quality={quality}
-                        isUpdated={isUpdated}
-                        payload={movie}
-                      />
+                      <Tile {...movie} asCover/>
                     );
                   })}
                 </section>
@@ -636,7 +611,7 @@ export default function movieRoute() {
                       isUpdated
                     } = movie;
 
-                    const title = i18n('tvshow-title', movie);
+                    const title = i18n('movie-title', movie);
 
                     return (
                       <Tile
@@ -751,13 +726,13 @@ export default function movieRoute() {
 
           onShowFullDescription() {
             const title = i18n('tvshow-title', this.state.movie);
-            const { plot: description } = this.state.movie;
+            const { overview } = this.state.movie;
 
             TVDML.renderModal(
               <document>
                 <descriptiveAlertTemplate>
                   <title>{title}</title>
-                  <description>{description}</description>
+                  <description>{overview}</description>
                 </descriptiveAlertTemplate>
               </document>,
             ).sink();
@@ -826,24 +801,26 @@ export default function movieRoute() {
           },
 
           onMy() {
-            const { sid } = this.props;
-            const listId = user.getListId();
+            // const { sid } = this.props;
+            // const listId = user.getListId();
 
-            checkSession().then(payload => {
-              if(payload) user.set({ ...payload });
-              addToMyList(listId, sid).then(() => this.setState({isPreferred: true}));
-            })
-
+            // checkSession().then(payload => {
+            //   if(payload) user.set({ ...payload });
+            //   addToMyList(listId, sid).then(() => this.setState({isPreferred: true}));
+            // })
+            defaultErrorHandlers(new Error("Non Implementata!!!"))
           },
 
           removeFromMy() {
-            const { sid } = this.props;
-            const listId = user.getListId();
+            // const { sid } = this.props;
+            // const listId = user.getListId();
 
-            checkSession().then(payload => {
-              if(payload) user.set({ ...payload });
-              removeFromMyList(listId, sid).then(() => this.setState({isPreferred: false}));
-            })
+            // checkSession().then(payload => {
+            //   if(payload) user.set({ ...payload });
+            //   removeFromMyList(listId, sid).then(() => this.setState({isPreferred: false}));
+            // })
+            defaultErrorHandlers(new Error("Non Implementata!!!"))
+
           },
 
           onRateChange(event) {
