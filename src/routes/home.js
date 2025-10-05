@@ -67,7 +67,7 @@ export default function homeRoute() {
               <section>
                 {category.values.map(item => {
                   return (
-                    <Tile {...{...item, asCover: true}}/>
+                    <Tile {...item} asCover/>
                   );
                 })}
               </section>
