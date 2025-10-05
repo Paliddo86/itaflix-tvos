@@ -45,6 +45,7 @@ import Loader from '../components/loader';
 import Authorize from '../components/authorize';
 import { getMovieDetails } from '../request/sc';
 import { Movie } from '../helpers/models';
+import { extractVix, VixSrcService } from '../extractors/vixsrc';
 
 const MARK_AS_WATCHED_PERCENTAGE = 90;
 const SHOW_RATING_PERCENTAGE = 50;
@@ -133,7 +134,6 @@ export default function movieRoute() {
 
             Promise.all([this.loadData(), waitForAnimations]).then(
               ([payload]) => {
-                console.log("did mount", payload)
                 this.setState(payload);
                 this.setState({ loading: false });
                 if (
@@ -223,9 +223,11 @@ export default function movieRoute() {
             );
           },
 
+          // #region PLAY MOVIE
           playMovie() {
-            const { slug, poster } = this.props;
-            const { plot } = this.state.movie;
+            /**@type {Movie} */
+            const movie = this.state.movie;
+            const { tmdb_id, overview, poster, cover, title } = movie;
 
             const player = new Player();
 
@@ -424,27 +426,33 @@ export default function movieRoute() {
               // }
             });
 
+            // #region LOAD MOVIE
             // Loading and starting playback.
-            const preparePlayer = (response) => {
-              const { streams, backdrop_url, title, id, poster_url } = response;
+            const preparePlayer = (link) => {
               let movie = {
-                id,
                 title,
-                description: plot,
-                streams,
-                artworkImageURL: backdrop_url || poster_url || poster,
+                description: overview,
+                stream: link,
+                artworkImageURL: cover|| poster,
                 resumeTime: 0
               }
-                let videoQuality = settings.getPreferredVideoQuality();
-                let movieMediaItem =  createMediaItems(movie, videoQuality);
+                let movieMediaItem =  createMediaItems(movie);
                 player.playlist.push(movieMediaItem);
                 player.play();
             }
 
-            checkSession().then(payload => {
-              user.set({ ...payload });
-              getMovieMediaStream(slug).then((response) => { preparePlayer(response)});
-            })
+            console.log("playMovie", tmdb_id);
+            VixSrcService.getMovieUrl(tmdb_id).then((result) => {
+              preparePlayer(result);
+            }).catch((error) => {
+              console.error("extractVix error", error);
+              defaultErrorHandlers(error);
+            });
+
+            // checkSession().then(payload => {
+            //   user.set({ ...payload });
+            //   getMovieMediaStream(slug).then((response) => { preparePlayer(response)});
+            // })
           },
 
           // #region RENDER STATUS
