@@ -2,6 +2,7 @@ import { defaultErrorHandlers } from '../helpers/auth/handlers';
 import { Category, Movie, TvShow, Episode, Genre, People, Video, Season } from '../helpers/models';
 import * as request from '../request';
 import { get as i18n } from '../localization';
+import * as settings from '../settings';
 
 /* VixcloudExtractor mimics the extraction behavior */
 class VixcloudExtractor {
@@ -21,7 +22,7 @@ function addHeaders(dict) {
       Object.keys(dict).forEach(key => XHR.setRequestHeader(key, dict[key]));
       return XHR;
     };
-  }
+}
 
 class StreamingCommunityService {
     url = ""
@@ -32,6 +33,22 @@ class StreamingCommunityService {
     buildUrl(path) {
         return this.url + path;
     }
+
+    headers(version = '') {
+        const userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.1.2 Safari/605.1.15";
+      
+        let headers = {
+          'User-Agent': userAgent,
+          'Host': DOMAIN,
+          'Origin': this.url,
+          'X-Requested-With': "XMLHttpRequest",
+          'Accept': 'application/json',
+          "x-inertia": "true",
+          "x-inertia-version": version,
+        };
+      
+        return headers;
+      }
 
     // GET "/" returning Document equivalent
     async getHomeDocument() {
@@ -74,10 +91,7 @@ class StreamingCommunityService {
     async getMovies(version) {
         try {
             let response = await request.get(this.buildUrl("/film"), {
-                prepare: addHeaders({
-                    "x-inertia": "true",
-                    "x-inertia-version": version,
-                })
+                prepare: addHeaders(this.headers(version))
             }).then(request.toJSON());
             return response;
         } catch (error) {
@@ -99,15 +113,12 @@ class StreamingCommunityService {
         }
     }
 
-    async getDetails(id, version) {
+    async getDetails(id, slug, version) {
         try {
-            let response = await request.get(this.buildUrl("/titles/" + id), {
-                headers: {
-                    "x-inertia": "true",
-                    "x-inertia-version": version
-                }
-            });
-            return response.toJSON();
+            let response = await request.get(this.buildUrl("/it/titles/" + id + "-" + slug), {
+                prepare: addHeaders(this.headers(version))
+            }).then(request.toJSON());
+            return response;
         } catch (error) {
             defaultErrorHandlers(error); 
         }
@@ -169,15 +180,15 @@ let _version = ""
 
 const service =  new StreamingCommunityService(URL);
 
-function getImageLink(filename) {
+function getImageLink(filename, gradient = false) {
     if (!filename) return null;
-    return IMAGEKIT_URL + "https://cdn." + DOMAIN + "/images/" + filename;
+    return IMAGEKIT_URL + "https://cdn." + DOMAIN + "/images/" + filename + (gradient ? "?tr=fo-auto,e-gradient-ld-280_from-FFFFFF00_to-black_sp-iw_div_0.4" : "");
 }
 
 function getFilenameFromImageLink(it, type) {
     let founded = it.images.find(img => img.type === type);
     if (founded) {
-        return getImageLink(founded.filename);
+        return getImageLink(founded.filename, founded.type === "background");
     }
 
     return "";
@@ -244,20 +255,45 @@ function isMoreThanDaysAhead(dateString) {
     return diffInDays > 2;
 }
 
+/**
+ * 
+ * @param {Genre[]} genres 
+ */
+function mapGenres(genres) {
+    let genresMovie = {};
+    let genresTvShows = {};
+    genres.forEach((data) => {
+        switch (data.type) {
+            case "movie":
+                genresMovie[data.id] = new Genre(data);
+                break;
+            case "tv":
+                genresTvShows[data.id] = new Genre(data);
+                break;
+                    
+            default:
+                genresTvShows[data.id] = new Genre(data);
+                genresMovie[data.id] = new Genre(data);
+                break;
+        }
+    });
+
+    settings.set(settings.params.MOVIE_CATEGORIES, genresMovie);
+    settings.set(settings.params.TV_SHOW_CATEGORIES, genresTvShows);
+}
+
 export async function getHome() {
     let categories = [];
     let res = await service.getHome(_version || await _initVersion());
     if (!res) return categories;
 
     if (_version !== res.version) _version = res.version;
-    
-    let moviesUpdates = [];
-    let tvshowUpdates = [];
 
     let topTen = null;
     let latest = null;
     let tranding = null;
-    console.log("home", res.props.sliders)
+
+    mapGenres(res.props.genres);
 
     res.props.sliders.forEach(({titles, label}, index) => {
         let isTopTen = index === 2;
@@ -269,8 +305,8 @@ export async function getHome() {
                         id: it.id,
                         title: isTopTen ? `${it.top10_index} - ${it.name}`: it.name,
                         poster: getFilenameFromImageLink(it, "poster"),
-                        banner: getFilenameFromImageLink(it, "background"),
                         cover: getFilenameFromImageLink(it, "cover"),
+                        banner: getFilenameFromImageLink(it, "background"),
                         rating: it.score,
                         slug: it.slug,
                         isUpdated: it.last_air_date ? isMoreThanDaysAhead(it.last_air_date) : true,
@@ -281,8 +317,8 @@ export async function getHome() {
                         id: it.id,
                         title: isTopTen ? `${it.top10_index} - ${it.name}`: it.name,
                         poster: getFilenameFromImageLink(it, "poster"),
-                        banner: getFilenameFromImageLink(it, "background"),
                         cover: getFilenameFromImageLink(it, "cover"),
+                        banner: getFilenameFromImageLink(it, "background"),
                         rating: it.score,
                         slug: it.slug,
                         isUpdated: it.last_air_date ? isMoreThanDaysAhead(it.last_air_date) : false,
@@ -309,6 +345,51 @@ export async function getHome() {
         latest,
         tranding
         }
+}
+
+export async function getMovieDetails(id, slug) {
+    let res = await service.getDetails(id, slug, _version || await _initVersion());
+    if (_version !== res.version) _version = res.version;
+    let it = res.props.title;
+
+    const target = new Movie({
+        id: it.id,
+        title: it.name,
+        poster: getFilenameFromImageLink(it, "poster"),
+        cover: getFilenameFromImageLink(it, "cover"),
+        banner: getFilenameFromImageLink(it, "background"),
+        rating: it.score,
+        slug: it.slug,
+        isUpdated: it.last_air_date ? isMoreThanDaysAhead(it.last_air_date) : true,
+        type: it.type,
+        quality: it.quality,
+        overview: it.plot,
+        genres: it.genres,
+        released: it.release_date,
+        tmdb_id: it.tmdb_id,
+        runtime: it.runtime,
+        status: it.status
+    });
+
+    // Map recommentations
+    if (res.props.sliders && res.props.sliders.length) {
+        res.props.sliders[0].titles.forEach(it => {
+            if (it.type === "movie") {
+                target.addToRecommendations(new Movie({
+                    id: it.id,
+                    slug: it.slug,
+                    title: it.name,
+                    rating: it.score,
+                    poster: getFilenameFromImageLink(it, "poster"),
+                    cover: getFilenameFromImageLink(it, "cover"),
+                    banner: getFilenameFromImageLink(it, "background"),
+                    isUpdated: it.last_air_date ? isMoreThanDaysAhead(it.last_air_date) : true,
+                    type: it.type
+                }));
+            } 
+        })
+    }
+    return target;
 }
 
 /* StreamingCommunityProvider as a singleton object exactly mapped from Kotlin */
