@@ -6,25 +6,61 @@ export class Category {
     }
 }
 
-export class Movie {
-    constructor({ id, title, overview, released, rating, poster, genres, cast, trailer, recommendations, banner, slug, isUpdated, updateType, quality, type, cover }) {
+export class Movie{
+    /**
+     * @type {Movie[]}
+     */
+    recommendations = [];
+    /**
+     * 
+     * @param {{id: number, 
+     * title: string, 
+     * overview: string, 
+     * released: string, 
+     * rating: string, 
+     * poster: string, 
+     * genres: Genre[],
+     * recommendations: Movie[], 
+     * banner: string,
+     * slug: string,
+     * isUpdated: boolean,
+     * quality: string,
+     * type: "movie" | "tv"
+     * cover: string
+     * tmdb_id: number
+     * runtime: number
+     * status: string
+     * }} param0 
+     */
+    constructor({ id, title, overview, released, rating, poster, genres, cast, trailer, recommendations, banner, slug, isUpdated, updateType, quality, type, cover, tmdb_id, runtime, status }) {
         this.sid = id;
         this.title = title;
         this.overview = overview;
-        this.released = released;
-        this.rating = rating;
+        this.released = released ? new Date(released).getFullYear().toString() : "";
+        this.rating = parseInt(rating) || 10;
         this.poster = poster;
-        this.genres = genres;
+        this.genres = genres || [];
         this.cast = cast;
         this.trailer = trailer;
-        this.recommendations = recommendations;
+        this.recommendations = recommendations || [];
         this.banner = banner;
         this.slug = slug;
         this.isUpdated = isUpdated;
-        this.updateType = updateType;
+        this.updateType = isUpdated ? "Aggiornato": updateType;
         this.quality = quality;
         this.type = type;
         this.cover = cover;
+        this.tmdb_id = tmdb_id;
+        this.runtime = runtime;
+        this.status = status;
+    }
+
+    /**
+     * 
+     * @param {Movie} movie 
+     */
+    addToRecommendations(movie) {
+        this.recommendations.push(movie);
     }
 }
 
@@ -52,10 +88,10 @@ export class TvShow {
 }
 
 export class Genre {
-    constructor({ id, name, shows }) {
+    constructor({ id, name, type }) {
         this.id = id;
         this.name = name;
-        this.shows = shows;
+        this.type = type;
     }
 }
 
