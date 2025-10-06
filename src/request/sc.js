@@ -1,21 +1,10 @@
 import { defaultErrorHandlers } from '../helpers/auth/handlers';
 import { Category, Movie, TvShow, Episode, Genre, People, Video, Season } from '../helpers/models';
 import * as request from '../request';
-import { get as i18n } from '../localization';
 import * as settings from '../settings';
+import { isMoreThanDaysAhead } from '../utils';
 
 /* VixcloudExtractor mimics the extraction behavior */
-class VixcloudExtractor {
-    async extract(src) {
-        // Here we simulate video extraction. In a full implementation,
-        // this method would fetch and parse the video source.
-        return new Video({
-            id: src,
-            src: src,
-            server: new Video.Server({ id: src, name: "Vixcloud", src: src })
-        });
-    }
-}
 
 function addHeaders(dict) {
     return XHR => {
@@ -124,15 +113,12 @@ class StreamingCommunityService {
         }
     }
 
-    async getSeasonDetails(id, version) {
+    async getSeasonDetails(id, slug, seasonId,  version) {
         try {
-            let response = await request.get(this.buildUrl("/titles/" + id), {
-                headers: {
-                    "x-inertia": "true",
-                    "x-inertia-version": version
-                }
-            });
-            return response.toJSON();
+            let response = await request.get(this.buildUrl("/it/titles/" + id + "-" + slug + "/season-" + seasonId), {
+                prepare: addHeaders(this.headers(version))
+            }).then(request.toJSON());
+            return response;
         } catch (error) {
             defaultErrorHandlers(error); 
         }
@@ -241,20 +227,6 @@ async function _initVersion() {
     return _version;
 }
 
-function isMoreThanDaysAhead(dateString) {
-    const inputDate = new Date(dateString);
-    const currentDate = new Date();
-
-    // Imposta l'ora di entrambe le date a mezzanotte per un confronto solo sulla data
-    inputDate.setHours(0, 0, 0, 0);
-    currentDate.setHours(0, 0, 0, 0);
-
-    // Calcola la differenza in millisecondi e convertila in giorni
-    const diffInDays = (inputDate - currentDate) / (1000 * 60 * 60 * 24);
-
-    return diffInDays > 2;
-}
-
 /**
  * 
  * @param {Genre[]} genres 
@@ -309,7 +281,7 @@ export async function getHome() {
                         banner: getFilenameFromImageLink(it, "background"),
                         rating: it.score,
                         slug: it.slug,
-                        isUpdated: it.last_air_date ? isMoreThanDaysAhead(it.last_air_date) : true,
+                        isUpdated: it.updated_at ? isMoreThanDaysAhead(it.updated_at) : true,
                         type: it.type
                     });
                 } else {
@@ -321,7 +293,7 @@ export async function getHome() {
                         banner: getFilenameFromImageLink(it, "background"),
                         rating: it.score,
                         slug: it.slug,
-                        isUpdated: it.last_air_date ? isMoreThanDaysAhead(it.last_air_date) : false,
+                        isUpdated: it.updated_at ? isMoreThanDaysAhead(it.updated_at) : false,
                         type: "tvshow"
                     });
                 }
@@ -390,6 +362,98 @@ export async function getMovieDetails(id, slug) {
         })
     }
     return target;
+}
+
+export async function getTvShowDetails(id, slug) {
+    let res = await service.getDetails(id, slug, _version || await _initVersion());
+    if (_version !== res.version) _version = res.version;
+    let it = res.props.title;
+
+    const target = new TvShow({
+        id: it.id,
+        title: it.name,
+        poster: getFilenameFromImageLink(it, "poster"),
+        cover: getFilenameFromImageLink(it, "cover"),
+        banner: getFilenameFromImageLink(it, "background"),
+        rating: it.score,
+        slug: it.slug,
+        isUpdated: it.last_air_date ? isMoreThanDaysAhead(it.last_air_date) : true,
+        type: it.type,
+        quality: it.quality,
+        overview: it.plot,
+        genres: it.genres,
+        released: it.release_date,
+        tmdb_id: it.tmdb_id,
+        runtime: it.runtime,
+        status: it.status
+    });
+
+    if (!target.runtime &&res.props.loadedSeason && res.props.loadedSeason.episodes && res.props.loadedSeason.episodes.length) {
+        target.runtime = res.props.loadedSeason.episodes[0].duration;
+    }
+
+    if (it.seasons && it.seasons.length) {
+        it.seasons.forEach(season => {
+            target.addToSeasons(new Season({
+                id: season.id,
+                number: season.number,
+                title: season.name,
+                plot: season.plot,
+                release_date: season.release_date,
+                created_at: season.created_at,
+                updated_at: season.updated_at,
+                episodes_count: season.episodes_count,
+            }));
+        });
+    }
+
+    // Map recommentations
+    if (res.props.sliders && res.props.sliders.length) {
+        res.props.sliders[0].titles.forEach(it => {
+            if (it.type === "tv") {
+                target.addToRecommendations(new TvShow({
+                    id: it.id,
+                    slug: it.slug,
+                    title: it.name,
+                    rating: it.score,
+                    poster: getFilenameFromImageLink(it, "poster"),
+                    cover: getFilenameFromImageLink(it, "cover"),
+                    banner: getFilenameFromImageLink(it, "background"),
+                    isUpdated: it.last_air_date ? isMoreThanDaysAhead(it.last_air_date) : true,
+                    type: it.type
+                }));
+            } 
+        })
+    }
+    return target;
+}
+
+/**
+ * Popolate the episodes for the given season if not already done inside the TvShow
+ * @param {number} seasonId 
+ * @param {TvShow} tvShow 
+ */
+export async function getSeasonDetails(seasonId, tvShow) {
+    const season = tvShow.getSeasonById(seasonId);
+    if (!season) return;
+
+    if ((!season.episodes || !season.episodes.length) && season.episodes_count > 0) {
+        const seasonData = await service.getSeasonDetails(tvShow.sid, tvShow.slug, seasonId, _version || await _initVersion());
+        if (_version !== seasonData.version) _version = seasonData.version;
+
+        seasonData.props.loadedSeason.episodes.forEach(episode => {  
+            season.addEpisode(new Episode({
+                id: episode.id,
+                number: episode.number,
+                title: episode.name,
+                overview: episode.plot,
+                poster: getFilenameFromImageLink(episode, "cover"),
+                runtime: episode.duration,
+                created_at: episode.created_at,
+                updated_at: episode.updated_at
+            }));
+        });
+    }
 }
 
 /* StreamingCommunityProvider as a singleton object exactly mapped from Kotlin */
