@@ -2,7 +2,7 @@
 
 import * as TVDML from 'tvdml';
 
-import { getStartParams, createMediaItems } from '../utils';
+import { getStartParams, createMediaItems, isMoreThanDaysAhead } from '../utils';
 import { processEntitiesInString } from '../utils/parser';
 import { deepEqualShouldUpdate } from '../utils/components';
 
@@ -25,6 +25,10 @@ import Loader from '../components/loader';
 
 import hand from '../assets/icons/hand.png';
 import hand2x from '../assets/icons/hand@2x.png';
+import { Season } from '../helpers/models';
+import { getSeasonDetails } from '../request/sc';
+import { VixSrcService } from '../extractors/vixsrc';
+import { defaultErrorHandlers } from '../helpers/auth/handlers';
 
 const MARK_AS_WATCHED_PERCENTAGE = 90;
 const SHOW_RATING_PERCENTAGE = 50;
@@ -138,44 +142,30 @@ function getSeasonData(payload, isDemo) {
   );
 }
 
+// #region ROUTE
 export default function seasonRoute() {
   return TVDML.createPipeline()
     .pipe(
       TVDML.passthrough(
         ({
           navigation: {
-            id,
-            sid,
-            tmdb_id,
-            imdb_id,
-            title,
-            slug,
-            poster,
-            episodeNumber,
-            season,
             shouldPlayImmediately,
-            hasTmdbSeasons
+            activeTvShow,
+            season,
+            title
           },
         }) => ({
-          sid,
-          id,
-          slug,
-          tmdb_id,
-          imdb_id,
-          title,
-          poster,
-          episodeNumber,
-          season,
           shouldPlayImmediately,
-          hasTmdbSeasons
-        }),
+          activeTvShow,
+          season,
+          title,}),
       ),
     )
     .pipe(
       TVDML.render(
         TVDML.createComponent({
           getInitialState() {
-            const { episodeNumber, shouldPlayImmediately } = this.props;
+            const { shouldPlayImmediately } = this.props;
 
             const extended = user.isExtended();
             const authorized = user.isAuthorized();
@@ -187,7 +177,7 @@ export default function seasonRoute() {
               translation,
               loading: true,
               shouldPlayImmediately,
-              highlightEpisode: episodeNumber,
+              highlightEpisode: 0
             };
           },
 
@@ -195,7 +185,7 @@ export default function seasonRoute() {
             const setState = this.setState.bind(this);
 
             this.appResumeStream = TVDML.subscribe(TVDML.event.RESUME);
-            this.appResumeStream.pipe(() => this.loadData().then(setState));
+            //this.appResumeStream.pipe(() => this.loadData().then(setState));
 
             // To improuve UX on fast request we are adding rendering timeout.
             const waitForAnimations = new Promise(done =>
@@ -203,7 +193,7 @@ export default function seasonRoute() {
             );
 
             Promise.all([this.loadData(), waitForAnimations]).then(
-              ([payload]) => this.setState({ loading: false, ...payload }),
+              ([payload]) => this.setState({ ...payload, loading: false }),
             );
           },
 
@@ -214,52 +204,25 @@ export default function seasonRoute() {
           shouldComponentUpdate: deepEqualShouldUpdate,
 
           loadData() {
-            const { extended, translation, highlightEpisode } = this.state;
-
-            return {
-              translation,
-              highlightEpisode: 0,
-              episodesHasSubtitles: false,
-            };
+            console.log("Loading season data...", this.props, this.state);
+            return getSeasonDetails(this.props.season.number, this.props.activeTvShow).then(() => {
+              return { highlightEpisode: 0 };
+            });
           },
 
-          renderPoster(src, wide) {
-            let size = {
-              width: 400,
-              height: 400,
-            };
-
-            if (wide) {
-              size = {
-                width: 710,
-                height: 400,
-              };
-            }
-
-            return <img src={src} style="tv-placeholder: tv" {...size} />;
-          },
-
+          // #region RENDER
           render() {
+            /**@type {TvShow} */
+            const activeTvShow = this.props.activeTvShow;
+            /**@type {Season} */
+            const season = this.props.season;
+            const seasonTitle = this.props.title;
             if (this.state.loading) {
               return (
-                <Loader title={this.props.title} heroImg={this.props.poster} />
+                <Loader title={`${activeTvShow.title} - ${seasonTitle}`} />
               );
             }
 
-            const {
-              translation,
-              highlightEpisode,
-              episodesHasSubtitles,
-            } = this.state;
-
-            const {
-              season,
-              title,
-              poster,
-              id
-            } = this.props
-
-            const seasonTitle = season.season_label;
 
             const { BASEURL } = getStartParams();
             const settingsTranslation = settings.get(TRANSLATION);
@@ -312,101 +275,21 @@ export default function seasonRoute() {
                   />
                 </head>
                 <compilationTemplate>
-                  <background>
-                    <heroImg src={poster} />
-                  </background>
                   <list>
                     <relatedContent>
-                      <lockup>{this.renderPoster(poster)}</lockup>
+                      <lockup><img src={activeTvShow.poster} style="tv-placeholder: tv" width={"100%"} height={"100%"} /></lockup>
                     </relatedContent>
                     <segmentBarHeader>
-                      <title>{title}</title>
+                      <title>{activeTvShow.title}</title>
                       <subtitle>{seasonTitle}</subtitle>
-                      {episodesHasSubtitles && (
-                        <segmentBar>
-                          {translationOrder.map(item => {
-                            const autoHighlight =
-                              settingsTranslation === item ? true : undefined;
-
-                            return (
-                              <segmentBarItem
-                                key={item}
-                                autoHighlight={autoHighlight}
-                                // eslint-disable-next-line react/jsx-no-bind
-                                onHighlight={this.switchLocalTranslation.bind(
-                                  ...[this, item],
-                                )}
-                              >
-                                <title>{i18n(`translation-${item}`)}</title>
-                              </segmentBarItem>
-                            );
-                          })}
-                        </segmentBar>
-                      )}
                     </segmentBarHeader>
                     <section>
                       {season.episodes.map((episode, index) => {
-                        // const {
-                        //   rating,
-                        //   spoiler,
-                        //   date: begins,
-                        //   episode: episodeNumber,
-                        // } = episode;
+                        const highlight = index === this.state.highlightEpisode;
 
-                        // if (begins) {
-                        //   const date = moment(begins, 'DD.MM.YYYY');
-                        //   const airdate = date.format('ll');
-
-                        //   const dateTitle = date.isValid()
-                        //     ? i18n('tvshow-episode-airdate', { airdate })
-                        //     : '';
-
-                        //   return (
-                        //     <listItemLockup class="item item--disabled">
-                        //       <ordinal minLength="3">{episodeNumber}</ordinal>
-                        //       <title class="title">{episode.title}</title>
-                        //       <decorationLabel>
-                        //         <text>{dateTitle}</text>
-                        //       </decorationLabel>
-                        //     </listItemLockup>
-                        //   );
-                        // }
-
-                        const episodePoster = poster;
-
-                        // const file = getEpisodeMedia(episode, translation);
-                        // const mqCode = file && mediaQualities[file.quality];
-                        // const mtCode =
-                        //   file && mediaLocalizations[file.translate];
-
-                        // const hasHD = file && mqCode !== SD;
-                        // const isUHD = hasHD && mqCode === UHD;
-                        // const hasSubtitles = !!~subtitlesList.indexOf(mtCode);
-
-                        const highlight = index === highlightEpisode;
-
-                        const epTitle = i18n('episode-number', {epLabel: episode.label || ""});
-                        const description = "";
-
-                        const epId = `eid-${index}`;
-
-                        // const badges = [
-                        //   this.state[epId] && (
-                        //     <badge
-                        //       class="badge"
-                        //       src="resource://button-checkmark"
-                        //     />
-                        //   ),
-                        //   hasSubtitles && (
-                        //     <badge class="badge" src="resource://cc" />
-                        //   ),
-                        //   hasHD && (
-                        //     <badge
-                        //       class="badge"
-                        //       src={`resource://${isUHD ? '4k' : 'hd'}`}
-                        //     />
-                        //   ),
-                        // ];
+                        const epTitle = i18n('episode-number', {epLabel: episode.number || ""});
+                        const description = episode.overview || i18n('no-description');
+                        const isNewEpisode = isMoreThanDaysAhead(episode.updated_at)
 
                         // eslint-disable-next-line react/jsx-no-bind
                         const onSelectDesc = this.onShowMenu.bind(
@@ -414,7 +297,7 @@ export default function seasonRoute() {
                           episode,
                         );
 
-                        const onSelectEpisode = this.playEpisode.bind(this, episode.number);
+                        const onSelectEpisode = this.playEpisode.bind(this, episode);
 
                         const listItemRef = highlight
                           ? // eslint-disable-next-line react/jsx-no-bind
@@ -432,18 +315,12 @@ export default function seasonRoute() {
                           >
                             <ordinal minLength="3">{episode.label}</ordinal>
                             <title class="title">{epTitle}</title>
-                            {episode.is_new && <decorationLabel>
+                            {isNewEpisode && <decorationLabel>
                               <text>{i18n('tvshow-new')}</text>
                             </decorationLabel>}
                             <relatedContent>
                               <lockup class="item-content">
-                                {this.renderPoster(episodePoster, true)}
-                                <row class="controls_container">
-                                  <ratingBadge
-                                    style="tv-rating-style: star-l"
-                                    value={1 / 10}
-                                  />
-                                </row>
+                                <img src={episode.poster} style="tv-placeholder: tv" width={"100%"} height={"100%"} />
                                 <description class="item-desc">
                                   {description}
                                 </description>
@@ -500,19 +377,26 @@ export default function seasonRoute() {
             });
           },
 
+          /**
+           * 
+           * @param {Episode} episode 
+           */
           onHighlightedItemRender(episode) {
-            const { episode: episodeNumber } = episode;
 
             if (this.state.shouldPlayImmediately) {
               this.setState({ shouldPlayImmediately: false });
-              this.playEpisode(episodeNumber);
+              this.playEpisode(episode);
             }
           },
-
-          playEpisode(episodeNumber) {
-            const { slug, id: seasonId, season, poster } = this.props;
-
-            // const {episodes, translation } = this.state;
+          /**
+           * 
+           * @param {Episode} episode
+           */
+          playEpisode(episode) {
+            /**@type {TvShow} */
+            const tvshow = this.props.activeTvShow;
+            /**@type {Season} */
+            const season = this.props.season;
 
             const player = new Player();
 
@@ -532,14 +416,6 @@ export default function seasonRoute() {
                   currentMediaItem.duration = currentMediaItemDuration;
                 }
 
-                // const [, , currentEpisodeNumber] = currentMediaItem.id.split(
-                //   '-',
-                // );
-                // const currentEpisode = getEpisode(
-                //   currentEpisodeNumber,
-                //   episodes,
-                // );
-
                 const watchedPercent = (time * 100) / currentMediaItemDuration;
                 const passedBoundary =
                   watchedPercent >= MARK_AS_WATCHED_PERCENTAGE;
@@ -547,10 +423,10 @@ export default function seasonRoute() {
                 if (passedBoundary && !currentMediaItem.markedAsWatched) {
                   currentMediaItem.markedAsWatched = true;
 
-                  const index = episodeNumber;
+                  const index = episode.number - 1;
                   const nextEpisodeNumber = (season.episodes[index + 1] || {}).number;
 
-                  this.onMarkAsWatched(episodeNumber);
+                  this.onMarkAsWatched(episode.number);
 
                   // Setting next episode as highlighted if exist
                   if (nextEpisodeNumber) {
@@ -721,16 +597,25 @@ export default function seasonRoute() {
 
             //const episode = getEpisode(episodeNumber, episodes);
 
-            // Loading initial episode and starting playback.
-            getEpisodeItem(slug, seasonId, episodeNumber, poster)
-              .then(episode => {
-                let videoQuality = settings.getPreferredVideoQuality();
-                return createMediaItems(episode, videoQuality);
-              })
-              .then(episodeMediaItem => {
-                player.playlist.push(episodeMediaItem);
+            const preparePlayer = (link) => {
+              let episodeMedia = {
+                  title: `${tvshow.title} - ${i18n('tvshow-season-episode', { seasonNumber: season.number, episodeNumber: episode.number })}`,
+                  description: episode.overview|| "",
+                  stream: link,
+                  artworkImageURL: episode.poster || tvshow.cover,
+                  resumeTime: 0
+                };
+                
+                let movieMediaItem =  createMediaItems(episodeMedia);
+                player.playlist.push(movieMediaItem);
                 player.play();
-              });
+            }
+
+            VixSrcService.getTvShowUrl(tvshow.tmdb_id, season.number, episode.number).then(link => {
+              preparePlayer(link);
+            }).catch((error) => {
+              defaultErrorHandlers(error);
+            });
           },
 
           onShowMenu(episode) {
