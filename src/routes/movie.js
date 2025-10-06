@@ -30,14 +30,6 @@ import {
   markSeasonAsUnwatched,
   markReviewAsLiked,
   markReviewAsDisliked,
-  getRelated,
-  getMovieDescription,
-  getMovieMediaStream,
-  getCollection,
-  isPreferred,
-  addToMyList,
-  removeFromMyList,
-  checkSession,
 } from '../request/adc';
 
 import Tile from '../components/tile';
@@ -45,7 +37,7 @@ import Loader from '../components/loader';
 import Authorize from '../components/authorize';
 import { getMovieDetails } from '../request/sc';
 import { Movie } from '../helpers/models';
-import { extractVix, VixSrcService } from '../extractors/vixsrc';
+import { VixSrcService } from '../extractors/vixsrc';
 
 const MARK_AS_WATCHED_PERCENTAGE = 90;
 const SHOW_RATING_PERCENTAGE = 50;
@@ -159,35 +151,13 @@ export default function movieRoute() {
 
           shouldComponentUpdate: deepEqualShouldUpdate,
 
+          // #region LOAD DATA
           loadData() {
             const { sid, slug } = this.props;
 
             return getMovieDetails(sid, slug).then(movie => ({
               movie
             }));
-
-            // const preferred = () => {
-            //   return checkSession().then(payload => {
-            //     if(payload) user.set({...payload});
-            //     return isPreferred(sid);
-            //   })
-            // }
-
-            // return Promise.all([
-            //   getMovieDescription(slug),
-            //   getRelated(slug),
-            //   getCollection(collection_slug),
-            //   preferred()
-            // ])
-            //   .then(payload => {
-            //     const [
-            //       movieResponse,
-            //       recomendations,
-            //       collection,
-            //       isPreferred
-            //     ] = payload;
-
-            //   });
           },
           // #region RENDER
           render() {
@@ -441,11 +411,9 @@ export default function movieRoute() {
                 player.play();
             }
 
-            console.log("playMovie", tmdb_id);
             VixSrcService.getMovieUrl(tmdb_id).then((result) => {
               preparePlayer(result);
             }).catch((error) => {
-              console.error("extractVix error", error);
               defaultErrorHandlers(error);
             });
 
