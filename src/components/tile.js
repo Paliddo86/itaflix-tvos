@@ -52,7 +52,7 @@ export default function Tile({ key, attrs = {}, events = {} }) {
       >
         {attrs.title}
       </title>
-      <subtitle class="tile-subtitle" style="font-size: 20">{attrs.type === "movie" ? i18n("menu-moviesGenres") : i18n("menu-tvShowsGenres")}</subtitle>
+      <subtitle class="tile-subtitle" style="font-size: 20">{i18n(`${attrs.type}-type`)}</subtitle>
       <overlay style="margin: 0; padding: 0;">
       {attrs.quality && (
             <textBadge
