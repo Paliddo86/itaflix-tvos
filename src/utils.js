@@ -174,3 +174,17 @@ export function sortTvShows(tvshows) {
       i18n('tvshow-title', left).localeCompare(i18n('tvshow-title', right)),
     );
 }
+
+export function isMoreThanDaysAhead(dateString) {
+    const inputDate = new Date(dateString);
+    const currentDate = new Date();
+
+    // Imposta l'ora di entrambe le date a mezzanotte per un confronto solo sulla data
+    inputDate.setHours(0, 0, 0, 0);
+    currentDate.setHours(0, 0, 0, 0);
+
+    // Calcola la differenza in millisecondi e convertila in giorni
+    const diffInDays = (currentDate - inputDate) / (1000 * 60 * 60 * 24);
+
+    return diffInDays <= 5;
+}
