@@ -124,7 +124,10 @@ export default {
   'movie-quality': 'Qualità',
   'movie-collection': 'Collezione',
   'movie-type': 'Film',
+  'movie-update': 'Aggiornato',
   
+  'tvshow-update': 'Nuovi Episodi',
+  'season-update': 'Nuovi Episodi',
   'tvshow-type': 'Serie TV',
   'season-type': 'Stagione',
   'tvshow-status': 'Stato Serie TV',

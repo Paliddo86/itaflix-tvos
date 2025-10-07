@@ -68,7 +68,7 @@ export default function Tile({ key, attrs = {}, events = {} }) {
             {attrs.quality}
           </textBadge>
         )}
-      {(attrs.isUpdated || attrs.updateType) && (
+      {(attrs.isUpdated) && (
             <textBadge
             style={`
               margin: 0 10 12 0;
@@ -79,7 +79,7 @@ export default function Tile({ key, attrs = {}, events = {} }) {
               background-color: #b90505;
             `}
           >
-            {attrs.updateType? attrs.updateType : i18n('tvshow-next')}
+            {i18n(attrs.type + '-update')}
           </textBadge>
         )}
         {!attrs.isWatched && attrs.counter && (

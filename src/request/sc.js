@@ -281,7 +281,7 @@ export async function getHome() {
                         banner: getFilenameFromImageLink(it, "background"),
                         rating: it.score,
                         slug: it.slug,
-                        isUpdated: it.updated_at ? isMoreThanDaysAhead(it.updated_at) : true,
+                        isUpdated: it.updated_at || it.last_air_date ? isMoreThanDaysAhead(it.updated_at || it.last_air_date) : true,
                         type: it.type
                     });
                 } else {
@@ -293,7 +293,7 @@ export async function getHome() {
                         banner: getFilenameFromImageLink(it, "background"),
                         rating: it.score,
                         slug: it.slug,
-                        isUpdated: it.updated_at ? isMoreThanDaysAhead(it.updated_at) : false,
+                        isUpdated: it.updated_at || it.last_air_date ? isMoreThanDaysAhead(it.updated_at || it.last_air_date) : false,
                         type: "tvshow"
                     });
                 }
