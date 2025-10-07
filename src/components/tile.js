@@ -52,7 +52,7 @@ export default function Tile({ key, attrs = {}, events = {} }) {
       >
         {attrs.title}
       </title>
-      <subtitle class="tile-subtitle" style="font-size: 20">{attrs.type === "movie" ? i18n("menu-moviesGenres") : i18n("menu-tvShowsGenres")}</subtitle>
+      <subtitle class="tile-subtitle" style="font-size: 20">{i18n(`${attrs.type}-type`)}</subtitle>
       <overlay style="margin: 0; padding: 0;">
       {attrs.quality && (
             <textBadge
@@ -68,18 +68,20 @@ export default function Tile({ key, attrs = {}, events = {} }) {
             {attrs.quality}
           </textBadge>
         )}
-      {(attrs.isUpdated || attrs.updateType) && (
+      {(attrs.isUpdated) && (
             <textBadge
             style={`
+              font-size: 20
               margin: 0 10 12 0;
               border-radius: 0;
-              tv-align: center;
-              tv-position: bottom;
               color: rgb(255, 255, 255);
+              tv-tint-color: #b90505;
               background-color: #b90505;
+              tv-align: left;
+              tv-position: top;
             `}
           >
-            {attrs.updateType? attrs.updateType : i18n('tvshow-next')}
+            {i18n(attrs.type + '-update')}
           </textBadge>
         )}
         {!attrs.isWatched && attrs.counter && (
@@ -112,6 +114,21 @@ export default function Tile({ key, attrs = {}, events = {} }) {
             `}
           >
             ✓
+          </textBadge>
+        )}
+        {attrs.isSubIta && (
+          <textBadge
+            type="fill"
+            style={`
+              tv-align: right;
+              tv-position: bottom;
+              tv-tint-color: rgb(255, 255, 255);
+              color: rgba(0, 0, 0, 1);
+              background-color: rgb(255, 255, 255);
+              font-size: 20;
+            `}
+          >
+            SUB
           </textBadge>
         )}
       </overlay>

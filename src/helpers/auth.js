@@ -2,7 +2,6 @@
 
 import * as TVDML from 'tvdml';
 
-import { authorize } from '../request/adc';
 import { get as i18n } from '../localization';
 import { noop, getStartParams, removeDocumentFromNavigation } from '../utils';
 
@@ -244,7 +243,6 @@ export default function auth(options = {}) {
         const { login, password } = envelope;
 
         envelope.reject = reject;
-        authorize({ email:login, password }).then(resolve, reject);
       });
 
       return promise

@@ -2,7 +2,6 @@
 
 import moment from 'moment';
 import * as TVDML from 'tvdml';
-import formatNumber from 'simple-format-number';
 
 import * as user from '../user';
 import * as settings from '../settings';
@@ -11,66 +10,36 @@ import authFactory from '../helpers/auth';
 import { defaultErrorHandlers } from '../helpers/auth/handlers';
 
 import {
-  link,
-  createMediaItem,
-  getMonogramImageUrl,
   isMenuButtonPressNavigatedTo,
 } from '../utils';
 
-import { processEntitiesInString } from '../utils/parser';
 import { deepEqualShouldUpdate } from '../utils/components';
 
 import { get as i18n } from '../localization';
 
-import {
-  getEpisodeMedia,
-  getTrailerStream,
-  getTVShowSeasons,
-  getTVShowDescription,
-  markTVShowAsWatched,
-  markTVShowAsUnwatched,
-  markSeasonAsWatched,
-  markSeasonAsUnwatched,
-  markReviewAsLiked,
-  markReviewAsDisliked,
-  getRelated,
-  isPreferred,
-  addToMyList,
-  removeFromMyList,
-  checkSession,
-} from '../request/adc';
-
 import Tile from '../components/tile';
 import Loader from '../components/loader';
 import Authorize from '../components/authorize';
-
-const { VIDEO_QUALITY } = settings.params;
-const { UHD } = settings.values[VIDEO_QUALITY];
+import { TvShow } from '../helpers/models';
+import { getTvShowDetails } from '../request/sc';
 
 function calculateUnwatchedCount(season) {
   return season.unwatched || 0;
 }
 
-function getTrailerItem(trailer) {
-  const { tid } = getEpisodeMedia(trailer);
-
-  return getTrailerStream(tid).then(({ stream }) => ({
-    id: tid,
-    url: stream,
-  }));
-}
-
+// #region ROUTE
 export default function tvShowRoute() {
   return TVDML.createPipeline()
     .pipe(
       TVDML.passthrough(
-        ({ navigation: { sid, title, poster, slug, tmdb_id, imdb_id, continueWatchingAndPlay } }) => ({
+        ({ navigation: { sid, title, poster, slug, tmdb_id, imdb_id, banner, continueWatchingAndPlay } }) => ({
           sid,
           title,
           poster,
           slug,
           tmdb_id,
           imdb_id,
+          banner,
           continueWatchingAndPlay: continueWatchingAndPlay === '1',
         }),
       ),
@@ -122,7 +91,7 @@ export default function tvShowRoute() {
 
             Promise.all([this.loadData(), waitForAnimations]).then(
               ([payload]) => {
-                this.setState(payload);
+                this.setState({...payload, loading: false});
                 if (
                   this.props.continueWatchingAndPlay &&
                   this.canContinueWatching()
@@ -143,78 +112,68 @@ export default function tvShowRoute() {
 
           shouldComponentUpdate: deepEqualShouldUpdate,
 
+          // #region LOAD DATA
           loadData() {
             const { sid, slug } = this.props;
 
-            const preferred = () => {
-              return checkSession().then(payload => {
-                if(payload) user.set({...payload});
-                return isPreferred(sid);
-              })
-            }
-
-            return Promise.all([
-              getTVShowDescription(slug),
-              getTVShowSeasons(slug),
-              getRelated(slug),
-              preferred()
-              // getCountriesList(),
-              // getTVShowSchedule(sid),
-              //getTVShowRecommendations(sid),
-            ])
-              .then(payload => {
-                const [
-                  tvshowResponse,
-                  seasons,
-                  recomendations,
-                  isPreferred
-                ] = payload;
-
-                return {
-                  tvshow: tvshowResponse.result, 
-                  seasons,
-                  recomendations: recomendations.relatedData,
-                  isPreferred
-                };
-              });
+            return getTvShowDetails(sid, slug).then(tvshow => ({
+                          tvshow
+                        }));
           },
 
+          // #region RENDERING
           render() {
             if (this.state.loading) {
               return (
-                <Loader title={this.props.title} heroImg={this.props.poster.split("?")[0]} />
+                <Loader title={this.props.title} heroImg={this.props.poster} />
               );
             }
             return (
               <document>
                 <productTemplate>
+                  {this.props.banner && (
+                    <background>
+                      <img
+                        src={this.props.banner}
+                        style="width: 100%; height: 100%; "
+                      />
+                    </background>
+                  )}
                   <banner>
                     {this.renderStatus()}
                     {this.renderInfo()}
-                    <heroImg src={this.props.poster.split("?")[0]} />
+                    {!this.props.banner && <heroImg src={this.props.poster} />}
                   </banner>
                   {this.renderSeasons()}
-                  {this.renderRecomendations()}
-                  {/* {this.renderRatings()} */}
-                  {/* {this.renderCrew()} */}
+                  {this.renderRecommendations()}
                 </productTemplate>
               </document>
             );
           },
 
+          // #region STATUS
           renderStatus() {
-            const { categories_ids } = this.state.tvshow;
+            /**@type {TvShow} */
+            const tvshow = this.state.tvshow;
+            const { genres, status } = tvshow;
+
 
             return (
               <infoList>
                 <info>
                   <header>
+                    <title>{i18n('tvshow-status')}</title>
+                  </header>
+                  <text key={status}>{status ? i18n(`status-${status.toLowerCase()}`) || status: "N/A"}</text>
+                </info>
+                <info>
+                  <header>
                     <title>{i18n('tvshow-genres')}</title>
                   </header>
-                  {categories_ids.map(id => {
-                      let genre = settings.getTvShowGenresById(id);
-                      if(!genre) return null;
-                      return (<text key={genre}>{genre}</text>);
+                  {genres.map(genre => {
+                    let genreName = settings.getTvShowGenresById(genre.id);
+                    return (<text key={genre.id}>{genreName || genre.name}</text>);
+
                     })
                   }
                 </info>
@@ -222,12 +181,13 @@ export default function tvShowRoute() {
             );
           },
 
+          // #region INFO
           renderInfo() {
 
-            const { title, year, quality, rating, plot: description, runtime: episodeRuntime } = this.state.tvshow;
+            /** @type {TvShow} */
+            const tvshow = this.state.tvshow;
+            const { title, released, quality, rating, overview: description, runtime } = tvshow;
             const isPreferred = this.state.isPreferred
-            // const hasTrailers = !!this.state.trailers.length;
-            // const hasMultipleTrailers = this.state.trailers.length > 1;
 
             let buttons = <row />;
 
@@ -241,49 +201,28 @@ export default function tvShowRoute() {
               </buttonLockup>
             );
 
-            // const trailerBtnTitleCode = hasMultipleTrailers
-            //   ? 'tvshow-control-show-trailers'
-            //   : 'tvshow-control-show-trailer';
+            // const startWatchingBtn = quality.map((quality) => {
+            //     return (
+            //       <buttonLockup onSelect={this.onAddToSubscriptions}>
+            //         <badge src="resource://button-play" />
+            //         <title>{i18n('tvshow-control-play', {quality})}</title>
+            //       </buttonLockup>
+            //     );
+            //   });
 
-            // const showTrailerBtn = (
-            //   <buttonLockup
-            //     onPlay={this.onShowFirstTrailer}
-            //     onSelect={this.onShowTrailer}
-            //   >
-            //     <badge src="resource://button-preview" />
-            //     <title>{i18n(trailerBtnTitleCode)}</title>
+            // const stopWatchingBtn = (
+            //   <buttonLockup onSelect={this.onRemoveFromSubscription}>
+            //     <badge src="resource://button-remove" />
+            //     <title>{i18n('tvshow-control-stop-watching')}</title>
             //   </buttonLockup>
             // );
 
-            const startWatchingBtn = quality.map((quality) => {
-                return (
-                  <buttonLockup onSelect={this.onAddToSubscriptions}>
-                    <badge src="resource://button-play" />
-                    <title>{i18n('tvshow-control-play', {quality})}</title>
-                  </buttonLockup>
-                );
-              });
-
-            const stopWatchingBtn = (
-              <buttonLockup onSelect={this.onRemoveFromSubscription}>
-                <badge src="resource://button-remove" />
-                <title>{i18n('tvshow-control-stop-watching')}</title>
-              </buttonLockup>
-            );
-
-            const moreBtn = (
-              <buttonLockup onSelect={this.onMore}>
-                <badge src="resource://button-more" />
-                <title>{i18n('tvshow-control-more')}</title>
-              </buttonLockup>
-            );
-
-            const rateBtn = (
-              <buttonLockup onSelect={this.onRate}>
-                <badge src="resource://button-rate" />
-                <title>{i18n('tvshow-control-rate')}</title>
-              </buttonLockup>
-            );
+            // const moreBtn = (
+            //   <buttonLockup onSelect={this.onMore}>
+            //     <badge src="resource://button-more" />
+            //     <title>{i18n('tvshow-control-more')}</title>
+            //   </buttonLockup>
+            // );
 
             const addToMyBtn = (
               <buttonLockup onSelect={this.onMy}>
@@ -322,8 +261,9 @@ export default function tvShowRoute() {
                 <title>{title}</title>
                 <row>
                   <ratingBadge value={rating / 10} />
-                  <text>{`${i18n('tvshow-information-year').toUpperCase()}: ${year}`}</text>
-                  <text>{`${i18n('tvshow-information-runtime').toUpperCase()}: ${moment.duration(+episodeRuntime, 'minutes').humanize()}`}</text>
+                  <text>{`${i18n('tvshow-information-year').toUpperCase()}: ${released}`}</text>
+                  <text>{`${i18n('tvshow-information-runtime').toUpperCase()}: ${moment.duration(runtime, 'minutes').humanize()}`}</text>
+                  <text>{`${i18n('tvshow-quality').toUpperCase()}:`}</text><textBadge style={`font-size: 20;`}>{quality}</textBadge>
                 </row>
                 <description
                   allowsZooming="true"
@@ -340,135 +280,37 @@ export default function tvShowRoute() {
             );
           },
 
+          // #region SEASONS
           renderSeasons() {
-            const {sid, slug, tmdb_id, poster, imdb_id } = this.props;
-            const seasons = this.state.seasons;
-            const title = i18n('tvshow-title', this.state.tvshow);
-
-            // const scheduleDiff = this.state.schedule
-            //   .slice(this.state.seasons.length)
-            //   .map(season => ({
-            //     covers,
-            //     begins: season.episodes[0].date,
-            //     ...season,
-            //   }));
-
-            // const seasons = this.state.seasons.concat(scheduleDiff);
-
-            // const currentMoment = moment();
-
-            // const nextDay = currentMoment
-            //   .clone()
-            //   .add(moment.relativeTimeThreshold('h'), 'hour');
-
-            // const nextMonth = currentMoment
-            //   .clone()
-            //   .add(moment.relativeTimeThreshold('d'), 'day');
-
+            /** @type {TvShow} */
+            const tvshow = this.state.tvshow;
+            const {cover } = tvshow;
+            const seasons = tvshow.seasons || [];
             if (!seasons.length) return null;
 
             return (
               <shelf>
                 <header>
-                  <title>{i18n('tvshow-seasons')}</title>
+                  <title>{i18n('tvshow-seasons')} - {seasons.length}</title>
                 </header>
                 <section>
                   {seasons.map((season, i) => {
-                    const seasonId = season.seasonId || season.season_number || i +1;
-                    let seasonPoster = poster;
-
-                    // const {
-                    //   season: i,
-                    //   covers: { big: poster},
-                    // } = season;
-
-                    //const { schedule } = this.state;
-
-                    if(!Array.isArray(season.episodes)) season.episodes = Object.values(season.episodes);
-                    const seasonHasPoster = !!seasonPoster;
-                    const seasonTitle = season.season_label;
-                    const totalEpisodes = season.episodes.length;
-                    //const unwatched = calculateUnwatchedCount(season);
-
-                    const { episodes: seasonEpisodes } = season;
-                    // const { episodes: scheduleEpisodes } = schedule[i] || {
-                    //   episodes: [],
-                    // };
-
-                    // const [scheduleEpisode] = scheduleEpisodes
-                    //   .slice(seasonEpisodes.length)
-                    //   .filter(episode => {
-                    //     const episodeDate = moment(episode.date, 'DD.MM.YYYY');
-                    //     return episodeDate > currentMoment;
-                    //   });
-
-                    // const isUHD = seasonEpisodes
-                    //   .map(({ files }) => files)
-                    //   .filter(Boolean)
-                    //   .some(files =>
-                    //     files.some(({ quality }) => {
-                    //       const mqCode = mediaQualities[quality];
-                    //       return mqCode === UHD;
-                    //     }),
-                    //   );
-
                     let isWatched = false;
-                    // let dateTitle;
-                    // let date;
 
-                    // if (scheduleEpisode) {
-                    //   date = moment(scheduleEpisode.date, 'DD.MM.YYYY');
-
-                    //   if (!date.isValid() || nextMonth < date) {
-                    //     dateTitle = i18n('new-episode-soon');
-                    //   } else if (nextDay > date) {
-                    //     dateTitle = i18n('new-episode-day');
-                    //   } else {
-                    //     dateTitle = i18n('new-episode-custom-date', {
-                    //       date: date.fromNow(),
-                    //     });
-                    //   }
-                    //   if (currentMoment < date) isWatched = false;
-                    // }
-
-                    // if (begins) {
-                    //   date = moment(begins, 'DD.MM.YYYY');
-
-                    //   if (!date.isValid() || nextMonth < date) {
-                    //     dateTitle = i18n('new-season-soon');
-                    //   } else if (nextDay > date) {
-                    //     dateTitle = i18n('new-season-day');
-                    //   } else {
-                    //     dateTitle = i18n('new-season-custom-date', {
-                    //       date: date.fromNow(),
-                    //     });
-                    //   }
-                    //   isWatched = false;
-                    // }
-
-                    const payload = {
-                      sid,
-                      tmdb_id,
-                      imdb_id,
-                      slug,
-                      season,
-                      poster: seasonPoster,
-                      id: seasonId,
-                      title,
-                    };
                     return (
                       <Tile
-                        key={sid+"_"+i}
-                        title={seasonTitle}
-                        route="season"
-                        poster={seasonHasPoster && seasonPoster}
-                        counter={totalEpisodes}
+                        type={season.type}
+                        season={season}
+                        activeTvShow={tvshow}
+                        title={i18n('tvshow-season', season.number)}
+                        cover={cover}
+                        asCover={true}
+                        counter={season.episodes_count}
                         isWatched={isWatched}
-                        isUHD={false}
-                        payload={payload}
+                        isUpdated={season.isUpdated}
                         // eslint-disable-next-line react/jsx-no-bind
                         onHoldselect={this.onSeasonOptions.bind(
-                          ...[this, payload.id, payload.title, payload.season, payload.tmdb_id, payload.imdb_id, isWatched],
+                          ...[this, season.id, season.title, season, isWatched],
                         )}
                       />
                     );
@@ -504,25 +346,30 @@ export default function tvShowRoute() {
           },
 
           onMarkSeasonAsWatched(id) {
-            const { sid } = this.state.tvshow;
+            // const { sid } = this.state.tvshow;
 
-            return markSeasonAsWatched(sid, id)
-              .then(this.loadData.bind(this))
-              .then(this.setState.bind(this))
-              .then(TVDML.removeModal);
+            // return markSeasonAsWatched(sid, id)
+            //   .then(this.loadData.bind(this))
+            //   .then(this.setState.bind(this))
+            //   .then(TVDML.removeModal);
+            defaultErrorHandlers(new Error("Non Implementata!!!"));
           },
 
           onMarkSeasonAsUnwatched(id) {
-            const { sid } = this.state.tvshow;
+            // const { sid } = this.state.tvshow;
 
-            return markSeasonAsUnwatched(sid, id)
-              .then(this.loadData.bind(this))
-              .then(this.setState.bind(this))
-              .then(TVDML.removeModal);
+            // return markSeasonAsUnwatched(sid, id)
+            //   .then(this.loadData.bind(this))
+            //   .then(this.setState.bind(this))
+            //   .then(TVDML.removeModal);
+            defaultErrorHandlers(new Error("Non Implementata!!!"));
           },
 
-          renderRecomendations() {
-            if (!this.state.recomendations.length) return null;
+          // #region RECOMMENDATIONS
+          renderRecommendations() {
+            /**@type {TvShow} */
+            const tvshow = this.state.tvshow;
+            if (!tvshow.recommendations.length) return null;
 
             return (
               <shelf>
@@ -530,160 +377,9 @@ export default function tvShowRoute() {
                   <title>{i18n('tvshow-also-watched')}</title>
                 </header>
                 <section>
-                  {this.state.recomendations.map(tvshow => {
-                    const {
-                      sid,
-                      poster,
-                      quality,
-                      isUpdated
-                    } = tvshow;
-
-                    const title = i18n('tvshow-title', tvshow);
-
+                  {tvshow.recommendations.map(tvshow => {
                     return (
-                      <Tile
-                        key={sid}
-                        title={title}
-                        poster={poster}
-                        route="tvshow"
-                        quality={quality}
-                        isUpdated={isUpdated}
-                        payload={tvshow}
-                      />
-                    );
-                  })}
-                </section>
-              </shelf>
-            );
-          },
-
-          renderRatings() {
-            const {
-              soap_votes: soapVotes,
-              soap_rating: soapRating,
-              imdb_votes: imdbVotes,
-              imdb_rating: imdbRating,
-              kinopoisk_votes: kinopoiskVotes,
-              kinopoisk_rating: kinopoiskRating,
-            } = this.state.tvshow;
-
-            return (
-              <shelf>
-                <header>
-                  <title>{i18n('tvshow-ratings')}</title>
-                </header>
-                <section>
-                  {!!+imdbRating && (
-                    <ratingCard>
-                      <title>{`${imdbRating}`.slice(0, 3)} / 10</title>
-                      <ratingBadge value={imdbRating / 10} />
-                      <description>
-                        {i18n('tvshow-average-imdb', {
-                          amount: formatNumber(+imdbVotes, {
-                            fractionDigits: 0,
-                          }),
-                        })}
-                      </description>
-                    </ratingCard>
-                  )}
-                  {!!+kinopoiskRating && (
-                    <ratingCard>
-                      <title>{`${kinopoiskRating}`.slice(0, 3)} / 10</title>
-                      <ratingBadge value={kinopoiskRating / 10} />
-                      <description>
-                        {i18n('tvshow-average-kinopoisk', {
-                          amount: formatNumber(+kinopoiskVotes, {
-                            fractionDigits: 0,
-                          }),
-                        })}
-                      </description>
-                    </ratingCard>
-                  )}
-                  {!!+soapRating && (
-                    <ratingCard>
-                      <title>{`${soapRating}`.slice(0, 3)} / 10</title>
-                      <ratingBadge value={soapRating / 10} />
-                      <description>
-                        {i18n('tvshow-average-soap', {
-                          amount: formatNumber(+soapVotes, {
-                            fractionDigits: 0,
-                          }),
-                        })}
-                      </description>
-                    </ratingCard>
-                  )}
-                  {this.state.reviews.map(review => {
-                    const {
-                      id,
-                      date,
-                      text,
-                      user: userName,
-                      review_likes: likes,
-                      review_dislikes: dislikes,
-                    } = review;
-
-                    return (
-                      <reviewCard
-                        // eslint-disable-next-line react/jsx-no-bind
-                        onSelect={this.onShowFullReview.bind(this, review)}
-                        key={id}
-                      >
-                        <title>{userName}</title>
-                        <description>
-                          {moment(date * 1000).format('lll')}
-                          {'\n\n'}
-                          {processEntitiesInString(text)}
-                        </description>
-                        <text>
-                          {likes} 👍 / {dislikes} 👎
-                        </text>
-                      </reviewCard>
-                    );
-                  })}
-                </section>
-              </shelf>
-            );
-          },
-
-          renderCrew() {
-            if (!this.state.tvshow.actors.length) return null;
-
-            return (
-              <shelf>
-                <header>
-                  <title>{i18n('tvshow-cast-crew')}</title>
-                </header>
-                <section>
-                  {this.state.tvshow.actors.map(actor => {
-                    const {
-                      person_id: personId,
-                      person_en: personName,
-                      person_image_original: personImage,
-                      character_en: characterName,
-                      character_image_original: characterImage,
-                    } = actor;
-
-                    const [firstName, lastName] = personName.split(' ');
-                    const poster = personImage || characterImage;
-
-                    return (
-                      <monogramLockup
-                        key={personId}
-                        onSelect={link('actor', {
-                          id: personId,
-                          actor: personName,
-                          poster,
-                        })}
-                      >
-                        <monogram
-                          style="tv-placeholder: monogram;"
-                          src={getMonogramImageUrl(poster)}
-                          firstName={firstName}
-                          lastName={lastName}
-                        />
-                        <title>{personName}</title>
-                        <subtitle>{characterName}</subtitle>
-                      </monogramLockup>
+                      <Tile {...tvshow} asCover />
                     );
                   })}
                 </section>
@@ -707,75 +403,24 @@ export default function tvShowRoute() {
           },
 
           onContinueWatching(event, shouldPlayImmediately) {
-            const uncompletedSeason = this.getSeasonToWatch(this.state.seasons);
-            const {
-              season: seasonNumber,
-              covers: { big: poster },
-            } = uncompletedSeason;
+            // const uncompletedSeason = this.getSeasonToWatch(this.state.seasons);
+            // const {
+            //   season: seasonNumber,
+            //   covers: { big: poster },
+            // } = uncompletedSeason;
 
-            const seasonTitle = i18n('tvshow-season', { seasonNumber });
-            const title = i18n('tvshow-title', this.state.tvshow);
-            const { sid } = this.state.tvshow;
+            // const seasonTitle = i18n('tvshow-season', { seasonNumber });
+            // const title = i18n('tvshow-title', this.state.tvshow);
+            // const { sid } = this.state.tvshow;
 
-            TVDML.navigate('season', {
-              sid,
-              poster,
-              id: seasonNumber,
-              title: `${title} — ${seasonTitle}`,
-              shouldPlayImmediately,
-            }).then(() => this.setState({ loading: false }));
-          },
-
-          onShowTrailer() {
-            const { trailers } = this.state;
-
-            if (trailers.length < 2) {
-              this.onShowFirstTrailer();
-            } else {
-              const title = i18n('tvshow-title', this.state.tvshow);
-
-              TVDML.renderModal(
-                <document>
-                  <alertTemplate>
-                    <title>{title}</title>
-                    {trailers.map(trailer => (
-                      <button
-                        // eslint-disable-next-line react/jsx-no-bind
-                        onSelect={this.playTrailer.bind(this, trailer)}
-                      >
-                        <text>{trailer.name}</text>
-                      </button>
-                    ))}
-                  </alertTemplate>
-                </document>,
-              ).sink();
-            }
-          },
-
-          onShowFirstTrailer() {
-            const [trailer] = this.state.trailers;
-            this.playTrailer(trailer);
-          },
-
-          playTrailer(trailer) {
-            const player = new Player();
-
-            player.playlist = new Playlist();
-
-            getTrailerItem(trailer)
-              .then(createMediaItem)
-              .then(trailerMediaItem => {
-                // Adding available meta information about tvshow and trailer.
-                Object.assign(trailerMediaItem, {
-                  title: i18n('tvshow-title', this.state.tvshow),
-                  description: trailer.name,
-                  artworkImageURL: this.props.poster,
-                });
-
-                // Adding to playlist and starting player.
-                player.playlist.push(trailerMediaItem);
-                player.play();
-              });
+            // TVDML.navigate('season', {
+            //   sid,
+            //   poster,
+            //   id: seasonNumber,
+            //   title: `${title} — ${seasonTitle}`,
+            //   shouldPlayImmediately,
+            // }).then(() => this.setState({ loading: false }));
+            defaultErrorHandlers(new Error("Non Implementata!!!"));
           },
 
           onAddToSubscriptions() {
@@ -817,99 +462,40 @@ export default function tvShowRoute() {
           },
 
           onShowFullDescription() {
-            const title = i18n('tvshow-title', this.state.tvshow);
-            const { plot: description } = this.state.tvshow;
+            /**@type {TvShow} */
+            const tvshow = this.state.tvshow;
+            const { title, overview } = tvshow;
 
             TVDML.renderModal(
               <document>
                 <descriptiveAlertTemplate>
                   <title>{title}</title>
-                  <description>{description}</description>
+                  <description>{overview}</description>
                 </descriptiveAlertTemplate>
-              </document>,
-            ).sink();
-          },
-
-          onShowFullReview(review) {
-            const {
-              id,
-              text,
-              user: userName,
-              you_liked: youLiked,
-              you_disliked: youDisliked,
-            } = review;
-
-            TVDML.renderModal(
-              <document>
-                <descriptiveAlertTemplate>
-                  <title>{userName}</title>
-                  <description>{processEntitiesInString(text)}</description>
-                  {!youLiked && !youDisliked && (
-                    <row>
-                      <button
-                        // eslint-disable-next-line react/jsx-no-bind
-                        onSelect={this.onReviewLiked.bind(this, id)}
-                      >
-                        <text>👍</text>
-                      </button>
-                      <button
-                        // eslint-disable-next-line react/jsx-no-bind
-                        onSelect={this.onReviewDisliked.bind(this, id)}
-                      >
-                        <text>👎</text>
-                      </button>
-                    </row>
-                  )}
-                </descriptiveAlertTemplate>
-              </document>,
-            ).sink();
-          },
-
-          onReviewLiked(id) {
-            return markReviewAsLiked(id)
-              .then(this.loadData.bind(this))
-              .then(this.setState.bind(this))
-              .then(TVDML.removeModal);
-          },
-
-          onReviewDisliked(id) {
-            return markReviewAsDisliked(id)
-              .then(this.loadData.bind(this))
-              .then(this.setState.bind(this))
-              .then(TVDML.removeModal);
-          },
-
-          onRate() {
-            const { title } = this.props;
-
-            TVDML.renderModal(
-              <document>
-                <ratingTemplate>
-                  <title>{title}</title>
-                  <ratingBadge onChange={this.onRateChange} />
-                </ratingTemplate>
               </document>,
             ).sink();
           },
 
           onMy() {
-            const { sid } = this.props;
-            const listId = user.getListId();
+            // const { sid } = this.props;
+            // const listId = user.getListId();
 
-            checkSession().then(payload => {
-              if(payload) user.set({ ...payload });
-              addToMyList(listId, sid).then(() => this.setState({isPreferred: true}));
-            })
+            // checkSession().then(payload => {
+            //   if(payload) user.set({ ...payload });
+            //   addToMyList(listId, sid).then(() => this.setState({isPreferred: true}));
+            // })
+            defaultErrorHandlers(new Error("Non Implementata!!!"))
           },
 
           removeFromMy() {
-            const { sid } = this.props;
-            const listId = user.getListId();
+              // const { sid } = this.props;
+              // const listId = user.getListId();
 
-            checkSession().then(payload => {
-              if(payload) user.set({ ...payload });
-              removeFromMyList(listId, sid).then(() => this.setState({isPreferred: false}));
-            })
+              // checkSession().then(payload => {
+              //   if(payload) user.set({ ...payload });
+              //   removeFromMyList(listId, sid).then(() => this.setState({isPreferred: false}));
+              // })
+              defaultErrorHandlers(new Error("Non Implementata!!!"))
           },
 
           onRateChange(event) {
@@ -962,21 +548,23 @@ export default function tvShowRoute() {
           },
 
           onMarkTVShowAsWatched() {
-            const { sid } = this.props;
+            // const { sid } = this.props;
 
-            return markTVShowAsWatched(sid)
-              .then(this.loadData.bind(this))
-              .then(this.setState.bind(this))
-              .then(TVDML.removeModal);
+            // return markTVShowAsWatched(sid)
+            //   .then(this.loadData.bind(this))
+            //   .then(this.setState.bind(this))
+            //   .then(TVDML.removeModal);
+            defaultErrorHandlers(new Error("Non Implementata!!!"));
           },
 
           onMarkTVShowAsUnwatched() {
-            const { sid } = this.props;
+            // const { sid } = this.props;
 
-            return markTVShowAsUnwatched(sid)
-              .then(this.loadData.bind(this))
-              .then(this.setState.bind(this))
-              .then(TVDML.removeModal);
+            // return markTVShowAsUnwatched(sid)
+            //   .then(this.loadData.bind(this))
+            //   .then(this.setState.bind(this))
+            //   .then(TVDML.removeModal);
+            defaultErrorHandlers(new Error("Non Implementata!!!"));
           },
         }),
       ),

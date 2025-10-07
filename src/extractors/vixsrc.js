@@ -53,6 +53,10 @@ export class VixSrcService{
     return `${this.baseUrl}/movie/${id}`;
   }
 
+  static buildTvShowUrl(id, seasonNumber, episodeNumber) {
+    return `${this.baseUrl}/tv/${id}/${seasonNumber}/${episodeNumber}`;
+  }
+
   static findObjectEnd(str) {
     let depth = 0;
     let inString = false;
@@ -260,7 +264,15 @@ export class VixSrcService{
   static async getMovieUrl(id) {
     const url = this.buildUrl(id);
     const html = await this.get(url);
-    console.log("HTML fetched, length:", html);
+
+    const result = this.extractUrl(html);
+    return this.buildFinalUrl(result);
+  }
+
+  static async getTvShowUrl(id, seasonNumber, episodeNumber) {
+    const url = this.buildTvShowUrl(id, seasonNumber, episodeNumber);
+    const html = await this.get(url);
+    
     const result = this.extractUrl(html);
     return this.buildFinalUrl(result);
   }

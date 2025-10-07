@@ -2,12 +2,10 @@ import * as TVDML from 'tvdml';
 
 import { get as i18n } from '../localization';
 
-import {
-  getSearchResults
-} from '../request/adc';
-
 import Tile from '../components/tile';
 import styles from '../common/styles';
+import { searchMovieAndTvShow } from '../request/sc';
+import { defaultErrorHandlers } from '../helpers/auth/handlers';
 
 const THROTTLE_TIMEOUT = 1000;
 
@@ -52,22 +50,8 @@ export default function searchRoute() {
               </header>
               <section>
               {this.state.searchResults.tvshowFounded.map(result => {
-                  const {
-                    title,
-                    poster,
-                    quality,
-                    isUpdated,
-                  } = result;
-
                   return (
-                    <Tile
-                      title={title}
-                      route="tvshow"
-                      poster={poster}
-                      quality={quality}
-                      isUpdated={isUpdated}
-                      payload={result}
-                    />
+                    <Tile {...result}/>
                   );
                 })}
               </section>
@@ -85,22 +69,8 @@ export default function searchRoute() {
               </header>
               <section>
               {this.state.searchResults.moviesFounded.map(result => {
-                  const {
-                    title,
-                    poster,
-                    quality,
-                    isUpdated,
-                  } = result;
-
                   return (
-                    <Tile
-                      title={title}
-                      route="movie"
-                      poster={poster}
-                      quality={quality}
-                      isUpdated={isUpdated}
-                      payload={result}
-                    />
+                    <Tile {...result}/>
                   );
                 })}
               </section>
@@ -135,9 +105,11 @@ export default function searchRoute() {
             this.setState({ loading: false, updating: true, searchResults })
             return Promise.resolve({searchResults})
           }
-          return getSearchResults(query)
-            .catch(() => ({}))
-            .then(result => this.setState({ loading: false, ...result }));
+          return searchMovieAndTvShow(query)
+          .then(result => this.setState({ loading: false, ...result }))
+          .catch((error) => {
+            defaultErrorHandlers(error);
+          });
         },
       }),
     ),

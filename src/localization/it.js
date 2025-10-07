@@ -4,7 +4,7 @@ import { supportUHD } from '../helpers/constants';
 
 export default {
   'auth-checking': 'Verifica sottoscrizione...',
-
+  'start-application': 'Avvio applicazione...',
   'menu-home': 'Home',
   'menu-my': 'Preferiti',
   'menu-tvshows': 'Serie TV',
@@ -107,10 +107,11 @@ export default {
   'tvshow-episode-title': ({ title_en }) => title_en || '',
   'tvshow-episode-airdate': ({ airdate }) => `Andato in onda ${airdate}`,
   'tvshow-episode-menu-hint': 'tieni premuto per aprire il menù episodio',
-  'tvshow-season': ({ seasonNumber }) => `Stagione ${seasonNumber}`,
+  'tvshow-season': (seasonNumber) => `Stagione ${seasonNumber}`,
   'tvshow-next': 'Nuovi Episodi',
   'tv-show-updates': 'Aggiornamenti Serie TV',
   'tvshow-new': 'Nuovo',
+  'tvshow-season-episode': ({ seasonNumber, episodeNumber }) => `St ${seasonNumber} - Ep ${episodeNumber}`,
 
   'movie-updates': 'Aggiornamenti Film',
   'movie-status': 'Stato',
@@ -122,8 +123,14 @@ export default {
   'movie-cast-crew': 'Attori e Cast',
   'movie-quality': 'Qualità',
   'movie-collection': 'Collezione',
-
-  'tvshow-status': 'Stato',
+  'movie-type': 'Film',
+  'movie-update': 'Aggiornato',
+  
+  'tvshow-update': 'Nuovi Episodi',
+  'season-update': 'Nuovi Episodi',
+  'tvshow-type': 'Serie TV',
+  'season-type': 'Stagione',
+  'tvshow-status': 'Stato Serie TV',
   'tvshow-genres': 'Generi',
   'tvshow-actors': 'Attori',
   'tvshow-seasons': 'Stagioni',
@@ -166,6 +173,7 @@ export default {
   'status-in production': 'In Produzione',
   'status-released': 'Rilasciato',
   'status-post production': 'Post Produzione',
+  'status-returning series': 'Serie Rinnovata',
 
   'tvshow-control-continue-watching': 'Continua a guardare',
   'tvshow-control-show-trailer': 'Play\nTrailer',
@@ -271,4 +279,5 @@ export default {
   'error': 'Errore',
   'generic-error': 'Errore generico',
   'loading': 'Caricamento...'
+  
 };
