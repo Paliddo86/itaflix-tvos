@@ -14,7 +14,7 @@ export default (
       }
 
       .text-red {
-        color: #ff2222;
+        color: rgba(185, 5, 5, 1);
       }
 
       .shelf_indent {
@@ -39,7 +39,7 @@ export default (
         tv-text-style: none;
         color: #ffffff;
         font-size: 38;
-        tv-highlight-color: #ff2222;
+        tv-highlight-color: rgba(185, 5, 5, 1);
     }
     `}
   />
