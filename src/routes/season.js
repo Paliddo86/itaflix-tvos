@@ -11,15 +11,6 @@ import * as user from '../user';
 
 import { get as i18n } from '../localization';
 
-import {
-  localization,
-  mediaLocalizations,
-  getMediaStream,
-  markEpisodeAsWatched,
-  markEpisodeAsUnwatched,
-  rateEpisode,
-  checkSession
-} from '../request/adc';
 
 import Loader from '../components/loader';
 
@@ -34,113 +25,8 @@ const MARK_AS_WATCHED_PERCENTAGE = 90;
 const SHOW_RATING_PERCENTAGE = 50;
 const RATING_SCREEN_TIMEOUT = 10;
 
-const { VIDEO_QUALITY, VIDEO_PLAYBACK, TRANSLATION } = settings.params;
-const { SD, UHD } = settings.values[VIDEO_QUALITY];
+const { VIDEO_PLAYBACK } = settings.params;
 const { CONTINUES } = settings.values[VIDEO_PLAYBACK];
-const { LOCALIZATION, SUBTITLES } = settings.values[TRANSLATION];
-
-const translationOrder = [LOCALIZATION, SUBTITLES];
-
-function getEpisodeItem(slug, seasonId, episodeId, poster) {
-  const name = "";
-  const overview = "";
-
-  const grabMediaData = () => {
-    return getMediaStream(slug, seasonId - 1, episodeId).then((response) => {
-      const { streams, backdrop_url, title, id } = response;
-      return {
-        id,
-        title: `${title} - ${name || episodeId + 1}`,
-        description: overview || "",
-        streams,
-        artworkImageURL: backdrop_url || poster || episodePoster,
-        resumeTime: 0
-      }
-    });
-
-  } 
-
-  return checkSession().then(payload => {
-    if(payload) user.set({ ...payload });
-    return grabMediaData();
-  })
-}
-
-function getScheduleEpsForSeason(schedule, season) {
-  const [seasonSchedule] = (schedule || []).filter(scheduleItem => {
-    const scheduledSeason = scheduleItem.season;
-
-    // eslint-disable-next-line eqeqeq
-    return scheduledSeason == season;
-  });
-  return (seasonSchedule || {}).episodes || [];
-}
-
-function episodeHasTranslation({ files = [] }) {
-  return files.some(({ translate }) => {
-    const mediaLocalization = mediaLocalizations[translate];
-    return mediaLocalization === localization.LOCALIZATION;
-  });
-}
-
-function episodeHasSubtitles({ files = [] }) {
-  return files.some(({ translate }) => {
-    const mediaLocalization = mediaLocalizations[translate];
-    return mediaLocalization !== localization.LOCALIZATION;
-  });
-}
-
-function getSeasonExtendedData(season, schedule, translation, isDemo) {
-  if (!season) return null;
-
-  const {
-    episodes: seasonEpisodes,
-    covers: { big: poster },
-  } = season;
-
-  const scheduleEpisodes = getScheduleEpsForSeason(schedule, season.season);
-
-  const filteredSeasonEps = seasonEpisodes.filter(
-    episode =>
-      isDemo || translation !== LOCALIZATION || episodeHasTranslation(episode),
-  );
-
-  const seasonEpsDictionary = filteredSeasonEps.reduce((result, episode) => {
-    // eslint-disable-next-line no-param-reassign
-    result[episode.episode] = episode;
-    return result;
-  }, {});
-
-  const scheduleDiff = scheduleEpisodes.filter(item => {
-    const { episode } = item;
-    return !seasonEpsDictionary[episode];
-  });
-
-  const episodes = filteredSeasonEps
-    .concat(scheduleDiff)
-    .sort((a, b) => a.episode - b.episode);
-
-  return episodes.reduce(
-    (result, { episode, watched }) => {
-      // eslint-disable-next-line no-param-reassign
-      result[`eid-${episode}`] = !!watched;
-      return result;
-    },
-    { poster, episodes },
-  );
-}
-
-function getSeasonData(payload, isDemo) {
-  const { id, tvshow, season, schedule, translation } = payload;
-
-  return (
-    getSeasonExtendedData(season, schedule, translation, isDemo) || {
-      season: { season: id },
-      poster: tvshow.covers.big,
-      episodes: getScheduleEpsForSeason(schedule, id),
-    }
-  );
-}
 
 // #region ROUTE
 export default function seasonRoute() {
@@ -169,12 +55,10 @@ export default function seasonRoute() {
 
             const extended = user.isExtended();
             const authorized = user.isAuthorized();
-            const translation = settings.get(TRANSLATION);
 
             return {
               extended,
               authorized,
-              translation,
               loading: true,
               shouldPlayImmediately,
               highlightEpisode: 0
@@ -225,7 +109,6 @@ export default function seasonRoute() {
 
 
             const { BASEURL } = getStartParams();
-            const settingsTranslation = settings.get(TRANSLATION);
 
             return (
               <document>
@@ -349,34 +232,6 @@ export default function seasonRoute() {
             );
           },
 
-          switchLocalTranslation(translation) {
-            const { id } = this.props;
-            const { tvshow, season, schedule, extended } = this.state;
-
-            const currentWatchedMarks = Object.keys(this.state)
-              .filter(key => !key.indexOf('eid-'))
-              .reduce((result, key) => {
-                // eslint-disable-next-line no-param-reassign
-                result[key] = this.state[key];
-                return result;
-              }, {});
-
-            this.setState({
-              translation,
-              ...getSeasonData(
-                {
-                  id,
-                  tvshow,
-                  season,
-                  schedule,
-                  translation,
-                },
-                !extended,
-              ),
-              ...currentWatchedMarks,
-            });
-          },
-
           /**
            * 
            * @param {Episode} episode 
@@ -440,7 +295,7 @@ export default function seasonRoute() {
                   // if (settings.get(VIDEO_PLAYBACK) === CONTINUES) {
                   //   const nextEpisode = getEpisode(nextEpisodeNumber, episodes);
 
-                  //   getEpisodeItem(sid, nextEpisode, poster, translation)
+                  //   getEpisodeItem(sid, nextEpisode, poster)
                   //     .then(createMediaItem)
                   //     .then(episodeMediaItem => {
                   //       player.playlist.push(episodeMediaItem);
@@ -463,12 +318,6 @@ export default function seasonRoute() {
 
                   const minimalWatchTime =
                     (duration * SHOW_RATING_PERCENTAGE) / 100;
-
-                  /**
-                   * Creating bound closure for rate method to be able to use in
-                   * child component.
-                   */
-                  const onRateChange = this.onRateChange.bind(this);
 
                   /**
                    * Don't show rating screen if watched time less than minimum
@@ -536,11 +385,7 @@ export default function seasonRoute() {
                               </title>
                               <ratingBadge
                                 onChange={event => {
-                                  onRateChange(currentEpisode, event).then(
-                                    () => {
-                                      this.resumePlayback();
-                                    },
-                                  );
+                                  this.resumePlayback();
                                 }}
                               />
                             </ratingTemplate>
@@ -589,7 +434,7 @@ export default function seasonRoute() {
               //     currentEpisodeNumber,
               //     episodes,
               //   );
-              //   const { eid } = getEpisodeMedia(currentEpisode, translation);
+              //   const { eid } = getEpisodeMedia(currentEpisode);
 
               //   saveElapsedTime(eid, currentTime);
               // }
@@ -635,15 +480,6 @@ export default function seasonRoute() {
                   <title>{title}</title>
                   <description>{description}</description>
                   <row style="tv-content-align: top">
-                    {authorized && [
-                      <buttonLockup
-                        // eslint-disable-next-line
-                        onSelect={this.onRate.bind(this, episode)}
-                      >
-                        <badge src="resource://button-rate" />
-                        <title>{i18n('episode-rate')}</title>
-                      </buttonLockup>,
-                    ]}
                     {authorized &&
                       (this.state[epId] ? (
                         <buttonLockup
@@ -673,75 +509,28 @@ export default function seasonRoute() {
           },
 
           onMarkAsNew(episodeNumber) {
-            const { id, sid } = this.props;
+            // const { id, sid } = this.props;
 
-            this.setState({ [`eid-${episodeNumber}`]: false });
+            // this.setState({ [`eid-${episodeNumber}`]: false });
 
-            return markEpisodeAsUnwatched(sid, id, episodeNumber).then(
-              TVDML.removeModal,
-            );
+            // return markEpisodeAsUnwatched(sid, id, episodeNumber).then(
+            //   TVDML.removeModal,
+            // );
+            defaultErrorHandlers(new Error("Mark as watched/unwatched not implemented"));
           },
 
           onMarkAsWatched(episodeNumber, addTVShowToSubscriptions) {
-            const { id, sid } = this.props;
+            // const { id, sid } = this.props;
 
-            const { tvshow } = this.state;
+            // const { tvshow } = this.state;
 
-            const addShowToWatched =
-              addTVShowToSubscriptions && !tvshow.watching;
+            // this.setState({ [`eid-${episodeNumber}`]: true });
 
-            this.setState({ [`eid-${episodeNumber}`]: true });
-
-            return Promise.all([
-              markEpisodeAsWatched(sid, id, episodeNumber),
-              Promise.resolve(),
-            ]).then(TVDML.removeModal);
-          },
-
-          onRate(episode) {
-            const title = i18n('tvshow-episode-title', episode);
-            const processedTitle = processEntitiesInString(title);
-
-            TVDML.renderModal(
-              <document>
-                <ratingTemplate>
-                  <title>{processedTitle}</title>
-                  <ratingBadge
-                    // eslint-disable-next-line react/jsx-no-bind
-                    onChange={this.onRateChange.bind(this, episode)}
-                  />
-                </ratingTemplate>
-              </document>,
-            ).sink();
-          },
-
-          onRateChange(episode, event) {
-            return this.onRateTVShow(episode, event.value * 10);
-          },
-
-          onRateTVShow(episode, rating) {
-            const { sid } = this.props;
-
-            const { season, episode: episodeNumber } = episode;
-
-            return rateEpisode(sid, season, episodeNumber, rating)
-              .then(result => {
-                const episodes = this.state.episodes.map(item => {
-                  if (
-                    item.season === season &&
-                    item.episode === episodeNumber
-                  ) {
-                    return {
-                      ...item,
-                      rating: result.rating,
-                    };
-                  }
-                  return item;
-                });
-
-                this.setState({ episodes });
-              })
-              .then(TVDML.removeModal);
+            // return Promise.all([
+            //   markEpisodeAsWatched(sid, id, episodeNumber),
+            //   Promise.resolve(),
+            // ]).then(TVDML.removeModal);
+            defaultErrorHandlers(new Error("Mark as watched/unwatched not implemented"));
           },
         }),
       ),
