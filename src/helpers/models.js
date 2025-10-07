@@ -30,9 +30,10 @@ export class Movie{
      * tmdb_id: number
      * runtime: number
      * status: string
+     * isSubIta: boolean
      * }} param0 
      */
-    constructor({ id, title, overview, released, rating, poster, genres, cast, trailer, recommendations, banner, slug, isUpdated, updateType, quality, type, cover, tmdb_id, runtime, status }) {
+    constructor({ id, title, overview, released, rating, poster, genres, cast, trailer, recommendations, banner, slug, isUpdated, updateType, quality, type, cover, tmdb_id, runtime, status, isSubIta }) {
         this.sid = id;
         this.title = title;
         this.overview = overview;
@@ -53,6 +54,7 @@ export class Movie{
         this.tmdb_id = tmdb_id;
         this.runtime = runtime;
         this.status = status;
+        this.isSubIta = isSubIta;
     }
 
     /**
@@ -92,9 +94,10 @@ export class TvShow {
          * tmdb_id: number
          * runtime: number
          * status: string
+         * isSubIta: boolean
          * }} param0 
          */
-    constructor({ id, title, overview, released, rating, poster, genres, cast, trailer, recommendations, banner, slug, isUpdated, updateType, quality, type, cover, tmdb_id, runtime, status }) {
+    constructor({ id, title, overview, released, rating, poster, genres, cast, trailer, recommendations, banner, slug, isUpdated, updateType, quality, type, cover, tmdb_id, runtime, status, isSubIta }) {
         this.sid = id;
         this.title = title;
         this.overview = overview;
@@ -116,6 +119,7 @@ export class TvShow {
         this.runtime = runtime || 0;
         this.status = status;
         this.seasons = [];
+        this.isSubIta = isSubIta;
     }
 
     /**
@@ -173,10 +177,11 @@ export class Season {
      *   created_at?: string,
      *   updated_at?: string,
      *   episodes_count?: number,
+     *   isUpdated?: boolean,
      *   episodes?: Episode[]
      * }} param0
      */
-    constructor({ id, number, title, name, plot, release_date, title_id, created_at, updated_at, episodes_count, episodes }) {
+    constructor({ id, number, title, name, plot, release_date, title_id, created_at, updated_at, episodes_count, isUpdated, episodes }) {
         this.id = id;
         this.number = number;
         this.title = title || name || "";
@@ -188,6 +193,7 @@ export class Season {
         this.episodes_count = episodes_count || (episodes ? episodes.length : 0);
         this.episodes = (episodes || []).map(e => new Episode(e));
         this.type = "season";
+        this.isUpdated = isUpdated || false;
     }
 
     /**
