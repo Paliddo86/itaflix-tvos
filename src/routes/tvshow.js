@@ -307,6 +307,7 @@ export default function tvShowRoute() {
                         asCover={true}
                         counter={season.episodes_count}
                         isWatched={isWatched}
+                        isUpdated={season.isUpdated}
                         // eslint-disable-next-line react/jsx-no-bind
                         onHoldselect={this.onSeasonOptions.bind(
                           ...[this, season.id, season.title, season, isWatched],
