@@ -8,7 +8,6 @@ import { get as i18n } from './localization';
 
 import menuRoute from './routes/menu';
 import myRoute from './routes/my';
-import userRoute from './routes/user';
 import seasonRoute from './routes/season';
 import tvShowRoute from './routes/tvshow';
 import searchRoute from './routes/search';
