@@ -9,52 +9,26 @@ import * as settings from '../settings';
 
 import authFactory from '../helpers/auth';
 import { defaultErrorHandlers } from '../helpers/auth/handlers';
+import { Movie } from '../helpers/models';
 
 import {
-  createMediaItem,
   isMenuButtonPressNavigatedTo,
   createMediaItems,
 } from '../utils';
-
-import { processEntitiesInString } from '../utils/parser';
 import { deepEqualShouldUpdate } from '../utils/components';
 
-import { get as i18n } from '../localization';
 
-import {
-  getEpisodeMedia,
-  getTrailerStream,
-  markTVShowAsWatched,
-  markTVShowAsUnwatched,
-  markSeasonAsWatched,
-  markSeasonAsUnwatched,
-  markReviewAsLiked,
-  markReviewAsDisliked,
-} from '../request/adc';
+import { get as i18n } from '../localization';
 
 import Tile from '../components/tile';
 import Loader from '../components/loader';
 import Authorize from '../components/authorize';
 import { getMovieDetails } from '../request/sc';
-import { Movie } from '../helpers/models';
 import { VixSrcService } from '../extractors/vixsrc';
 
 const MARK_AS_WATCHED_PERCENTAGE = 90;
 const SHOW_RATING_PERCENTAGE = 50;
 const RATING_SCREEN_TIMEOUT = 10;
-
-function calculateUnwatchedCount(season) {
-  return season.unwatched || 0;
-}
-
-function getTrailerItem(trailer) {
-  const { tid } = getEpisodeMedia(trailer);
-
-  return getTrailerStream(tid).then(({ stream }) => ({
-    id: tid,
-    url: stream,
-  }));
-}
 
 // #region START
 export default function movieRoute() {
@@ -529,24 +503,6 @@ export default function movieRoute() {
             );
           },
 
-          onMarkSeasonAsWatched(id) {
-            const { sid } = this.state.movie;
-
-            return markSeasonAsWatched(sid, id)
-              .then(this.loadData.bind(this))
-              .then(this.setState.bind(this))
-              .then(TVDML.removeModal);
-          },
-
-          onMarkSeasonAsUnwatched(id) {
-            const { sid } = this.state.movie;
-
-            return markSeasonAsUnwatched(sid, id)
-              .then(this.loadData.bind(this))
-              .then(this.setState.bind(this))
-              .then(TVDML.removeModal);
-          },
-
           // #region RENDER RECOMM
           renderRecomendations() {
             /** @type {Movie} */
@@ -618,50 +574,6 @@ export default function movieRoute() {
             this.setState({ loading: false });
           },
 
-          onShowTrailer() {
-              const title = i18n('tvshow-title', this.state.movie);
-
-              TVDML.renderModal(
-                <document>
-                  <alertTemplate>
-                    <title>{title}</title>
-                      <button
-                        // eslint-disable-next-line react/jsx-no-bind
-                        onSelect={this.playTrailer.bind(this, trailer)}
-                      >
-                        <text>Play</text>
-                      </button>
-                  </alertTemplate>
-                </document>
-              ).sink();
-          },
-
-          onShowFirstTrailer() {
-            const [trailer] = this.state.trailers;
-            this.playTrailer(trailer);
-          },
-
-          playTrailer(trailer) {
-            const player = new Player();
-
-            player.playlist = new Playlist();
-
-            getTrailerItem(trailer)
-              .then(createMediaItem)
-              .then(trailerMediaItem => {
-                // Adding available meta information about tvshow and trailer.
-                Object.assign(trailerMediaItem, {
-                  title: i18n('tvshow-title', this.state.tvshow),
-                  description: trailer.name,
-                  artworkImageURL: this.props.poster,
-                });
-
-                // Adding to playlist and starting player.
-                player.playlist.push(trailerMediaItem);
-                player.play();
-              });
-          },
-
           onAddToSubscriptions() {
             const {
               authorized,
@@ -712,55 +624,6 @@ export default function movieRoute() {
                 </descriptiveAlertTemplate>
               </document>,
             ).sink();
-          },
-
-          onShowFullReview(review) {
-            const {
-              id,
-              text,
-              user: userName,
-              you_liked: youLiked,
-              you_disliked: youDisliked,
-            } = review;
-
-            TVDML.renderModal(
-              <document>
-                <descriptiveAlertTemplate>
-                  <title>{userName}</title>
-                  <description>{processEntitiesInString(text)}</description>
-                  {!youLiked && !youDisliked && (
-                    <row>
-                      <button
-                        // eslint-disable-next-line react/jsx-no-bind
-                        onSelect={this.onReviewLiked.bind(this, id)}
-                      >
-                        <text>👍</text>
-                      </button>
-                      <button
-                        // eslint-disable-next-line react/jsx-no-bind
-                        onSelect={this.onReviewDisliked.bind(this, id)}
-                      >
-                        <text>👎</text>
-                      </button>
-                    </row>
-                  )}
-                </descriptiveAlertTemplate>
-              </document>,
-            ).sink();
-          },
-
-          onReviewLiked(id) {
-            return markReviewAsLiked(id)
-              .then(this.loadData.bind(this))
-              .then(this.setState.bind(this))
-              .then(TVDML.removeModal);
-          },
-
-          onReviewDisliked(id) {
-            return markReviewAsDisliked(id)
-              .then(this.loadData.bind(this))
-              .then(this.setState.bind(this))
-              .then(TVDML.removeModal);
           },
 
           onRate() {
@@ -849,21 +712,11 @@ export default function movieRoute() {
           },
 
           onMarkTVShowAsWatched() {
-            const { sid } = this.props;
-
-            return markTVShowAsWatched(sid)
-              .then(this.loadData.bind(this))
-              .then(this.setState.bind(this))
-              .then(TVDML.removeModal);
+            defaultErrorHandlers(new Error("Non Implementata!!!"))
           },
 
           onMarkTVShowAsUnwatched() {
-            const { sid } = this.props;
-
-            return markTVShowAsUnwatched(sid)
-              .then(this.loadData.bind(this))
-              .then(this.setState.bind(this))
-              .then(TVDML.removeModal);
+            defaultErrorHandlers(new Error("Non Implementata!!!"))
           },
         }),
       ),
