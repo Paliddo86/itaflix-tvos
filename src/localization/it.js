@@ -4,7 +4,7 @@ import { supportUHD } from '../helpers/constants';
 
 export default {
   'auth-checking': 'Verifica sottoscrizione...',
-
+  'start-application': 'Avvio applicazione...',
   'menu-home': 'Home',
   'menu-my': 'Preferiti',
   'menu-tvshows': 'Serie TV',

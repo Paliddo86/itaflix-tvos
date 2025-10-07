@@ -29,7 +29,7 @@ TVDML.subscribe(TVDML.event.LAUNCH).pipe(params => {
 });
 
 TVDML.handleRoute('get-token')
-  .pipe(TVDML.render(<Loader title={i18n('auth-checking')} />))
+  .pipe(TVDML.render(<Loader title={i18n('start-application')} />))
   .pipe(payload => {
     if(process.env.NODE_ENV === "development") console.log("Paylod User", payload); 
     user.set({ logged: 0});
