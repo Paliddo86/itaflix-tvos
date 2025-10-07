@@ -63,15 +63,12 @@ class StreamingCommunityService {
         }
     }
 
-    async search(keyword, offset = 0) {
+    async search(keyword, version, offset = 0) {
         try {
-            let response = await request.get(this.buildUrl("/api/search"), {
-                params: {
-                    q: keyword,
-                    offset: offset
-                }
-            });
-            return response.toJSON();
+            let response = await request.get(this.buildUrl("/api/search?q=" + encodeURIComponent(keyword)), {
+                prepare: addHeaders(this.headers(version))
+            }).then(request.toJSON());
+            return response;
         } catch (error) {
             defaultErrorHandlers(error); 
         }
@@ -281,7 +278,7 @@ export async function getHome() {
                         banner: getFilenameFromImageLink(it, "background"),
                         rating: it.score,
                         slug: it.slug,
-                        isUpdated: it.updated_at || it.last_air_date ? isMoreThanDaysAhead(it.updated_at || it.last_air_date) : true,
+                        isUpdated: it.updated_at || it.last_air_date ? isMoreThanDaysAhead(it.updated_at || it.last_air_date) : false,
                         type: it.type
                     });
                 } else {
@@ -377,7 +374,7 @@ export async function getTvShowDetails(id, slug) {
         banner: getFilenameFromImageLink(it, "background"),
         rating: it.score,
         slug: it.slug,
-        isUpdated: it.last_air_date ? isMoreThanDaysAhead(it.last_air_date) : true,
+        isUpdated: it.updated_at || it.last_air_date ? isMoreThanDaysAhead(it.updated_at || it.last_air_date) : false,
         type: it.type,
         quality: it.quality,
         overview: it.plot,
@@ -403,6 +400,7 @@ export async function getTvShowDetails(id, slug) {
                 created_at: season.created_at,
                 updated_at: season.updated_at,
                 episodes_count: season.episodes_count,
+                isUpdated: season.updated_at || season.last_air_date ? isMoreThanDaysAhead(season.updated_at || season.last_air_date) : false
             }));
         });
     }
@@ -419,7 +417,7 @@ export async function getTvShowDetails(id, slug) {
                     poster: getFilenameFromImageLink(it, "poster"),
                     cover: getFilenameFromImageLink(it, "cover"),
                     banner: getFilenameFromImageLink(it, "background"),
-                    isUpdated: it.last_air_date ? isMoreThanDaysAhead(it.last_air_date) : true,
+                    isUpdated: it.updated_at || it.last_air_date ? isMoreThanDaysAhead(it.updated_at || it.last_air_date) : false,
                     type: it.type
                 }));
             } 
@@ -454,6 +452,61 @@ export async function getSeasonDetails(seasonId, tvShow) {
             }));
         });
     }
+}
+
+export async function searchMovieAndTvShow(query, page) {
+    let moviesFounded = [];
+    let tvshowFounded = [];
+    if (query === "") {
+        return {
+            searchResults: {
+                moviesFounded,
+                tvshowFounded
+            }
+        };
+    }
+
+    let res = await service.search(query, _version || await _initVersion());
+    if (res.currentPage === null) {
+        return {
+            searchResults: {
+                moviesFounded,
+                tvshowFounded
+            }
+        };
+    }
+
+    res.data.map(it => {
+        let poster = getFilenameFromImageLink(it, "poster");
+        if (it.type === "movie") {
+            moviesFounded.push(new Movie({
+               id: it.id,
+                title: it.name,
+                poster: poster,
+                isSubIta: Boolean(it.sub_ita),
+                slug: it.slug,
+                isUpdated: it.updated_at || it.last_air_date ? isMoreThanDaysAhead(it.updated_at || it.last_air_date) : false,
+                type: it.type
+            }));
+        } else {
+            tvshowFounded.push(new TvShow({
+                id: it.id,
+                title: it.name,
+                poster: poster,
+                isSubIta: Boolean(it.sub_ita),
+                slug: it.slug,
+                isUpdated: it.updated_at || it.last_air_date ? isMoreThanDaysAhead(it.updated_at || it.last_air_date) : false,
+                type: "tvshow"
+            }));
+        }
+    });
+
+     return {
+      searchResults: {
+        moviesFounded,
+        tvshowFounded
+      }
+    };
 }
 
 /* StreamingCommunityProvider as a singleton object exactly mapped from Kotlin */
