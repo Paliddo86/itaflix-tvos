@@ -71,12 +71,14 @@ export default function Tile({ key, attrs = {}, events = {} }) {
       {(attrs.isUpdated) && (
             <textBadge
             style={`
+              font-size: 20
               margin: 0 10 12 0;
               border-radius: 0;
-              tv-align: center;
-              tv-position: bottom;
               color: rgb(255, 255, 255);
+              tv-tint-color: #b90505;
               background-color: #b90505;
+              tv-align: left;
+              tv-position: top;
             `}
           >
             {i18n(attrs.type + '-update')}
@@ -112,6 +114,21 @@ export default function Tile({ key, attrs = {}, events = {} }) {
             `}
           >
             ✓
+          </textBadge>
+        )}
+        {attrs.isSubIta && (
+          <textBadge
+            type="fill"
+            style={`
+              tv-align: right;
+              tv-position: bottom;
+              tv-tint-color: rgb(255, 255, 255);
+              color: rgba(0, 0, 0, 1);
+              background-color: rgb(255, 255, 255);
+              font-size: 20;
+            `}
+          >
+            SUB
           </textBadge>
         )}
       </overlay>
