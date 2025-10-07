@@ -2,7 +2,6 @@
 
 import moment from 'moment';
 import * as TVDML from 'tvdml';
-import formatNumber from 'simple-format-number';
 
 import * as user from '../user';
 import * as settings from '../settings';
@@ -11,35 +10,12 @@ import authFactory from '../helpers/auth';
 import { defaultErrorHandlers } from '../helpers/auth/handlers';
 
 import {
-  link,
-  createMediaItem,
-  getMonogramImageUrl,
   isMenuButtonPressNavigatedTo,
 } from '../utils';
 
-import { processEntitiesInString } from '../utils/parser';
 import { deepEqualShouldUpdate } from '../utils/components';
 
 import { get as i18n } from '../localization';
-
-import {
-  getEpisodeMedia,
-  getTrailerStream,
-  getTVShowSeasons,
-  getTVShowDescription,
-  markTVShowAsWatched,
-  markTVShowAsUnwatched,
-  markSeasonAsWatched,
-  markSeasonAsUnwatched,
-  markReviewAsLiked,
-  markReviewAsDisliked,
-  getRelated,
-  isPreferred,
-  addToMyList,
-  removeFromMyList,
-  checkSession,
-  tvshow,
-} from '../request/adc';
 
 import Tile from '../components/tile';
 import Loader from '../components/loader';
@@ -47,20 +23,8 @@ import Authorize from '../components/authorize';
 import { TvShow } from '../helpers/models';
 import { getTvShowDetails } from '../request/sc';
 
-const { VIDEO_QUALITY } = settings.params;
-const { UHD } = settings.values[VIDEO_QUALITY];
-
 function calculateUnwatchedCount(season) {
   return season.unwatched || 0;
-}
-
-function getTrailerItem(trailer) {
-  const { tid } = getEpisodeMedia(trailer);
-
-  return getTrailerStream(tid).then(({ stream }) => ({
-    id: tid,
-    url: stream,
-  }));
 }
 
 // #region ROUTE
@@ -260,13 +224,6 @@ export default function tvShowRoute() {
             //   </buttonLockup>
             // );
 
-            // const rateBtn = (
-            //   <buttonLockup onSelect={this.onRate}>
-            //     <badge src="resource://button-rate" />
-            //     <title>{i18n('tvshow-control-rate')}</title>
-            //   </buttonLockup>
-            // );
-
             const addToMyBtn = (
               <buttonLockup onSelect={this.onMy}>
                 <badge src="resource://button-rate" />
@@ -388,21 +345,23 @@ export default function tvShowRoute() {
           },
 
           onMarkSeasonAsWatched(id) {
-            const { sid } = this.state.tvshow;
+            // const { sid } = this.state.tvshow;
 
-            return markSeasonAsWatched(sid, id)
-              .then(this.loadData.bind(this))
-              .then(this.setState.bind(this))
-              .then(TVDML.removeModal);
+            // return markSeasonAsWatched(sid, id)
+            //   .then(this.loadData.bind(this))
+            //   .then(this.setState.bind(this))
+            //   .then(TVDML.removeModal);
+            defaultErrorHandlers(new Error("Non Implementata!!!"));
           },
 
           onMarkSeasonAsUnwatched(id) {
-            const { sid } = this.state.tvshow;
+            // const { sid } = this.state.tvshow;
 
-            return markSeasonAsUnwatched(sid, id)
-              .then(this.loadData.bind(this))
-              .then(this.setState.bind(this))
-              .then(TVDML.removeModal);
+            // return markSeasonAsUnwatched(sid, id)
+            //   .then(this.loadData.bind(this))
+            //   .then(this.setState.bind(this))
+            //   .then(TVDML.removeModal);
+            defaultErrorHandlers(new Error("Non Implementata!!!"));
           },
 
           // #region RECOMMENDATIONS
@@ -443,75 +402,24 @@ export default function tvShowRoute() {
           },
 
           onContinueWatching(event, shouldPlayImmediately) {
-            const uncompletedSeason = this.getSeasonToWatch(this.state.seasons);
-            const {
-              season: seasonNumber,
-              covers: { big: poster },
-            } = uncompletedSeason;
+            // const uncompletedSeason = this.getSeasonToWatch(this.state.seasons);
+            // const {
+            //   season: seasonNumber,
+            //   covers: { big: poster },
+            // } = uncompletedSeason;
 
-            const seasonTitle = i18n('tvshow-season', { seasonNumber });
-            const title = i18n('tvshow-title', this.state.tvshow);
-            const { sid } = this.state.tvshow;
+            // const seasonTitle = i18n('tvshow-season', { seasonNumber });
+            // const title = i18n('tvshow-title', this.state.tvshow);
+            // const { sid } = this.state.tvshow;
 
-            TVDML.navigate('season', {
-              sid,
-              poster,
-              id: seasonNumber,
-              title: `${title} — ${seasonTitle}`,
-              shouldPlayImmediately,
-            }).then(() => this.setState({ loading: false }));
-          },
-
-          onShowTrailer() {
-            const { trailers } = this.state;
-
-            if (trailers.length < 2) {
-              this.onShowFirstTrailer();
-            } else {
-              const title = i18n('tvshow-title', this.state.tvshow);
-
-              TVDML.renderModal(
-                <document>
-                  <alertTemplate>
-                    <title>{title}</title>
-                    {trailers.map(trailer => (
-                      <button
-                        // eslint-disable-next-line react/jsx-no-bind
-                        onSelect={this.playTrailer.bind(this, trailer)}
-                      >
-                        <text>{trailer.name}</text>
-                      </button>
-                    ))}
-                  </alertTemplate>
-                </document>,
-              ).sink();
-            }
-          },
-
-          onShowFirstTrailer() {
-            const [trailer] = this.state.trailers;
-            this.playTrailer(trailer);
-          },
-
-          playTrailer(trailer) {
-            const player = new Player();
-
-            player.playlist = new Playlist();
-
-            getTrailerItem(trailer)
-              .then(createMediaItem)
-              .then(trailerMediaItem => {
-                // Adding available meta information about tvshow and trailer.
-                Object.assign(trailerMediaItem, {
-                  title: i18n('tvshow-title', this.state.tvshow),
-                  description: trailer.name,
-                  artworkImageURL: this.props.poster,
-                });
-
-                // Adding to playlist and starting player.
-                player.playlist.push(trailerMediaItem);
-                player.play();
-              });
+            // TVDML.navigate('season', {
+            //   sid,
+            //   poster,
+            //   id: seasonNumber,
+            //   title: `${title} — ${seasonTitle}`,
+            //   shouldPlayImmediately,
+            // }).then(() => this.setState({ loading: false }));
+            defaultErrorHandlers(new Error("Non Implementata!!!"));
           },
 
           onAddToSubscriptions() {
@@ -563,68 +471,6 @@ export default function tvShowRoute() {
                   <title>{title}</title>
                   <description>{overview}</description>
                 </descriptiveAlertTemplate>
-              </document>,
-            ).sink();
-          },
-
-          onShowFullReview(review) {
-            const {
-              id,
-              text,
-              user: userName,
-              you_liked: youLiked,
-              you_disliked: youDisliked,
-            } = review;
-
-            TVDML.renderModal(
-              <document>
-                <descriptiveAlertTemplate>
-                  <title>{userName}</title>
-                  <description>{processEntitiesInString(text)}</description>
-                  {!youLiked && !youDisliked && (
-                    <row>
-                      <button
-                        // eslint-disable-next-line react/jsx-no-bind
-                        onSelect={this.onReviewLiked.bind(this, id)}
-                      >
-                        <text>👍</text>
-                      </button>
-                      <button
-                        // eslint-disable-next-line react/jsx-no-bind
-                        onSelect={this.onReviewDisliked.bind(this, id)}
-                      >
-                        <text>👎</text>
-                      </button>
-                    </row>
-                  )}
-                </descriptiveAlertTemplate>
-              </document>,
-            ).sink();
-          },
-
-          onReviewLiked(id) {
-            return markReviewAsLiked(id)
-              .then(this.loadData.bind(this))
-              .then(this.setState.bind(this))
-              .then(TVDML.removeModal);
-          },
-
-          onReviewDisliked(id) {
-            return markReviewAsDisliked(id)
-              .then(this.loadData.bind(this))
-              .then(this.setState.bind(this))
-              .then(TVDML.removeModal);
-          },
-
-          onRate() {
-            const { title } = this.props;
-
-            TVDML.renderModal(
-              <document>
-                <ratingTemplate>
-                  <title>{title}</title>
-                  <ratingBadge onChange={this.onRateChange} />
-                </ratingTemplate>
               </document>,
             ).sink();
           },
@@ -701,21 +547,23 @@ export default function tvShowRoute() {
           },
 
           onMarkTVShowAsWatched() {
-            const { sid } = this.props;
+            // const { sid } = this.props;
 
-            return markTVShowAsWatched(sid)
-              .then(this.loadData.bind(this))
-              .then(this.setState.bind(this))
-              .then(TVDML.removeModal);
+            // return markTVShowAsWatched(sid)
+            //   .then(this.loadData.bind(this))
+            //   .then(this.setState.bind(this))
+            //   .then(TVDML.removeModal);
+            defaultErrorHandlers(new Error("Non Implementata!!!"));
           },
 
           onMarkTVShowAsUnwatched() {
-            const { sid } = this.props;
+            // const { sid } = this.props;
 
-            return markTVShowAsUnwatched(sid)
-              .then(this.loadData.bind(this))
-              .then(this.setState.bind(this))
-              .then(TVDML.removeModal);
+            // return markTVShowAsUnwatched(sid)
+            //   .then(this.loadData.bind(this))
+            //   .then(this.setState.bind(this))
+            //   .then(TVDML.removeModal);
+            defaultErrorHandlers(new Error("Non Implementata!!!"));
           },
         }),
       ),
