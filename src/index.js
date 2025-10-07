@@ -74,8 +74,6 @@ TVDML.handleRoute('movie').pipe(movieRoute());
 
 TVDML.handleRoute('season').pipe(seasonRoute());
 
-TVDML.handleRoute('user').pipe(userRoute());
-
 TVDML.handleRoute('moviesGenres').pipe(moviesGenresRoute());
 
 TVDML.handleRoute('tvShowsGenres').pipe(tvShowsGenresRoute());

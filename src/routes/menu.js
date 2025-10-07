@@ -98,15 +98,6 @@ export default function menuRoute(items) {
                       </menuItem>
                     );
                   })}
-                  <menuItem style="tv-highlight-color: rgba(185, 5, 5, 1)" key="nickname" route="user">
-                    {authorized ? (
-                      <title>
-                        <title>{localization.get('menu-account-auth')}</title>
-                      </title>
-                    ) : (
-                      <title>{localization.get('menu-account')}</title>
-                    )}
-                  </menuItem>
                 </menuBar>
               </menuBarTemplate>
             </document>
