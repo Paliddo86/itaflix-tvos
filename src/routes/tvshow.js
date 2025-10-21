@@ -420,7 +420,6 @@ export default function tvShowRoute() {
             //   title: `${title} — ${seasonTitle}`,
             //   shouldPlayImmediately,
             // }).then(() => this.setState({ loading: false }));
-            defaultErrorHandlers(new Error("Non Implementata!!!"));
           },
 
           onAddToSubscriptions() {
@@ -554,7 +553,6 @@ export default function tvShowRoute() {
             //   .then(this.loadData.bind(this))
             //   .then(this.setState.bind(this))
             //   .then(TVDML.removeModal);
-            defaultErrorHandlers(new Error("Non Implementata!!!"));
           },
 
           onMarkTVShowAsUnwatched() {
@@ -564,7 +562,6 @@ export default function tvShowRoute() {
             //   .then(this.loadData.bind(this))
             //   .then(this.setState.bind(this))
             //   .then(TVDML.removeModal);
-            defaultErrorHandlers(new Error("Non Implementata!!!"));
           },
         }),
       ),
