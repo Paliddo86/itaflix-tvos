@@ -151,11 +151,14 @@ export class Genre {
     }
 }
 
-export class People {
-    constructor({ id, name, filmography }) {
+export class Service {
+    /**
+     * 
+     * @param {{id: string, name: string}} param0 
+     */
+    constructor({ id, name }) {
         this.id = id;
         this.name = name;
-        this.filmography = filmography;
     }
 }
 
@@ -230,24 +233,3 @@ export class Episode {
         this.updated_at = updated_at || null;
     }
 }
-
-export class Video {
-    constructor({ id, src, server }) {
-        this.id = id;
-        this.src = src;
-        this.server = server;
-    }
-}
-
-// Types
-Video.Server = class {
-    constructor({ id, name, src }) {
-        this.id = id;
-        this.name = name;
-        this.src = src;
-    }
-};
-Video.Type = {
-    Movie: 'Movie',
-    Episode: 'Episode'
-};

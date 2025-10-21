@@ -124,7 +124,7 @@ export default {
   'movie-quality': 'Qualità',
   'movie-collection': 'Collezione',
   'movie-type': 'Film',
-  'movie-update': 'Aggiornato',
+  'movie-update': 'Aggiunto di recente',
   
   'tvshow-update': 'Nuovi Episodi',
   'season-update': 'Nuovi Episodi',
@@ -174,6 +174,7 @@ export default {
   'status-released': 'Rilasciato',
   'status-post production': 'Post Produzione',
   'status-returning series': 'Serie Rinnovata',
+  'status-canceled': 'Cancellata',
 
   'tvshow-control-continue-watching': 'Continua a guardare',
   'tvshow-control-show-trailer': 'Play\nTrailer',
@@ -278,6 +279,7 @@ export default {
 
   'error': 'Errore',
   'generic-error': 'Errore generico',
-  'loading': 'Caricamento...'
+  'loading': 'Caricamento...',
+  'no-content': 'Contenuto non disponibile',
   
 };
