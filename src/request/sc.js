@@ -477,12 +477,16 @@ export async function searchMovieAndTvShow(query, page) {
     }
 
     res.data.map(it => {
-        let poster = getFilenameFromImageLink(it, "poster");
+        const poster = getFilenameFromImageLink(it, "poster");
+        const cover = getFilenameFromImageLink(it, "cover");
+        const banner = getFilenameFromImageLink(it, "background");
         if (it.type === "movie") {
             moviesFounded.push(new Movie({
                id: it.id,
                 title: it.name,
                 poster: poster,
+                cover: cover,
+                banner: banner,
                 isSubIta: Boolean(it.sub_ita),
                 slug: it.slug,
                 isUpdated: it.updated_at || it.last_air_date ? isMoreThanDaysAhead(it.updated_at || it.last_air_date) : false,
@@ -493,6 +497,8 @@ export async function searchMovieAndTvShow(query, page) {
                 id: it.id,
                 title: it.name,
                 poster: poster,
+                cover: cover,
+                banner: banner,
                 isSubIta: Boolean(it.sub_ita),
                 slug: it.slug,
                 isUpdated: it.updated_at || it.last_air_date ? isMoreThanDaysAhead(it.updated_at || it.last_air_date) : false,

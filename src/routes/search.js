@@ -7,7 +7,7 @@ import styles from '../common/styles';
 import { searchMovieAndTvShow } from '../request/sc';
 import { defaultErrorHandlers } from '../helpers/auth/handlers';
 
-const THROTTLE_TIMEOUT = 1000;
+const THROTTLE_TIMEOUT = 500;
 
 export default function searchRoute() {
   return TVDML.createPipeline().pipe(

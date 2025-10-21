@@ -53,7 +53,7 @@ export default function Tile({ key, attrs = {}, events = {} }) {
         {attrs.title}
       </title>
       <subtitle class="tile-subtitle" style="font-size: 20">{i18n(`${attrs.type}-type`)}</subtitle>
-      <overlay style="margin: 0; padding: 0;">
+      <overlay style="margin: 0; padding: 0; display: grid; width: 100%; height: 100%;">
       {attrs.quality && (
             <textBadge
             style={`
@@ -72,12 +72,12 @@ export default function Tile({ key, attrs = {}, events = {} }) {
             <textBadge
             style={`
               font-size: 20
-              margin: 0 10 12 0;
+              width: 30%;
               border-radius: 0;
               color: rgb(255, 255, 255);
               tv-tint-color: #b90505;
               background-color: #b90505;
-              tv-align: left;
+              tv-align: right;
               tv-position: top;
             `}
           >
