@@ -1,6 +1,7 @@
 /* global localStorage */
 
 import EventBus from './event-bus';
+import { Service } from './helpers/models';
 
 const bus = new EventBus();
 
@@ -144,4 +145,13 @@ export function getAllMovieGenres() {
 
 export function getAllTvShowGenres() {
   return settings[params.TV_SHOW_CATEGORIES];
+}
+
+export function getService() {
+  return [new Service({id: 'netflix', name: 'Netflix'}), 
+    new Service({id: 'prime', name: 'Prime Video'}),
+    new Service({id: 'disney', name: 'Disney+'}),
+    new Service({id: 'apple', name: 'Apple TV+'}),
+    new Service({id: 'now', name: 'Now TV'}),
+  ];
 }

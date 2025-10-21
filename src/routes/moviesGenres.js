@@ -4,7 +4,6 @@ import * as user from '../user';
 
 import { get as i18n } from '../localization';
 
-import {getMoviesByGenre } from '../request/adc';
 import * as settings from '../settings';
 
 import {
@@ -19,6 +18,9 @@ import Tile from '../components/tile';
 import Loader from '../components/loader';
 
 import logo from '../assets/img/logo.png';
+import { Genre, Service } from '../helpers/models';
+import {getGenreMovies, MAX_SEARCH_RESULTS} from '../request/sc';
+import { defaultErrorHandlers } from '../helpers/auth/handlers';
 
 export default function moviesGenresRoute() {
   return TVDML.createPipeline().pipe(
@@ -61,7 +63,7 @@ export default function moviesGenresRoute() {
           });
 
           this.loadData().then(payload => {
-            this.setState({ loading: false, ...payload });
+            this.setState({ loading: false, ...payload, active: 0 });
           });
         },
 
@@ -70,15 +72,6 @@ export default function moviesGenresRoute() {
         },
 
         componentDidUpdate(prevProps, prevState) {
-          // if (
-          //   this.state.updating &&
-          //   prevState.updating !== this.state.updating
-          // ) {
-          //   console.log("updated")
-          //   this.loadData().then(payload => {
-          //     this.setState({ updating: false, ...payload });
-          //   });
-          // }
         },
 
         componentWillUnmount() {
@@ -91,16 +84,20 @@ export default function moviesGenresRoute() {
         loadData() {
           let genres = [];
           let result = {};
-          let allMovies = i18n("menu-moviesGenres");
-          genres.push({name: allMovies, slug: "film"});
-          result[0] = {};
-          const allgenres = settings.getAllMovieGenres();
 
+          /** @type {Genre[]} */
+          const allgenres = settings.getAllMovieGenres();
+          const services = settings.getService();
+
+          services.forEach((service, index) => {
+            genres.push(service);
+            result[index] = {}
+          })
           Object.values(allgenres).sort((a, b) => {
             return a.name > b.name;
-          }).forEach((value, index) => {
-            genres.push(value);
-            result[index + 1] = {};
+          }).forEach((value) => {
+            let newIndex = genres.push(value) -1;
+            result[newIndex] = {};
           })
           return Promise.resolve({genres, ...result});
         },
@@ -141,7 +138,7 @@ export default function moviesGenresRoute() {
                   <section>
                     {genres.map((genre, index) => {
                       const id = index;
-                      const {movies, total} = this.state[id];
+                      const {movies} = this.state[id];
 
                       return (
                         <listItemLockup
@@ -151,30 +148,16 @@ export default function moviesGenresRoute() {
                         >
                           <title>{capitalizeText(genre.name)}</title>
                           <decorationLabel>
-                            {total ? total : '…'}
+                            {movies ? movies.length : "..."}
                           </decorationLabel>
                           <relatedContent>
-                            {movies == null ? (
-                              <activityIndicator />
-                            ) : (
+                            { movies ? (
                               <grid>
                                 <section>
                                   {movies.map((movie, index) => {
-                                    const {
-                                      title,
-                                      quality,
-                                      isUpdated,
-                                      poster,
-                                    } = movie;
-
                                     return (
                                       <Tile
-                                        title={title}
-                                        route="movie"
-                                        poster={poster}
-                                        quality={quality}
-                                        isUpdated={isUpdated}
-                                        payload={movie}
+                                        {...movie}
                                         autoHighlight={false}
                                         onHighlight={this.onHighlightTile.bind(this, index)}
                                       />
@@ -182,7 +165,7 @@ export default function moviesGenresRoute() {
                                   })}
                                 </section>
                               </grid>
-                            )}
+                            ): <activityIndicator />}
                           </relatedContent>
                         </listItemLockup>
                       );
@@ -196,20 +179,22 @@ export default function moviesGenresRoute() {
 
         onGenreSelect(id) {
           const { genres } = this.state;
-
+          let activeSection = this.state[id];
           this.setState({ active: id });
 
-          //if (~updated_genres.indexOf(id)) return;
-          let activeSection = this.state[id];
+          /** @type {Genre | Service} */
           let genre = genres[id];
 
           if(!activeSection.movies || !activeSection.movies.length) {
-            getMoviesByGenre(genre.slug).then((result) => {
+            let service = (genre instanceof Service)? genre.id : undefined;
+            let genreSlug = (genre instanceof Genre)? genre.id : undefined;
+            getGenreMovies(0, service, genreSlug).then((result) => {
                 this.setState({
                   [id]: result,
-                  //updated_genres: updated_genres.concat(id),
-                })
+                });
   
+            }).catch((error) => {
+              defaultErrorHandlers(error);
             });
           }
         },
@@ -217,19 +202,19 @@ export default function moviesGenresRoute() {
         onHighlightTile(index) {
           const { genres, active } = this.state;
 
-
-          //if (~updated_genres.indexOf(id)) return;
-
+          /** @type {Genre | Service} */
           let genre = genres[active];
           let activeSection = this.state[active];
+
+          if (activeSection.movies.length % MAX_SEARCH_RESULTS !== 0) return;
           
-          if (index >= (activeSection.movies.length - 4) && activeSection.current_page < activeSection.last_page) {
-            let page = activeSection.current_page + 1;
-            if(page === activeSection.current_page) return;
-            
-            getMoviesByGenre(genre.slug, ++activeSection.current_page).then((result) => {
+          if (index >= (activeSection.movies.length - 5)) {
+            let service = (genre instanceof Service)? genre.id : undefined;
+            let genreSlug = (genre instanceof Genre)? genre.id : undefined;
+            let offset = Math.floor(activeSection.movies.length / MAX_SEARCH_RESULTS) * MAX_SEARCH_RESULTS;
+            getGenreMovies(offset, service, genreSlug).then((result) => {
                 this.setState({
-                  [active]: Object.assign({}, result, {movies: [...activeSection.movies, ...result.movies]})
+                  [active]: {movies: activeSection.movies.concat(result.movies)},
                 });
             });
 

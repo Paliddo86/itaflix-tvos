@@ -120,34 +120,13 @@ class StreamingCommunityService {
             defaultErrorHandlers(error); 
         }
     }
-    async getGenre(id, version) {
+    async getGenre(type, version, offset = 0, service = null, genreId = null) {
         try {
-            let response = await request.get(this.buildUrl("/archivio"), {
-                params: { "genre[]": id },
-                headers: {
-                    "x-inertia": "true",
-                    "x-inertia-version": version
-                }
-            });
-            return response.toJSON();
-        } catch (error) {
-            defaultErrorHandlers(error); 
-        }
-    }
-    async getIframe(id, episodeId, nextEpisode = '1') {
-        try {
-            if (episodeId === undefined) {
-                let response = await request.get(this.buildUrl("/iframe/" + id));
-                return response.toJSON();
-            } else {
-                let response = await request.get(this.buildUrl("/iframe/" + id), {
-                    params: {
-                        episode_id: episodeId,
-                        next_episode: nextEpisode
-                    }
-                });
-                return response.toJSON();
-            }
+            const url = this.buildUrl("/api/archive?type=" + encodeURIComponent(type) + "&offset=" + offset + (service ? "&service=" + encodeURIComponent(service) : "") + (genreId ? "&genre[]=" + encodeURIComponent(genreId) : ""));
+            let response = await request.get(url, {
+                prepare: addHeaders(this.headers(version))
+            }).then(request.toJSON());
+            return response;
         } catch (error) {
             defaultErrorHandlers(error); 
         }
@@ -156,7 +135,7 @@ class StreamingCommunityService {
 
 const DOMAIN =  "streamingunity.co";
 const URL = "https://" + DOMAIN;
-const MAX_SEARCH_RESULTS = 60;
+export const MAX_SEARCH_RESULTS = 60;
 const language = "it";
 const IMAGEKIT_URL = "https://ik.imagekit.io/itaflix/webp/"
 let _version = ""
@@ -515,425 +494,31 @@ export async function searchMovieAndTvShow(query, page) {
     };
 }
 
-/* StreamingCommunityProvider as a singleton object exactly mapped from Kotlin */
-// class StreamingCommunityProvider {
-//     static DOMAIN =  "streamingcommunity.paris";
-//     static URL = "https://streamingcommunity.paris/";
-//     static MAX_SEARCH_RESULTS = 60;
+export async function getGenreMovies(offset = 0, genreService = undefined, genreSlug = undefined) {
+    let movies = [];
+    let res = await service.getGenre("movie", _version || await _initVersion(), offset, genreService, genreSlug);
+    if (!res) return {movies};
 
-//     static name = "StreamingCommunity";
-//     static logo = "https://streamingcommunity.paris/apple-touch-icon.png";
-//     static language = "it";
+    if (_version !== res.version) _version = res.version;
 
-//     _version;
+    res.titles.forEach(it => {
+        movies.push(new Movie({
+            id: it.id,
+            title: it.name,
+            poster: getFilenameFromImageLink(it, "poster"),
+            cover: getFilenameFromImageLink(it, "cover"),
+            banner: getFilenameFromImageLink(it, "background"),
+            rating: it.score,
+            slug: it.slug,
+            isUpdated: it.updated_at || it.last_air_date ? isMoreThanDaysAhead(it.updated_at || it.last_air_date) : false,
+            type: it.type
+        }));
+    });
 
-//     get version() {
-//         return this._version;
-//     }
-
-//     set version(val) {
-//         this._version = val;
-//     }
-
-//     static service =  new StreamingCommunityService(StreamingCommunityProvider.URL);
-
-
-//     // Helper: getImageLink
-//     static getImageLink(filename) {
-//         if (!filename) return null;
-//         return "https://cdn." + this.DOMAIN + "/images/" + filename;
-//     }
-
-//     static getFilenameFromImageLink(it, type) {
-//         let imageLink = this.getImageLink(it.images.find(img => img.type === type));
-//         if (imageLink) return imageLink.filename;
-
-//         return "";
-//     }
-
-//     // getHome implementation
-//     static async getHome() {
-//         let res = await StreamingCommunityProvider.service.getHome(this.version || await this._initVersion());
-//         if (this.version !== res.version) this.version = res.version;
-
-//         let mainTitles = res.props.sliders[2].titles;
-
-//         let categories = [];
-
-//         // 2: top10 (Featured)
-//         categories.push(new Category({
-//             name: "FEATURED",
-//             list: mainTitles.map(it => {
-//                 if (it.type === "movie") {
-//                     return new Movie({
-//                         id: it.id + "-" + it.slug,
-//                         title: it.name,
-//                         banner: this.getFilenameFromImageLink(it, "background"),
-//                         rating: it.score
-//                     });
-//                 } else {
-//                     return new TvShow({
-//                         id: it.id + "-" + it.slug,
-//                         title: it.name,
-//                         banner: this.getFilenameFromImageLink(it, "background"),
-//                         rating: it.score
-//                     });
-//                 }
-//             })
-//         }));
-
-//         // 0: trending, 1: latest
-//         let extraCategories = [0, 1].map(index => {
-//             let slider = res.props.sliders[index];
-//             return new Category({
-//                 name: slider.label,
-//                 list: slider.titles.map(it => {
-//                     if (it.type === "movie") {
-//                         return new Movie({
-//                             id: it.id + "-" + it.slug,
-//                             title: it.name,
-//                             released: it.lastAirDate,
-//                             rating: it.score,
-//                             poster: this.getFilenameFromImageLink(it, "poster"),
-//                             banner: this.getFilenameFromImageLink(it, "background")
-//                         });
-//                     } else {
-//                         return new TvShow({
-//                             id: it.id + "-" + it.slug,
-//                             title: it.name,
-//                             released: it.lastAirDate,
-//                             rating: it.score,
-//                             poster: this.getFilenameFromImageLink(it, "poster"),
-//                             banner: this.getFilenameFromImageLink(it, "background")
-//                         });
-//                     }
-//                 })
-//             });
-//         });
-//         categories.push(...extraCategories);
-
-//         return categories;
-//     }
-
-//     static async _initVersion() {
-//         const document = await StreamingCommunityProvider.service.getHomeDocument();
-        
-//         // Trova l'attributo `data-page` dentro il tag con id "app"
-//         const match = document.match(/id="app"[^>]*data-page='([^']+)'/) || 
-//                       document.match(/id="app"[^>]*data-page="([^"]+)"/);
-    
-//         let parsed = {};
-//         if (match) {
-//             try {
-//                 parsed = JSON.parse(match[1]);
-//             } catch (e) {
-//                 parsed = {};
-//             }
-//         }
-    
-//         this.version = parsed.version || "";
-//         return this.version;
-//     }
-
-//     static async search(query, page) {
-//         if (query === "") {
-//             let res = await StreamingCommunityProvider.service.getHome(this.version || await this._initVersion());
-//             if (this.version !== res.version) this.version = res.version;
-//             return res.props.genres.map(it => new Genre({
-//                 id: it.id,
-//                 name: it.name
-//             })).sort((a, b) => a.name.localeCompare(b.name));
-//         }
-
-//         let res = await StreamingCommunityProvider.service.search(query, (page - 1) * this.MAX_SEARCH_RESULTS);
-//         if (res.currentPage === null || res.lastPage === null || res.currentPage > res.lastPage) {
-//             return [];
-//         }
-
-//         return res.data.map(it => {
-//             let poster = this.getFilenameFromImageLink(it, "poster");
-//             if (it.type === "movie") {
-//                 return new Movie({
-//                     id: it.id + "-" + it.slug,
-//                     title: it.name,
-//                     released: it.lastAirDate,
-//                     rating: it.score,
-//                     poster: poster
-//                 });
-//             } else {
-//                 return new TvShow({
-//                     id: it.id + "-" + it.slug,
-//                     title: it.name,
-//                     released: it.lastAirDate,
-//                     rating: it.score,
-//                     poster: poster
-//                 });
-//             }
-//         });
-//     }
-
-//     static async getMovies(page) {
-//         if (page > 1) return [];
-//         let res = await StreamingCommunityProvider.service.getMovies(this.version || await this._initVersion());
-//         if (this.version !== res.version) this.version = res.version;
-
-//         let movies = [];
-//         res.props.sliders.forEach(slider => {
-//             slider.titles.forEach(title => {
-//                 let poster = this.getFilenameFromImageLink(it, "poster");
-//                 movies.push(new Movie({
-//                     id: title.id + "-" + title.slug,
-//                     title: title.name,
-//                     released: title.lastAirDate,
-//                     rating: title.score,
-//                     poster: poster
-//                 }));
-//             });
-//         });
-
-//         let seen = new Set();
-//         return movies.filter(movie => {
-//             if (seen.has(movie.id)) {
-//                 return false;
-//             } else {
-//                 seen.add(movie.id);
-//                 return true;
-//             }
-//         });
-//     }
-
-//     async getTvShows(page) {
-//         if (page > 1) return [];
-//         let res = await StreamingCommunityProvider.service.getTvSeries(this.version || await this._initVersion());
-//         if (this.version !== res.version) this.version = res.version;
-
-//         let tvShows = [];
-//         res.props.sliders.forEach(slider => {
-//             slider.titles.forEach(title => {
-//                 let poster = this.getFilenameFromImageLink(it, "poster");
-//                 tvShows.push(new TvShow({
-//                     id: title.id + "-" + title.slug,
-//                     title: title.name,
-//                     released: title.lastAirDate,
-//                     rating: title.score,
-//                     poster: poster
-//                 }));
-//             });
-//         });
-
-//         let seen = new Set();
-//         return tvShows.filter(show => {
-//             if (seen.has(show.id)) return false;
-//             seen.add(show.id);
-//             return true;
-//         });
-//     }
-
-//     static getTrailerUrl(title) {
-//         if(title.trailers) {
-//             let founded = title.trailers.find(t => t.youtubeId && t.youtubeId !== "");
-//             if(founded) return "https://youtube.com/watch?v=" + founded.youtubeId;
-//             return null;
-//         }
-//         return null;
-//     }
-
-//     static async getMovie(id) {
-//         let res = await StreamingCommunityProvider.service.getDetails(id, this.version || await this._initVersion());
-//         if (this.version !== res.version) this.version = res.version;
-//         let title = res.props.title;
-
-//         return new Movie({
-//             id: id,
-//             title: title.name,
-//             overview: title.plot,
-//             released: title.lastAirDate,
-//             rating: title.score,
-//             poster: this.getFilenameFromImageLink(it, "poster"),
-//             genres: (title.genres || []).map(it => new Genre({
-//                 id: it.id,
-//                 name: it.name
-//             })),
-//             cast: (title.actors || []).map(it => new People({
-//                 id: it.name,
-//                 name: it.name
-//             })),
-//             trailer: this.getTrailerUrl(title),
-//             recommendations: res.props.sliders[0].titles.map(it => {
-//                 if (it.type === "movie") {
-//                     return new Movie({
-//                         id: it.id + "-" + it.slug,
-//                         title: it.name,
-//                         rating: it.score,
-//                         poster: this.getFilenameFromImageLink(it, "poster")
-//                     });
-//                 } else {
-//                     return new TvShow({
-//                         id: it.id + "-" + it.slug,
-//                         title: it.name,
-//                         rating: it.score,
-//                         poster: this.getFilenameFromImageLink(it, "poster")
-//                     });
-//                 }
-//             })
-//         });
-//     }
-
-//     static async getTvShow(id) {
-//         let res = await StreamingCommunityProvider.service.getDetails(id, this.version || await this._initVersion());
-//         if (this.version !== res.version) this.version = res.version;
-//         let title = res.props.title;
-
-//         return new TvShow({
-//             id: id,
-//             title: title.name,
-//             overview: title.plot,
-//             released: title.lastAirDate,
-//             rating: title.score,
-//             poster: this.getFilenameFromImageLink(it, "poster"),
-//             genres: (title.genres || []).map(it => new Genre({
-//                 id: it.id,
-//                 name: it.name
-//             })),
-//             cast: (title.actors || []).map(it => new People({
-//                 id: it.name,
-//                 name: it.name
-//             })),
-//             trailer: this.getTrailerUrl(title),
-//             recommendations: res.props.sliders[0].titles.map(it => {
-//                 if (it.type === "movie") {
-//                     return new Movie({
-//                         id: it.id + "-" + it.slug,
-//                         title: it.name,
-//                         rating: it.score,
-//                         poster: this.getFilenameFromImageLink(it, "poster")
-//                     });
-//                 } else {
-//                     return new TvShow({
-//                         id: it.id + "-" + it.slug,
-//                         title: it.name,
-//                         rating: it.score,
-//                         poster: this.getFilenameFromImageLink(it, "poster")
-//                     });
-//                 }
-//             }),
-//             seasons: (title.seasons || []).map(it => new Season({
-//                 id: id + "/stagione-" + it.number,
-//                 number: parseInt(it.number) || (title.seasons.indexOf(it) + 1),
-//                 title: it.name
-//             }))
-//         });
-//     }
-
-//     static async getEpisodesBySeason(seasonId) {
-//         let res = await StreamingCommunityProvider.service.getSeasonDetails(seasonId, this.version || await this._initVersion());
-//         if (this.version !== res.version) this.version = res.version;
-//         return res.props.loadedSeason.episodes.map(it => new Episode({
-//             id: seasonId.split("-")[0] + "?episode_id=" + it.id,
-//             number: parseInt(it.number) || (res.props.loadedSeason.episodes.indexOf(it) + 1),
-//             title: it.name,
-//             poster: this.getFilenameFromImageLink(it, "poster")
-//         }));
-//     }
-
-//     static async getGenre(id, page) {
-//         let res = await StreamingCommunityProvider.service.getGenre(id, this.version || await this._initVersion());
-//         if (res.version && res.version !== this.version) this.version = res.version;
-
-//         if (page > 1) {
-//             return new Genre({
-//                 id: id,
-//                 name: ""
-//             });
-//         }
-
-//         let titles = res.titles || res.props.titles;
-//         let genreName = "";
-//         if (res.props.genres) {
-//             let found = res.props.genres.find(g => g.id === id);
-//             genreName = found ? found.name : "";
-//         }
-//         return new Genre({
-//             id: id,
-//             name: genreName,
-//             shows: titles.map(it => {
-//                 let poster = this.getFilenameFromImageLink(it, "poster");
-//                 if (it.type === "movie") {
-//                     return new Movie({
-//                         id: it.id + "-" + it.slug,
-//                         title: it.name,
-//                         released: it.lastAirDate,
-//                         rating: it.score,
-//                         poster: poster
-//                     });
-//                 } else {
-//                     return new TvShow({
-//                         id: it.id + "-" + it.slug,
-//                         title: it.name,
-//                         released: it.lastAirDate,
-//                         rating: it.score,
-//                         poster: poster
-//                     });
-//                 }
-//             })
-//         });
-//     }
-
-//     static async getPeople(id, page) {
-//         let res = await StreamingCommunityProvider.service.search(id, (page - 1) * this.MAX_SEARCH_RESULTS);
-//         if (res.currentPage === null || res.lastPage === null || res.currentPage > res.lastPage) {
-//             return new People({
-//                 id: id,
-//                 name: id
-//             });
-//         }
-
-//         return new People({
-//             id: id,
-//             name: id,
-//             filmography: res.data.map(it => {
-//                 let poster = this.getFilenameFromImageLink(it, "poster");
-//                 if (it.type === "movie") {
-//                     return new Movie({
-//                         id: it.id + "-" + it.slug,
-//                         title: it.name,
-//                         released: it.lastAirDate,
-//                         rating: it.score,
-//                         poster: poster
-//                     });
-//                 } else {
-//                     return new TvShow({
-//                         id: it.id + "-" + it.slug,
-//                         title: it.name,
-//                         released: it.lastAirDate,
-//                         rating: it.score,
-//                         poster: poster
-//                     });
-//                 }
-//             })
-//         });
-//     }
-
-//     static async getServers(id, videoType) {
-//         let document;
-//         if (videoType === Video.Type.Movie) {
-//             document = await StreamingCommunityProvider.service.getIframe(id.split("-")[0]);
-//         } else if (videoType === Video.Type.Episode) {
-//             document = await StreamingCommunityProvider.service.getIframe(id.split("-")[0], id.split("?")[1].split("=")[1]);
-//         }
-//         const $ = cheerio.load(document);
-//         let src = $("iframe").first().attr("src") || "";
-//         return [new Video.Server({
-//             id: id,
-//             name: "Vixcloud",
-//             src: src
-//         })];
-//     }
-
-//     static async getVideo(server) {
-//         return await new VixcloudExtractor().extract(server.src);
-//     }
-// }
+    return {
+        movies
+    };
+}
 
 
   
