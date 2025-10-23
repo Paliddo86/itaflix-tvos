@@ -443,16 +443,16 @@ export default function seasonRoute() {
             //const episode = getEpisode(episodeNumber, episodes);
 
             const preparePlayer = (link) => {
-                VixSrcService.createMediaItemWithSubtitles(link).then(mediaItem => {
-                  mediaItem.title = `${tvshow.title} - ${i18n('tvshow-season-episode', { seasonNumber: season.number, episodeNumber: episode.number })}`
-                  mediaItem.description = episode.overview|| "";
-                  mediaItem.artworkImageURL =episode.poster || tvshow.cover;
-                  mediaItem.resumeTime = 0;
-                  
-                  player.playlist.push(movieMediaItem);
-                  player.play();
-                });
-                
+              let media = {
+                title: `${tvshow.title} - ${i18n('tvshow-season-episode', { seasonNumber: season.number, episodeNumber: episode.number })}`,
+                description: episode.overview|| "",
+                stream: link,
+                artworkImageURL: episode.poster || tvshow.cover,
+                resumeTime: 0
+              }
+                let tvshowMediaItem =  createMediaItems(media);
+                player.playlist.push(tvshowMediaItem);
+                player.play();
             }
 
             VixSrcService.getTvShowUrl(tvshow.tmdb_id, season.number, episode.number).then(link => {
