@@ -515,7 +515,7 @@ export default function seasonRoute() {
             // return markEpisodeAsUnwatched(sid, id, episodeNumber).then(
             //   TVDML.removeModal,
             // );
-            defaultErrorHandlers(new Error("Mark as watched/unwatched not implemented"));
+            // defaultErrorHandlers(new Error("Mark as watched/unwatched not implemented"));
           },
 
           onMarkAsWatched(episodeNumber, addTVShowToSubscriptions) {
@@ -529,7 +529,7 @@ export default function seasonRoute() {
             //   markEpisodeAsWatched(sid, id, episodeNumber),
             //   Promise.resolve(),
             // ]).then(TVDML.removeModal);
-            defaultErrorHandlers(new Error("Mark as watched/unwatched not implemented"));
+            // defaultErrorHandlers(new Error("Mark as watched/unwatched not implemented"));
           },
         }),
       ),
