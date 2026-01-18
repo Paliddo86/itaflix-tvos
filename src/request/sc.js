@@ -445,7 +445,7 @@ export async function searchMovieAndTvShow(query, page) {
         };
     }
 
-    let res = await service.search(encodeURIComponent(query), _version || await _initVersion());
+    let res = await service.search(query, _version || await _initVersion());
     if (res.currentPage === null) {
         return {
             searchResults: {
