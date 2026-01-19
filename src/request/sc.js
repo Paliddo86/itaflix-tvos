@@ -65,7 +65,7 @@ class StreamingCommunityService {
 
     async search(keyword, version, offset = 0) {
         try {
-            let response = await request.get(this.buildUrl("/api/search?q=" + encodeURIComponent(keyword)), {
+            let response = await request.get(this.buildUrl("/api/search?q=" + encodeURIComponent(keyword) + "&lang=it"), {
                 prepare: addHeaders(this.headers(version))
             }).then(request.toJSON());
             return response;
@@ -122,7 +122,7 @@ class StreamingCommunityService {
     }
     async getGenre(type, version, offset = 0, service = null, genreId = null) {
         try {
-            const url = this.buildUrl("/api/archive?type=" + encodeURIComponent(type) + "&offset=" + offset + (service ? "&service=" + encodeURIComponent(service) : "") + (genreId ? "&genre[]=" + encodeURIComponent(genreId) : ""));
+            const url = this.buildUrl("/api/archive?type=" + encodeURIComponent(type) + "&lang=it" + "&offset=" + offset + (service ? "&service=" + encodeURIComponent(service) : "") + (genreId ? "&genre[]=" + encodeURIComponent(genreId) : ""));
             let response = await request.get(url, {
                 prepare: addHeaders(this.headers(version))
             }).then(request.toJSON());
@@ -454,6 +454,8 @@ export async function searchMovieAndTvShow(query, page) {
             }
         };
     }
+
+    console.log("search", query, res.data)
 
     res.data.map(it => {
         const poster = getFilenameFromImageLink(it, "poster");

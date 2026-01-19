@@ -68,22 +68,6 @@ export default function Tile({ key, attrs = {}, events = {} }) {
             {attrs.quality}
           </textBadge>
         )}
-      {(attrs.isUpdated) && (
-            <textBadge
-            style={`
-              font-size: 20
-              width: 30%;
-              border-radius: 0;
-              color: rgb(255, 255, 255);
-              tv-tint-color: #b90505;
-              background-color: #b90505;
-              tv-align: right;
-              tv-position: top;
-            `}
-          >
-            {i18n(attrs.type + '-update')}
-          </textBadge>
-        )}
         {!attrs.isWatched && attrs.counter && (
           <textBadge
             type="fill"
