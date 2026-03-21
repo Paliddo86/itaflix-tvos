@@ -133,7 +133,7 @@ class StreamingCommunityService {
     }
 }
 
-const DOMAIN =  "streamingunity.buzz";
+const DOMAIN =  "streamingunity.biz";
 const URL = "https://" + DOMAIN;
 export const MAX_SEARCH_RESULTS = 60;
 const language = "it";
