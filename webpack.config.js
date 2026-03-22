@@ -57,6 +57,7 @@ const stats = {
 const plugins = [
   new webpack.EnvironmentPlugin({
     NODE_ENV: DEVELOPMENT,
+    TMDB_API: '7f0972f1e454095699f25d860f861850',
   }),
 
   new webpack.ProvidePlugin({
