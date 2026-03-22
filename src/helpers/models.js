@@ -151,6 +151,22 @@ export class Genre {
     }
 }
 
+export class People {
+    /**
+     * @param {{id: string, name: string, image?: string, biography?: string, placeOfBirth?: string, birthday?: string, deathday?: string, filmography?: Array}} param0
+     */
+    constructor({ id, name, image, biography, placeOfBirth, birthday, deathday, filmography }) {
+        this.id = id;
+        this.name = name;
+        this.image = image || '';
+        this.biography = biography || '';
+        this.placeOfBirth = placeOfBirth || '';
+        this.birthday = birthday || '';
+        this.deathday = deathday || '';
+        this.filmography = filmography || [];
+    }
+}
+
 export class Service {
     /**
      * 
