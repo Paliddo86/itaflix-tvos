@@ -48,10 +48,10 @@ export class Movie{
         this.slug = slug;
         this.isUpdated = isUpdated;
         this.updateType = isUpdated ? "Aggiornato": updateType;
-        this.quality = quality;
+        this.quality = quality || "HD";
         this.type = type;
         this.cover = cover;
-        this.tmdb_id = tmdb_id;
+        this.tmdb_id = tmdb_id || id;
         this.runtime = runtime;
         this.status = status;
         this.isSubIta = isSubIta;
@@ -112,10 +112,10 @@ export class TvShow {
         this.slug = slug;
         this.isUpdated = isUpdated;
         this.updateType = isUpdated ? "Nuovi Episodi": updateType;
-        this.quality = quality;
+        this.quality = quality || "HD";
         this.type = type === "tv" ? "tvshow" : type;
         this.cover = cover;
-        this.tmdb_id = tmdb_id;
+        this.tmdb_id = tmdb_id || id;
         this.runtime = runtime || 0;
         this.status = status;
         this.seasons = [];
