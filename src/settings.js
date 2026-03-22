@@ -148,10 +148,13 @@ export function getAllTvShowGenres() {
 }
 
 export function getService() {
-  return [new Service({id: 'netflix', name: 'Netflix'}), 
+  return [
+    new Service({id: 'netflix', name: 'Netflix'}), 
     new Service({id: 'prime', name: 'Prime Video'}),
     new Service({id: 'disney', name: 'Disney+'}),
     new Service({id: 'apple', name: 'Apple TV+'}),
+    new Service({id: 'hulu', name: 'Hulu'}),
+    new Service({id: 'hbo', name: 'HBO Max'}),
     new Service({id: 'now', name: 'Now TV'}),
   ];
 }

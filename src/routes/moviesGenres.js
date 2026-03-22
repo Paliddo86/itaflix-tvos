@@ -19,8 +19,10 @@ import Loader from '../components/loader';
 
 import logo from '../assets/img/logo.png';
 import { Genre, Service } from '../helpers/models';
-import {getGenreMovies, MAX_SEARCH_RESULTS} from '../request/sc';
+import TMDB from '../request/tmdb';
 import { defaultErrorHandlers } from '../helpers/auth/handlers';
+
+const MAX_SEARCH_RESULTS = 20;
 
 export default function moviesGenresRoute() {
   return TVDML.createPipeline().pipe(
@@ -188,7 +190,7 @@ export default function moviesGenresRoute() {
           if(!activeSection.movies || !activeSection.movies.length) {
             let service = (genre instanceof Service)? genre.id : undefined;
             let genreSlug = (genre instanceof Genre)? genre.id : undefined;
-            getGenreMovies(0, service, genreSlug).then((result) => {
+            TMDB.getGenreMovies(0, service, genreSlug).then((result) => {
                 this.setState({
                   [id]: result,
                 });
@@ -212,7 +214,7 @@ export default function moviesGenresRoute() {
             let service = (genre instanceof Service)? genre.id : undefined;
             let genreSlug = (genre instanceof Genre)? genre.id : undefined;
             let offset = Math.floor(activeSection.movies.length / MAX_SEARCH_RESULTS) * MAX_SEARCH_RESULTS;
-            getGenreMovies(offset, service, genreSlug).then((result) => {
+            TMDB.getGenreMovies(offset, service, genreSlug).then((result) => {
                 this.setState({
                   [active]: {movies: activeSection.movies.concat(result.movies)},
                 });
