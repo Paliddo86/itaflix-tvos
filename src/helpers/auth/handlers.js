@@ -20,7 +20,7 @@ export async function defaultErrorHandlers(error) {
         <alertTemplate>
           <title>{i18n(messageCode)}</title>
           <description class="grey_description">
-          {description || i18n('generic-error')}
+          {(description === "not found" ? i18n('no-content') :description )|| i18n('generic-error')}
         </description>
           <button onSelect={TVDML.removeModal}>
             <text>Ok</text>
