@@ -111,7 +111,7 @@ export default {
   'tvshow-next': 'Nuovi Episodi',
   'tv-show-updates': 'Aggiornamenti Serie TV',
   'tvshow-new': 'Nuovo',
-  'tvshow-season-episode': ({ seasonNumber, episodeNumber }) => `St ${seasonNumber} - Ep ${episodeNumber}`,
+  'tvshow-season-episode': ({ seasonNumber, episodeNumber }) => `S${seasonNumber} - E${episodeNumber}`,
 
   'movie-updates': 'Aggiornamenti Film',
   'movie-status': 'Stato',
