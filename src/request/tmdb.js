@@ -10,9 +10,15 @@ import * as settings from '../settings';
 class TMDB {
   static API_BASE = 'https://api.themoviedb.org/3';
   static IMAGE_BASE = 'https://image.tmdb.org/t/p/original';
+  static IMAGEKIT_URL = "https://ik.imagekit.io/itaflix/webp/"
   
   static _apiKey = process.env.TMDB_API || '';
   static _language = 'it';
+
+  static getImageLink(urlImage, gradient = true) {
+    if (!urlImage) return null;
+    return this.IMAGEKIT_URL + urlImage + (gradient ? "?tr=fo-auto,e-gradient-ld-280_from-FFFFFF00_to-black_sp-iw_div_0.4" : "");
+}
 
   /**
    * Set the language for API responses (default: 'it')
@@ -40,14 +46,15 @@ class TMDB {
    * Make a GET request to TMDB API
    */
   static async _tmdbGet(path, params = {}) {
-    this._ensureKey();
-    const qs = Object.keys(params)
-      .map(k => `${encodeURIComponent(k)}=${encodeURIComponent(params[k])}`)
-      .join('&');
-
-    const lang = this._language && this._language.length === 2 ? `${this._language}-IT` : this._language;
-    const url = `${this.API_BASE}${path}?api_key=${this._apiKey}&language=${lang}${qs ? `&${qs}` : ''}`;
-    return request.get(url).then(request.toJSON());
+      this._ensureKey();
+      const qs = Object.keys(params)
+        .map(k => `${encodeURIComponent(k)}=${encodeURIComponent(params[k])}`)
+        .join('&');
+  
+      const lang = this._language && this._language.length === 2 ? `${this._language}-IT` : this._language;
+      const url = `${this.API_BASE}${path}?api_key=${this._apiKey}&language=${lang}${qs ? `&${qs}` : ''}`;
+      let response = await request.get(url).then(request.toJSON());
+      return response;
   }
 
   /**
@@ -69,7 +76,6 @@ class TMDB {
       settings.set(settings.params.MOVIE_CATEGORIES, movieGenres);
       settings.set(settings.params.TV_SHOW_CATEGORIES, tvGenres);
 
-      console.log('Fetched and cached genres:', { movieGenres, tvGenres });
       return { movieGenres, tvGenres };
     } catch (e) {
       defaultErrorHandlers(e);
@@ -128,7 +134,7 @@ class TMDB {
       title: it.title || it.name,
       poster: this._buildImage(it.poster_path),
       //cover: this._buildImage(it.poster_path),
-      banner: this._buildImage(it.backdrop_path),
+      banner: this.getImageLink(this._buildImage(it.backdrop_path, "original")),
       rating: it.vote_average,
       slug: this._makeSlug(it.title || it.original_title || it.name),
       isUpdated: false,
@@ -334,14 +340,12 @@ class TMDB {
     try {
       const res = await this._tmdbGet(`/movie/${id}`, { append_to_response: 'recommendations' });
 
-      if (!Object.keys(settings.getAllMovieGenres()).length) await this._fetchAndMapGenres();
-
       const target = new Movie({
         id: res.id,
         title: res.title,
         poster: this._buildImage(res.poster_path),
-        cover: this._buildImage(res.poster_path),
-        banner: this._buildImage(res.backdrop_path),
+        //cover: this._buildImage(res.poster_path),
+        banner: this.getImageLink(this._buildImage(res.backdrop_path, "original")),
         rating: res.vote_average,
         slug: this._makeSlug(res.title || res.original_title),
         isUpdated: false,
@@ -361,8 +365,8 @@ class TMDB {
             id: it.id,
             title: it.title || it.name,
             poster: this._buildImage(it.poster_path),
-            cover: this._buildImage(it.poster_path),
-            banner: this._buildImage(it.backdrop_path),
+            //cover: this._buildImage(it.poster_path),
+            banner: this.getImageLink(this._buildImage(it.backdrop_path, "original")),
             rating: it.vote_average,
             slug: this._makeSlug(it.title || it.original_title || it.name),
             isUpdated: false,
@@ -783,13 +787,6 @@ class TMDB {
       defaultErrorHandlers(e);
       return null;
     }
-  }
-
-  /**
-   * Export image helper
-   */
-  static getImageLink(path, size = 'w500') {
-    return this._buildImage(path, size);
   }
 }
 

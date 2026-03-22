@@ -23,7 +23,7 @@ import { get as i18n } from '../localization';
 import Tile from '../components/tile';
 import Loader from '../components/loader';
 import Authorize from '../components/authorize';
-import { getMovieDetails } from '../request/sc';
+import TMDB from '../request/tmdb';
 import { VixSrcService } from '../extractors/vixsrc';
 
 const MARK_AS_WATCHED_PERCENTAGE = 90;
@@ -127,9 +127,9 @@ export default function movieRoute() {
 
           // #region LOAD DATA
           loadData() {
-            const { sid, slug } = this.props;
+            const { sid } = this.props;
 
-            return getMovieDetails(sid, slug).then(movie => ({
+            return TMDB.getMovieDetails(sid).then(movie => ({
               movie
             }));
           },
@@ -431,7 +431,7 @@ export default function movieRoute() {
           renderInfo() {
             /**@type {Movie} */
             const movie = this.state.movie;
-            const { title, released, rating, overview, runtime, quality} = movie;
+            const { title, released, rating, overview, runtime} = movie;
             const isPreferred = this.state.isPreferred;
 
             let buttons = <row />;
@@ -486,7 +486,7 @@ export default function movieRoute() {
                   <ratingBadge value={rating / 10} />
                   <text>{`${i18n('tvshow-information-year').toUpperCase()}: ${released}`}</text>
                   <text>{`${i18n('movie-information-runtime').toUpperCase()}: ${moment.duration(+runtime, 'minutes').humanize()}`}</text>
-                  <text>{`${i18n('movie-quality').toUpperCase()}:`}</text><textBadge style={`font-size: 20;`}>{quality}</textBadge>
+                  {/* <text>{`${i18n('movie-quality').toUpperCase()}:`}</text><textBadge style={`font-size: 20;`}>{quality}</textBadge> */}
                 </row>
                 <description
                   allowsZooming="true"
@@ -518,7 +518,7 @@ export default function movieRoute() {
                 <section>
                   {recommendations.map(movie => {
                     return (
-                      <Tile {...movie} asCover/>
+                      <Tile {...movie}/>
                     );
                   })}
                 </section>
