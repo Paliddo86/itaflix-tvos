@@ -5,7 +5,7 @@ import styles from '../common/styles';
 
 import { getStartParams } from '../utils';
 import logo from '../assets/img/logo.png';
-import { getHome } from '../request/sc';
+import TMDB from '../request/tmdb';
 import { defaultErrorHandlers } from '../helpers/auth/handlers';
 import Loader from '../components/loader';
 import { get as i18n } from '../localization';
@@ -19,9 +19,7 @@ export default function homeRoute() {
             value: '',
             loading: true,
             updating: false,
-            topTen: null,
-            latest: null,
-            trading: null
+            categories: []
           };
         },
 
@@ -37,7 +35,7 @@ export default function homeRoute() {
             <document>
               <head> {styles} </head>
               <stackTemplate>
-                <banner>
+                <banner id="header-banner">
                   <img
                     style="tv-align:left;tv-position:top-left"
                     src={BASEURL + logo}
@@ -45,10 +43,8 @@ export default function homeRoute() {
                     height="75"
                   />
                 </banner>
-                <collectionList>
-                  {this.renderCategory(this.state.tranding)}
-                  {this.renderCategory(this.state.latest)}
-                  {this.renderCategory(this.state.topTen)}
+                <collectionList id="collection" autoHighlight="true">
+                  {this.state.categories.map((category, idx) => this.renderCategory(category, idx))}
                   {/* {this.renderMoviesUpdate()}
                   {this.renderSeriesUpdate()} */}
                 </collectionList>
@@ -57,17 +53,17 @@ export default function homeRoute() {
           );
         },
 
-        renderCategory(category) {
-          if (!category || !category.values.length) return null;
+        renderCategory(category, idx) {
+          if (!category || !category.values || !category.values.length) return null;
           return (
-            <shelf>
+            <shelf key={idx}>
               <header>
                 <title>{category.name}</title>
               </header>
               <section>
                 {category.values.map(item => {
                   return (
-                    <Tile {...item} asCover/>
+                    <Tile {...item}/>
                   );
                 })}
               </section>
@@ -161,7 +157,7 @@ export default function homeRoute() {
         loadData(updating) {
           let state = updating ? {updating: true} : {loading: true}
           this.setState(state);
-          return getHome().then(categories => {
+          return TMDB.getHome().then(categories => {
             state = updating ? {updating: false, ...categories} : {loading: false, ...categories}
             this.setState(state);
           }).catch(error => {

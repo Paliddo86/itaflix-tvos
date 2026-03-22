@@ -40,7 +40,21 @@ export default (
         color: #ffffff;
         font-size: 38;
         tv-highlight-color: rgba(185, 5, 5, 1);
-    }
+      }
+
+      #header-banner {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        background-color: rgba(0, 0, 0, 0.9);
+        padding: 10 0;
+      }
+
+      #collection {
+        margin-top: 85px;
+      }
     `}
   />
 );
