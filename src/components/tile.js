@@ -54,7 +54,7 @@ export default function Tile({ key, attrs = {}, events = {} }) {
       </title>
       <subtitle class="tile-subtitle" style="font-size: 20">{i18n(`${attrs.type}-type`)}</subtitle>
       <overlay style="margin: 0; padding: 0; display: grid; width: 100%; height: 100%;">
-      {attrs.quality && (
+      {attrs.quality && false && (
             <textBadge
             style={`
               margin: 12 10 0 0;
