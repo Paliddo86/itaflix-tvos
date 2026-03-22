@@ -12,7 +12,8 @@ export async function defaultErrorHandlers(error) {
       : 'login-error-something-went-wrong';
       payload = await this.reset()
   }
-  let description = error ? error.message : null;
+
+  let description = error ? error.message || error.statusText: null;
 
     const promise = TVDML.renderModal(
       <document>
