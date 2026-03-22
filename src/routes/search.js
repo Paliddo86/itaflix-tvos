@@ -4,10 +4,10 @@ import { get as i18n } from '../localization';
 
 import Tile from '../components/tile';
 import styles from '../common/styles';
-import { searchMovieAndTvShow } from '../request/sc';
+import TMDB from '../request/tmdb';
 import { defaultErrorHandlers } from '../helpers/auth/handlers';
 
-const THROTTLE_TIMEOUT = 500;
+const THROTTLE_TIMEOUT = 1000;
 
 export default function searchRoute() {
   return TVDML.createPipeline().pipe(
@@ -105,7 +105,7 @@ export default function searchRoute() {
             this.setState({ loading: false, updating: true, searchResults })
             return Promise.resolve({searchResults})
           }
-          return searchMovieAndTvShow(query)
+          return TMDB.searchMovieAndTvShow(query)
           .then(result => this.setState({ loading: false, ...result }))
           .catch((error) => {
             defaultErrorHandlers(error);
