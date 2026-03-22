@@ -151,7 +151,7 @@ class TMDB {
       title: it.name || it.title,
       poster: this._buildImage(it.poster_path),
       //cover: this._buildImage(it.poster_path),
-      banner: this._buildImage(it.backdrop_path),
+      banner: this.getImageLink(this._buildImage(it.backdrop_path, "original")),
       rating: it.vote_average,
       slug: this._makeSlug(it.name || it.original_name || it.title),
       isUpdated: false,
@@ -386,16 +386,14 @@ class TMDB {
    */
   static async getTvShowDetails(id) {
     try {
-      const res = await this._tmdbGet(`/tv/${id}`, { append_to_response: 'credits,recommendations,videos,external_ids' });
-
-      if (!Object.keys(settings.getAllTvShowGenres()).length) await this._fetchAndMapGenres();
+      const res = await this._tmdbGet(`/tv/${id}`, { append_to_response: 'recommendations' });
 
       const target = new TvShow({
         id: res.id,
         title: res.name,
         poster: this._buildImage(res.poster_path),
-        cover: this._buildImage(res.poster_path),
-        banner: this._buildImage(res.backdrop_path),
+        //cover: this._buildImage(res.poster_path),
+        banner: this.getImageLink(this._buildImage(res.backdrop_path, "original")),
         rating: res.vote_average,
         slug: this._makeSlug(res.name || res.original_name),
         isUpdated: false,
@@ -407,23 +405,17 @@ class TMDB {
         tmdb_id: res.id,
         runtime: res.episode_run_time && res.episode_run_time.length ? res.episode_run_time[0] : 0,
         status: res.status,
-        trailer: (() => {
-          try {
-            if (res.videos && res.videos.results && res.videos.results.length) {
-              const you = res.videos.results.find(v => v.site && v.site.toLowerCase().includes('youtube')) || res.videos.results[0];
-              if (you && you.key) return `https://www.youtube.com/watch?v=${you.key}`;
-            }
-          } catch (e) {}
-          return undefined;
-        })(),
         imdb_id: res.external_ids && res.external_ids.imdb_id ? res.external_ids.imdb_id : undefined,
-        cast: res.credits && res.credits.cast ? (res.credits.cast.slice(0, 15).map(c => new People({ id: c.id ? c.id.toString() : '', name: c.name, image: c.profile_path ? this._buildImage(c.profile_path, 'w500') : '' }))) : [],
       });
+
+      console.log("TV Show details:", res.seasons);
 
       if (res.seasons && res.seasons.length) {
         res.seasons.forEach(season => {
+          if (!season.season_number || season.season_number === 0) return; // Skip specials or invalid seasons
           target.addToSeasons(new Season({
-            id: `${res.id}-${season.season_number}`,
+            id: season.id,
+            poster: this._buildImage(season.poster_path),
             number: season.season_number,
             title: season.name,
             plot: season.overview,
@@ -442,8 +434,8 @@ class TMDB {
             id: it.id,
             title: it.name || it.title,
             poster: this._buildImage(it.poster_path),
-            cover: this._buildImage(it.poster_path),
-            banner: this._buildImage(it.backdrop_path),
+            //cover: this._buildImage(it.poster_path),
+            banner: this.getImageLink(this._buildImage(it.backdrop_path, "original")),
             rating: it.vote_average,
             slug: this._makeSlug(it.name || it.original_name || it.title),
             isUpdated: false,

@@ -17,7 +17,7 @@ import Loader from '../components/loader';
 import hand from '../assets/icons/hand.png';
 import hand2x from '../assets/icons/hand@2x.png';
 import { Season } from '../helpers/models';
-import { getSeasonDetails } from '../request/sc';
+import TMDB from '../request/tmdb';
 import { VixSrcService } from '../extractors/vixsrc';
 import { defaultErrorHandlers } from '../helpers/auth/handlers';
 
@@ -89,7 +89,7 @@ export default function seasonRoute() {
 
           loadData() {
             console.log("Loading season data...", this.props, this.state);
-            return getSeasonDetails(this.props.season.number, this.props.activeTvShow).then(() => {
+            return TMDB.getSeasonDetails(this.props.season.number, this.props.activeTvShow).then(() => {
               return { highlightEpisode: 0 };
             });
           },
@@ -279,7 +279,7 @@ export default function seasonRoute() {
                   currentMediaItem.markedAsWatched = true;
 
                   const index = episode.number - 1;
-                  const nextEpisodeNumber = (season.episodes[index + 1] || {}).number;
+                  const nextEpisodeNumber = (season.episodes[index] || {}).number;
 
                   this.onMarkAsWatched(episode.number);
 

@@ -198,9 +198,10 @@ export class Season {
      *   episodes_count?: number,
      *   isUpdated?: boolean,
      *   episodes?: Episode[]
+     *   poster?: string
      * }} param0
      */
-    constructor({ id, number, title, name, plot, release_date, title_id, created_at, updated_at, episodes_count, isUpdated, episodes }) {
+    constructor({ id, number, title, name, plot, release_date, title_id, created_at, updated_at, episodes_count, isUpdated, episodes, poster }) {
         this.id = id;
         this.number = number;
         this.title = title || name || "";
@@ -213,6 +214,7 @@ export class Season {
         this.episodes = (episodes || []).map(e => new Episode(e));
         this.type = "season";
         this.isUpdated = isUpdated || false;
+        this.poster = poster || "";
     }
 
     /**

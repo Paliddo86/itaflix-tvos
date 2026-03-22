@@ -21,7 +21,7 @@ import Tile from '../components/tile';
 import Loader from '../components/loader';
 import Authorize from '../components/authorize';
 import { TvShow } from '../helpers/models';
-import { getTvShowDetails } from '../request/sc';
+import TMDB from '../request/tmdb';
 
 function calculateUnwatchedCount(season) {
   return season.unwatched || 0;
@@ -114,9 +114,9 @@ export default function tvShowRoute() {
 
           // #region LOAD DATA
           loadData() {
-            const { sid, slug } = this.props;
+            const { tmdb_id } = this.props;
 
-            return getTvShowDetails(sid, slug).then(tvshow => ({
+            return TMDB.getTvShowDetails(tmdb_id).then(tvshow => ({
                           tvshow
                         }));
           },
@@ -135,11 +135,11 @@ export default function tvShowRoute() {
                     <background>
                       <img
                         src={this.props.banner}
-                        style="width: 100%; height: 100%; "
+                        scaleToFill="true"
                       />
                     </background>
                   )}
-                  <banner>
+                  <banner style="background-color: rgba(0, 0, 0, 0.5);">
                     {this.renderStatus()}
                     {this.renderInfo()}
                     {!this.props.banner && <heroImg src={this.props.poster} />}
@@ -186,7 +186,7 @@ export default function tvShowRoute() {
 
             /** @type {TvShow} */
             const tvshow = this.state.tvshow;
-            const { title, released, quality, rating, overview: description, runtime } = tvshow;
+            const { title, released, rating, overview: description, runtime } = tvshow;
             const isPreferred = this.state.isPreferred
 
             let buttons = <row />;
@@ -263,7 +263,7 @@ export default function tvShowRoute() {
                   <ratingBadge value={rating / 10} />
                   <text>{`${i18n('tvshow-information-year').toUpperCase()}: ${released}`}</text>
                   <text>{`${i18n('tvshow-information-runtime').toUpperCase()}: ${moment.duration(runtime, 'minutes').humanize()}`}</text>
-                  <text>{`${i18n('tvshow-quality').toUpperCase()}:`}</text><textBadge style={`font-size: 20;`}>{quality}</textBadge>
+                  {/* <text>{`${i18n('tvshow-quality').toUpperCase()}:`}</text><textBadge style={`font-size: 20;`}>{quality}</textBadge> */}
                 </row>
                 <description
                   allowsZooming="true"
@@ -284,7 +284,7 @@ export default function tvShowRoute() {
           renderSeasons() {
             /** @type {TvShow} */
             const tvshow = this.state.tvshow;
-            const {cover } = tvshow;
+            const {poster } = tvshow;
             const seasons = tvshow.seasons || [];
             if (!seasons.length) return null;
 
@@ -302,9 +302,8 @@ export default function tvShowRoute() {
                         type={season.type}
                         season={season}
                         activeTvShow={tvshow}
-                        title={i18n('tvshow-season', season.number)}
-                        cover={cover}
-                        asCover={true}
+                        title={season.title || i18n('tvshow-season', season.number)}
+                        poster={season.poster || poster}
                         counter={season.episodes_count}
                         isWatched={isWatched}
                         isUpdated={season.isUpdated}
@@ -379,7 +378,7 @@ export default function tvShowRoute() {
                 <section>
                   {tvshow.recommendations.map(tvshow => {
                     return (
-                      <Tile {...tvshow} asCover />
+                      <Tile {...tvshow} />
                     );
                   })}
                 </section>
