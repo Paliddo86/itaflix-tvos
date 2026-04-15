@@ -50,11 +50,11 @@ export class VixSrcService{
   }
 
   static buildUrl(id) {
-    return `${this.baseUrl}/movie/${id}`;
+    return `${this.baseUrl}/api/movie/${id}`;
   }
 
   static buildTvShowUrl(id, seasonNumber, episodeNumber) {
-    return `${this.baseUrl}/tv/${id}/${seasonNumber}/${episodeNumber}`;
+    return `${this.baseUrl}/api/tv/${id}/${seasonNumber}/${episodeNumber}`;
   }
 
   static findObjectEnd(str) {
