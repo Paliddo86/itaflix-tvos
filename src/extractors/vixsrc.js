@@ -262,12 +262,36 @@ export class VixSrcService{
   }
 
   static async getMovieUrl(id) {
-    const url = this.buildUrl(id);
-    const html = await this.get(url);
+  try {
+    let url = this.buildUrl(id);
+    let response = await this.get(url);
+    let data = JSON.parse(response);
+
+    if (!data.src) {
+      throw new Error("Field 'src' mancante nel JSON.");
+    }
+
+    let newUrl = `${this.baseUrl}${data.src}`;
+    let html;
+
+    do {
+      html = await this.get(newUrl);
+      if (html.status === 410) {
+        response = await this.get(url);
+        data = JSON.parse(response);
+        newUrl = `${this.baseUrl}${data.src}`;
+      } else if (html.status === 200) {
+        break;
+      }
+    } while (true);
 
     const result = this.extractUrl(html);
     return this.buildFinalUrl(result);
+  } catch (error) {
+    console.error("Errore in getMovieUrl:", error);
+    throw error; // Rilancia l'errore dopo il log
   }
+}
 
   static async getTvShowUrl(id, seasonNumber, episodeNumber) {
     const url = this.buildTvShowUrl(id, seasonNumber, episodeNumber);
