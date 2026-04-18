@@ -42,10 +42,20 @@ export class VixSrcService{
     };
   }
 
-  static get(url) {
+  static get(url, withStatusCode = false) {
     return request
       .get(url, { prepare: this.addHeaders(this.headers()) })
-      .then(request.toString())
+      .then(response => {
+        const html = response.responseText;
+        return withStatusCode ? { status: response.status, html } : html;
+      })
+      .then(...this.requestLogger('GET', url));
+  }
+
+  static getJson(url) {
+    return request
+      .get(url, { prepare: this.addHeaders(this.headers()) })
+      .then(request.toJSON())
       .then(...this.requestLogger('GET', url));
   }
 
@@ -264,31 +274,29 @@ export class VixSrcService{
   static async getMovieUrl(id) {
     try {
       let url = this.buildUrl(id);
-      let response = await this.get(url);
-      let data = JSON.parse(response);
+      let data = await this.getJson(url);
   
       if (!data.src) {
         throw new Error("Field 'src' mancante nel JSON.");
       }
   
       let newUrl = `${this.baseUrl}${data.src}`;
-      let html;
+      let response;
   
       do {
-        html = await this.get(newUrl);
-        if (html.status === 410) {
-          response = await this.get(url);
-          data = JSON.parse(response);
+        response = await this.get(newUrl, true);
+        console.log("HTML Response:", response.status);
+        if (response.status === 410) {
+          data = await this.getJson(url);
           newUrl = `${this.baseUrl}${data.src}`;
-        } else if (html.status === 200) {
+        } else if (response.status === 200) {
           break;
         }
       } while (true);
   
-      const result = this.extractUrl(html);
+      const result = this.extractUrl(response.html);
       return this.buildFinalUrl(result);
     } catch (error) {
-      console.error("Errore in getMovieUrl:", error);
       throw error; // Rilancia l'errore dopo il log
     }
   }
@@ -296,32 +304,30 @@ export class VixSrcService{
   static async getTvShowUrl(id, seasonNumber, episodeNumber) {
     try {
       let url = this.buildTvShowUrl(id, seasonNumber, episodeNumber);
-      let response = await this.get(url);
-      let data = JSON.parse(response);
-  
+      let data = await this.getJson(url);
+
       if (!data.src) {
         throw new Error("Field 'src' mancante nel JSON.");
       }
-  
+
       let newUrl = `${this.baseUrl}${data.src}`;
-      let html;
-  
+      let response;
+
       do {
-        html = await this.get(newUrl);
-        if (html.status === 410) {
-          response = await this.get(url);
-          data = JSON.parse(response);
+        response = await this.get(newUrl, true);
+        console.log("HTML Response:", response.status);
+        if (response.status === 410) {
+          data = await this.getJson(url);
           newUrl = `${this.baseUrl}${data.src}`;
-        } else if (html.status === 200) {
+        } else if (response.status === 200) {
           break;
         }
       } while (true);
-  
-      const result = this.extractUrl(html);
+
+      const result = this.extractUrl(response.html);
       return this.buildFinalUrl(result);
     } catch (error) {
-      console.error("Errore in getTvShowUrl:", error);
-      throw error; // Rilancia l'errore dopo il log
+      throw error;
     }
   }
 }
