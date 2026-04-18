@@ -6,6 +6,10 @@
 node_modules/
 dist/
 
+# Environment variables (local configuration)
+.env.local
+.env
+
 # IDE and editors
 *.iml
 .vscode

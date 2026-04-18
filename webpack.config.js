@@ -1,7 +1,24 @@
 const path = require('path');
+const fs = require('fs');
 
 const webpack = require('webpack');
 const MinifyPlugin = require('babel-minify-webpack-plugin');
+
+// Load .env.local if it exists
+const envPath = path.resolve(__dirname, '.env.local');
+if (fs.existsSync(envPath)) {
+  const envContent = fs.readFileSync(envPath, 'utf8');
+  envContent.split('\n').forEach(line => {
+    const match = line.match(/^\s*([^=]+)\s*=\s*(.*)$/);
+    if (match && !match[1].startsWith('#')) {
+      const key = match[1].trim();
+      const value = match[2].trim();
+      if (!process.env[key]) {
+        process.env[key] = value;
+      }
+    }
+  });
+}
 
 function resolveFromRoot(dir) {
   return path.resolve(__dirname, dir);
