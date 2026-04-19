@@ -4,7 +4,7 @@ import * as user from '../user';
 
 import { get as i18n } from '../localization';
 
-import { getTVShowsByGenre } from '../request/adc';
+import TMDB from '../request/tmdb';
 import * as settings from '../settings';
 
 import {
@@ -19,6 +19,10 @@ import Tile from '../components/tile';
 import Loader from '../components/loader';
 
 import logo from '../assets/img/logo.png';
+import { Genre, Service } from '../helpers/models';
+import { defaultErrorHandlers } from '../helpers/auth/handlers';
+
+const MAX_SEARCH_RESULTS = 20;
 
 export default function tvShowsGenresRoute() {
   return TVDML.createPipeline().pipe(
@@ -61,7 +65,7 @@ export default function tvShowsGenresRoute() {
           });
 
           this.loadData().then(payload => {
-            this.setState({ loading: false, ...payload });
+            this.setState({ loading: false, ...payload, active: 0 });
           });
         },
 
@@ -91,17 +95,21 @@ export default function tvShowsGenresRoute() {
         loadData() {
           let genres = [];
           let result = {};
-          let allTvShows = i18n("menu-tvshows");
-          genres.push({name: allTvShows, slug: "serie-tv"});
-          result[0] = {};
-          const allgenres = settings.getAllTvShowGenres();
 
+          /** @type {Genre[]} */
+          const allgenres = settings.getAllTvShowGenres();
+          const services = settings.getTvShowServices();
+
+          services.forEach((service, index) => {
+            genres.push(service);
+            result[index] = {};
+          });
           Object.values(allgenres).sort((a, b) => {
             return a.name > b.name;
-          }).forEach((value, index) => {
-            genres.push(value);
-            result[index + 1] = {};
-          })
+          }).forEach((value) => {
+            let newIndex = genres.push(value) - 1;
+            result[newIndex] = {};
+          });
           return Promise.resolve({genres, ...result});
         },
 
@@ -151,7 +159,7 @@ export default function tvShowsGenresRoute() {
                         >
                           <title>{capitalizeText(genre.name)}</title>
                           <decorationLabel>
-                            {total ? total : '…'}
+                            {tvshows ? total : '…'}
                           </decorationLabel>
                           <relatedContent>
                             {tvshows == null ? (
@@ -160,21 +168,9 @@ export default function tvShowsGenresRoute() {
                               <grid>
                                 <section>
                                   {tvshows.map((tvshow, index) => {
-                                    const {
-                                      title,
-                                      quality,
-                                      isUpdated,
-                                      poster,
-                                    } = tvshow;
-
                                     return (
                                       <Tile
-                                        title={title}
-                                        route="tvshow"
-                                        poster={poster}
-                                        quality={quality}
-                                        isUpdated={isUpdated}
-                                        payload={tvshow}
+                                        {...tvshow}
                                         autoHighlight={false}
                                         onHighlight={this.onHighlightTile.bind(this, index)}
                                       />
@@ -196,20 +192,22 @@ export default function tvShowsGenresRoute() {
 
         onGenreSelect(id) {
           const { genres } = this.state;
-
+          let activeSection = this.state[id];
           this.setState({ active: id });
 
-          //if (~updated_genres.indexOf(id)) return;
-          let activeSection = this.state[id];
+          /** @type {Genre | Service} */
           let genre = genres[id];
 
           if(!activeSection.tvshows || !activeSection.tvshows.length) {
-            getTVShowsByGenre(genre.slug).then((result) => {
+            let service = (genre instanceof Service)? genre.id : undefined;
+            let genreId = (genre instanceof Genre)? genre.id : undefined;
+            TMDB.getGenreTvShow(0, service, genreId).then((result) => {
                 this.setState({
                   [id]: result,
-                  //updated_genres: updated_genres.concat(id),
-                })
+                });
   
+            }).catch((error) => {
+              defaultErrorHandlers(error);
             });
           }
         },
@@ -217,19 +215,19 @@ export default function tvShowsGenresRoute() {
         onHighlightTile(index) {
           const { genres, active } = this.state;
 
-
-          //if (~updated_genres.indexOf(id)) return;
-
+          /** @type {Genre | Service} */
           let genre = genres[active];
           let activeSection = this.state[active];
+
+          if (activeSection.tvshows.length % MAX_SEARCH_RESULTS !== 0) return;
           
-          if (index >= (activeSection.tvshows.length - 4) && activeSection.current_page < activeSection.last_page) {
-            let page = activeSection.current_page + 1;
-            if(page === activeSection.current_page) return;
-            
-            getTVShowsByGenre(genre.slug, ++activeSection.current_page).then((result) => {
+          if (index >= (activeSection.tvshows.length - 5)) {
+            let service = (genre instanceof Service)? genre.id : undefined;
+            let genreId = (genre instanceof Genre)? genre.id : undefined;
+            let offset = Math.floor(activeSection.tvshows.length / MAX_SEARCH_RESULTS) * MAX_SEARCH_RESULTS;
+            TMDB.getGenreTvShow(offset, service, genreId).then((result) => {
                 this.setState({
-                  [active]: Object.assign({}, result, {tvshows: [...activeSection.tvshows, ...result.tvshows]})
+                  [active]: {tvshows: activeSection.tvshows.concat(result.tvshows), total: result.total},
                 });
             });
 

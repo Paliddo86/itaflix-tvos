@@ -210,7 +210,7 @@ class TMDB {
       // 5. Fetch Netflix content
       const [netflixMoviesRes, netflixTvRes] = await Promise.all([
         this._tmdbGet('/discover/movie', { page: 1, with_watch_providers: settings.SERVICE_ID_MAP.NETFLIX, watch_region: watchRegion }),
-        this._tmdbGet('/discover/tv', { page: 1, with_networks: '213' }),
+        this._tmdbGet('/discover/tv', { page: 1, with_watch_providers: settings.SERVICE_ID_MAP.NETFLIX, watch_region: watchRegion }),
       ]);
       const netflixList = [
         ...(netflixMoviesRes.results || []),
@@ -220,7 +220,7 @@ class TMDB {
       // 6. Fetch Amazon Prime content
       const [amazonMoviesRes, amazonTvRes] = await Promise.all([
         this._tmdbGet('/discover/movie', { page: 1, with_watch_providers: settings.SERVICE_ID_MAP.PRIME_VIDEO, watch_region: watchRegion }),
-        this._tmdbGet('/discover/tv', { page: 1, with_networks: '1024' }),
+        this._tmdbGet('/discover/tv', { page: 1, with_watch_providers: settings.SERVICE_ID_MAP.PRIME_VIDEO, watch_region: watchRegion }),
       ]);
       const amazonList = [
         ...(amazonMoviesRes.results || []),
@@ -230,7 +230,7 @@ class TMDB {
       // 7. Fetch Disney+ content
       const [disneyMoviesRes, disneyTvRes] = await Promise.all([
         this._tmdbGet('/discover/movie', { page: 1, with_watch_providers: settings.SERVICE_ID_MAP.DISNEY, watch_region: watchRegion }),
-        this._tmdbGet('/discover/tv', { page: 1, with_networks: '2739' }),
+        this._tmdbGet('/discover/tv', { page: 1, with_watch_providers: settings.SERVICE_ID_MAP.DISNEY, watch_region: watchRegion }),
       ]);
       const disneyList = [
         ...(disneyMoviesRes.results || []),
@@ -240,7 +240,7 @@ class TMDB {
       // 8. Fetch Now content
       const [nowMoviesRes, nowTvRes] = await Promise.all([
         this._tmdbGet('/discover/movie', { page: 1, with_watch_providers: settings.SERVICE_ID_MAP.NOW, watch_region: watchRegion }),
-        this._tmdbGet('/discover/tv', { page: 1, with_networks: '453' }),
+        this._tmdbGet('/discover/tv', { page: 1, with_watch_providers: settings.SERVICE_ID_MAP.NOW, watch_region: watchRegion }),
       ]);
       const nowList = [
         ...(nowMoviesRes.results || []),
@@ -250,7 +250,7 @@ class TMDB {
       // 9. Fetch Apple TV+ content
       const [appleMoviesRes, appleTvRes] = await Promise.all([
         this._tmdbGet('/discover/movie', { page: 1, with_watch_providers: settings.SERVICE_ID_MAP.APPLE, watch_region: watchRegion }),
-        this._tmdbGet('/discover/tv', { page: 1, with_networks: '2552' }),
+        this._tmdbGet('/discover/tv', { page: 1, with_watch_providers: settings.SERVICE_ID_MAP.APPLE, watch_region: watchRegion }),
       ]);
       const appleList = [
         ...(appleMoviesRes.results || []),
@@ -564,6 +564,36 @@ class TMDB {
     } catch (e) {
       defaultErrorHandlers(e);
       return { movies: [], total: 0 };
+    }
+  }
+
+  /**
+   * Get genre tv show with pagination, optionally filtered by service
+   */
+  static async getGenreTvShow(offset = 0, genreService = undefined, genreId = undefined) {
+    try {
+      const page = Math.floor(offset / 20) + 1;
+      const watchRegion = this._language === 'en' ? 'US' : this._language.toUpperCase();
+      
+      // Build parameters for the API request
+      const params = { page };
+      
+      // Add watch provider filter if service is specified
+      if (genreService) {
+        params.with_watch_providers = genreService;
+        params.watch_region = watchRegion;
+      } else if (genreId) {
+        params.with_genres = genreId;
+      }
+      
+      const res = await this._tmdbGet('/discover/tv', params);
+
+      const tvshows = (res.results || []).map(it => this._mapTvToItem(it));
+
+      return { tvshows, total: res.total_results };
+    } catch (e) {
+      defaultErrorHandlers(e);
+      return { tvshows: [], total: 0 };
     }
   }
 
