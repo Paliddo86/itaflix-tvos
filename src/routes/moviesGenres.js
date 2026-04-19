@@ -89,7 +89,7 @@ export default function moviesGenresRoute() {
 
           /** @type {Genre[]} */
           const allgenres = settings.getAllMovieGenres();
-          const services = settings.getService();
+          const services = settings.getMovieServices();
 
           services.forEach((service, index) => {
             genres.push(service);
@@ -189,8 +189,8 @@ export default function moviesGenresRoute() {
 
           if(!activeSection.movies || !activeSection.movies.length) {
             let service = (genre instanceof Service)? genre.id : undefined;
-            let genreSlug = (genre instanceof Genre)? genre.id : undefined;
-            TMDB.getGenreMovies(0, service, genreSlug).then((result) => {
+            let genreId = (genre instanceof Genre)? genre.id : undefined;
+            TMDB.getGenreMovies(0, service, genreId).then((result) => {
                 this.setState({
                   [id]: result,
                 });
@@ -212,9 +212,9 @@ export default function moviesGenresRoute() {
           
           if (index >= (activeSection.movies.length - 5)) {
             let service = (genre instanceof Service)? genre.id : undefined;
-            let genreSlug = (genre instanceof Genre)? genre.id : undefined;
+            let genreId = (genre instanceof Genre)? genre.id : undefined;
             let offset = Math.floor(activeSection.movies.length / MAX_SEARCH_RESULTS) * MAX_SEARCH_RESULTS;
-            TMDB.getGenreMovies(offset, service, genreSlug).then((result) => {
+            TMDB.getGenreMovies(offset, service, genreId).then((result) => {
                 this.setState({
                   [active]: {movies: activeSection.movies.concat(result.movies)},
                 });

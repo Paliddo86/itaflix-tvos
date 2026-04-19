@@ -209,7 +209,7 @@ class TMDB {
 
       // 5. Fetch Netflix content
       const [netflixMoviesRes, netflixTvRes] = await Promise.all([
-        this._tmdbGet('/discover/movie', { page: 1, with_watch_providers: '8', watch_region: watchRegion }),
+        this._tmdbGet('/discover/movie', { page: 1, with_watch_providers: settings.SERVICE_ID_MAP.NETFLIX, watch_region: watchRegion }),
         this._tmdbGet('/discover/tv', { page: 1, with_networks: '213' }),
       ]);
       const netflixList = [
@@ -219,7 +219,7 @@ class TMDB {
 
       // 6. Fetch Amazon Prime content
       const [amazonMoviesRes, amazonTvRes] = await Promise.all([
-        this._tmdbGet('/discover/movie', { page: 1, with_watch_providers: '119', watch_region: watchRegion }),
+        this._tmdbGet('/discover/movie', { page: 1, with_watch_providers: settings.SERVICE_ID_MAP.PRIME_VIDEO, watch_region: watchRegion }),
         this._tmdbGet('/discover/tv', { page: 1, with_networks: '1024' }),
       ]);
       const amazonList = [
@@ -229,7 +229,7 @@ class TMDB {
 
       // 7. Fetch Disney+ content
       const [disneyMoviesRes, disneyTvRes] = await Promise.all([
-        this._tmdbGet('/discover/movie', { page: 1, with_watch_providers: '137', watch_region: watchRegion }),
+        this._tmdbGet('/discover/movie', { page: 1, with_watch_providers: settings.SERVICE_ID_MAP.DISNEY, watch_region: watchRegion }),
         this._tmdbGet('/discover/tv', { page: 1, with_networks: '2739' }),
       ]);
       const disneyList = [
@@ -237,19 +237,19 @@ class TMDB {
         ...(disneyTvRes.results || []),
       ].sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
 
-      // 8. Fetch Hulu content
-      const [huluMoviesRes, huluTvRes] = await Promise.all([
-        this._tmdbGet('/discover/movie', { page: 1, with_watch_providers: '15', watch_region: watchRegion }),
+      // 8. Fetch Now content
+      const [nowMoviesRes, nowTvRes] = await Promise.all([
+        this._tmdbGet('/discover/movie', { page: 1, with_watch_providers: settings.SERVICE_ID_MAP.NOW, watch_region: watchRegion }),
         this._tmdbGet('/discover/tv', { page: 1, with_networks: '453' }),
       ]);
-      const huluList = [
-        ...(huluMoviesRes.results || []),
-        ...(huluTvRes.results || []),
+      const nowList = [
+        ...(nowMoviesRes.results || []),
+        ...(nowTvRes.results || []),
       ].sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
 
       // 9. Fetch Apple TV+ content
       const [appleMoviesRes, appleTvRes] = await Promise.all([
-        this._tmdbGet('/discover/movie', { page: 1, with_watch_providers: '192', watch_region: watchRegion }),
+        this._tmdbGet('/discover/movie', { page: 1, with_watch_providers: settings.SERVICE_ID_MAP.APPLE, watch_region: watchRegion }),
         this._tmdbGet('/discover/tv', { page: 1, with_networks: '2552' }),
       ]);
       const appleList = [
@@ -258,7 +258,7 @@ class TMDB {
       ].sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
 
       // 10. Fetch HBO content
-      const hboRes = await this._tmdbGet('/discover/tv', { page: 1, with_networks: '49' });
+      const hboRes = await this._tmdbGet('/discover/tv', { page: 1, with_networks: settings.SERVICE_ID_MAP.HBO });
       const hboList = (hboRes.results || []).sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
 
       // Build categories array
@@ -307,8 +307,8 @@ class TMDB {
 
       categories.push(
         new Category({
-          name: this._getTranslation('Popular on Hulu'),
-          values: huluList.map(it => this._mapMultiToItem(it)).filter(Boolean),
+          name: this._getTranslation('Popular on Now TV'),
+          values: nowList.map(it => this._mapMultiToItem(it)).filter(Boolean),
         })
       );
 
@@ -528,12 +528,25 @@ class TMDB {
   }
 
   /**
-   * Get genre movies with pagination
+   * Get genre movies with pagination, optionally filtered by service
    */
-  static async getGenreMovies(offset = 0, genreService = undefined, genreSlug = undefined) {
+  static async getGenreMovies(offset = 0, genreService = undefined, genreId = undefined) {
     try {
       const page = Math.floor(offset / 20) + 1;
-      const res = await this._tmdbGet('/discover/movie', { page, with_genres: genreSlug });
+      const watchRegion = this._language === 'en' ? 'US' : this._language.toUpperCase();
+      
+      // Build parameters for the API request
+      const params = { page };
+      
+      // Add watch provider filter if service is specified
+      if (genreService) {
+        params.with_watch_providers = genreService;
+        params.watch_region = watchRegion;
+      } else if (genreId) {
+        params.with_genres = genreId;
+      }
+      
+      const res = await this._tmdbGet('/discover/movie', params);
 
       const movies = (res.results || []).map(it => new Movie({
         id: it.id,
