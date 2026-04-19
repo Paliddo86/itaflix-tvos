@@ -147,14 +147,32 @@ export function getAllTvShowGenres() {
   return settings[params.TV_SHOW_CATEGORIES];
 }
 
-export function getService() {
+export const SERVICE_ID_MAP = {
+  NETFLIX: '8',
+  PRIME_VIDEO: '119',
+  DISNEY: '337',
+  APPLE: '350',
+  HBO: '49',
+  NOW: '39',
+};
+
+export function getMovieServices() {
   return [
-    new Service({id: 'netflix', name: 'Netflix'}), 
-    new Service({id: 'prime', name: 'Prime Video'}),
-    new Service({id: 'disney', name: 'Disney+'}),
-    new Service({id: 'apple', name: 'Apple TV+'}),
-    new Service({id: 'hulu', name: 'Hulu'}),
-    new Service({id: 'hbo', name: 'HBO Max'}),
-    new Service({id: 'now', name: 'Now TV'}),
+    new Service({id: SERVICE_ID_MAP.APPLE, name: 'Apple TV'}),
+    new Service({id: SERVICE_ID_MAP.DISNEY, name: 'Disney+'}),
+    new Service({id: SERVICE_ID_MAP.NETFLIX, name: 'Netflix'}), 
+    new Service({id: SERVICE_ID_MAP.NOW, name: 'Now TV'}),
+    new Service({id: SERVICE_ID_MAP.PRIME_VIDEO, name: 'Prime Video'}),
+  ];
+}
+
+export function getTvShowServices() {
+  return [
+    new Service({id: SERVICE_ID_MAP.APPLE, name: 'Apple TV'}),
+    new Service({id: SERVICE_ID_MAP.DISNEY, name: 'Disney+'}),
+    new Service({id: SERVICE_ID_MAP.HBO, name: 'HBO Max'}),
+    new Service({id: SERVICE_ID_MAP.NETFLIX, name: 'Netflix'}), 
+    new Service({id: SERVICE_ID_MAP.NOW, name: 'Now TV'}),
+    new Service({id: SERVICE_ID_MAP.PRIME_VIDEO, name: 'Prime Video'}),
   ];
 }
