@@ -216,7 +216,7 @@ export default function moviesGenresRoute() {
             let offset = Math.floor(activeSection.movies.length / MAX_SEARCH_RESULTS) * MAX_SEARCH_RESULTS;
             TMDB.getGenreMovies(offset, service, genreId).then((result) => {
                 this.setState({
-                  [active]: {movies: activeSection.movies.concat(result.movies)},
+                  [active]: {movies: activeSection.movies.concat(result.movies), total: result.total},
                 });
             });
 
