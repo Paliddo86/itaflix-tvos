@@ -827,9 +827,13 @@ class TMDB {
   /**
    * POST request to TMDB API
    */
-  static async _tmdbPost(path, data = {}) {
+  static async _tmdbPost(path, data = {}, params = {}) {
     this._ensureKey();
-    const url = `${this.API_BASE}${path}?api_key=${this._apiKey}`;
+    const qs = Object.keys(params)
+      .map(k => `${encodeURIComponent(k)}=${encodeURIComponent(params[k])}`)
+      .join('&');
+
+    const url = `${this.API_BASE}${path}?api_key=${this._apiKey}${qs ? `&${qs}` : ''}`;
     
     const body = JSON.stringify(data);
     const xhr = new XMLHttpRequest();
@@ -987,12 +991,11 @@ class TMDB {
   }
 
   /**
-   * Get user's watchlist
+   * Get user's movie favorites
    */
-  static async getWatchlist(sessionId, page = 1) {
+  static async getFavoriteMovies(sessionId, accountId, page = 1) {
     try {
-      const res = await this._tmdbGet('/account/watchlist/movies', { session_id: sessionId, page });
-      
+      const res = await this._tmdbGet(`/account/${accountId}/favorite/movies`, { session_id: sessionId, page });
       const items = (res.results || []).map(it => this._mapMovieToItem(it));
       return {
         items,
@@ -1000,27 +1003,57 @@ class TMDB {
         totalResults: res.total_results
       };
     } catch (e) {
-      console.error('Error getting watchlist:', e);
+      console.error('Error getting movie favorites:', e);
       return { items: [], totalPages: 0, totalResults: 0 };
     }
   }
 
   /**
-   * Add movie to watchlist
+   * Get user's TV favorites
    */
-  static async addToWatchlist(sessionId, movieId) {
+  static async getFavoriteTv(sessionId, accountId, page = 1) {
     try {
-      const res = await this._tmdbPost('/account/watchlist', {
-        session_id: sessionId,
-        media_type: 'movie',
-        media_id: movieId,
-        watchlist: true
-      });
+      const res = await this._tmdbGet(`/account/${accountId}/favorite/tv`, { session_id: sessionId, page });
+      const items = (res.results || []).map(it => this._mapTvToItem(it));
+      return {
+        items,
+        totalPages: res.total_pages,
+        totalResults: res.total_results
+      };
+    } catch (e) {
+      console.error('Error getting TV favorites:', e);
+      return { items: [], totalPages: 0, totalResults: 0 };
+    }
+  }
+
+  /**
+   * Toggle item in favorites
+   */
+  static async toggleFavorite(sessionId, accountId, mediaType, mediaId, status) {
+    try {
+      const res = await this._tmdbPost(`/account/${accountId}/favorite`, {
+        media_type: mediaType,
+        media_id: parseInt(mediaId),
+        favorite: !!status
+      }, { session_id: sessionId });
       
       return res.success || false;
     } catch (e) {
-      console.error('Error adding to watchlist:', e);
+      console.error('Error toggling favorite:', e);
       return false;
+    }
+  }
+
+  /**
+   * Get account states (watchlist, favorite, rated) for a specific item
+   */
+  static async getAccountStates(id, type, sessionId) {
+    try {
+      const path = type === 'movie' ? `/movie/${id}/account_states` : `/tv/${id}/account_states`;
+      return await this._tmdbGet(path, { session_id: sessionId });
+    } catch (e) {
+      console.error('Error getting account states:', e);
+      return { favorite: false };
     }
   }
 }

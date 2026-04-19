@@ -115,10 +115,19 @@ export default function tvShowRoute() {
           // #region LOAD DATA
           loadData() {
             const { tmdb_id } = this.props;
+            const sessionId = user.getTmdbSessionId();
 
-            return TMDB.getTvShowDetails(tmdb_id).then(tvshow => ({
-                          tvshow
-                        }));
+            return TMDB.getTvShowDetails(tmdb_id).then(async (tvshow) => {
+              let isPreferred = false;
+              if (sessionId) {
+                const states = await TMDB.getAccountStates(tmdb_id, 'tv', sessionId);
+                isPreferred = states.favorite;
+              }
+              return {
+                tvshow,
+                isPreferred
+              };
+            });
           },
 
           // #region RENDERING
@@ -475,25 +484,35 @@ export default function tvShowRoute() {
           },
 
           onMy() {
-            // const { sid } = this.props;
-            // const listId = user.getListId();
+            /** @type {TvShow} */
+            const { tvshow } = this.state;
+            const sessionId = user.getTmdbSessionId();
+            const accountId = user.getTmdbAccountId();
 
-            // checkSession().then(payload => {
-            //   if(payload) user.set({ ...payload });
-            //   addToMyList(listId, sid).then(() => this.setState({isPreferred: true}));
-            // })
-            defaultErrorHandlers(new Error("Non Implementata!!!"))
+            if (!sessionId) {
+              return defaultErrorHandlers(new Error(i18n('tmdb-login-required')));
+            }
+
+            TMDB.toggleFavorite(sessionId, accountId, 'tv', tvshow.sid, true)
+              .then((success) => {
+                if (success) this.setState({ isPreferred: true });
+              })
+              .catch(defaultErrorHandlers);
           },
 
           removeFromMy() {
-              // const { sid } = this.props;
-              // const listId = user.getListId();
+            /** @type {TvShow} */
+            const { tvshow } = this.state;
+            const sessionId = user.getTmdbSessionId();
+            const accountId = user.getTmdbAccountId();
 
-              // checkSession().then(payload => {
-              //   if(payload) user.set({ ...payload });
-              //   removeFromMyList(listId, sid).then(() => this.setState({isPreferred: false}));
-              // })
-              defaultErrorHandlers(new Error("Non Implementata!!!"))
+            if (!sessionId) return;
+
+            TMDB.toggleFavorite(sessionId, accountId, 'tv', tvshow.sid, false)
+              .then((success) => {
+                if (success) this.setState({ isPreferred: false });
+              })
+              .catch(defaultErrorHandlers);
           },
 
           onRateChange(event) {

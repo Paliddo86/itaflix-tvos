@@ -4,7 +4,7 @@ import * as TVDML from 'tvdml';
 import * as user from '../user';
 import { get as i18n } from '../localization';
 
-import { checkSession, getMyListCollection } from '../request/adc';
+import TMDB from '../request/tmdb';
 import tmdbLoginRoute from './tmdb-login';
 
 import {
@@ -92,19 +92,25 @@ export default function myRoute() {
         shouldComponentUpdate: deepEqualShouldUpdate,
 
         loadData() {
-          if (!user.isAuthorized()) {
-            return Promise.resolve({});
+          const sessionId = user.getTmdbSessionId();
+          const accountId = user.getTmdbAccountId();
+
+          if (!sessionId || !accountId) {
+            return Promise.resolve({ myMovies: [], myTvShows: [] });
           }
-          
-          const listId = user.getListId();
-          if (!listId) {
-            return Promise.resolve({});
-          }
-          
-          return checkSession().then(payload => {
-            if(payload) user.set({ ...payload });
-            return getMyListCollection(listId);
-          })
+
+          return Promise.all([
+            TMDB.getFavoriteMovies(sessionId, accountId),
+            TMDB.getFavoriteTv(sessionId, accountId)
+          ]).then(([moviesRes, tvRes]) => {
+            return {
+              myMovies: moviesRes.items || [],
+              myTvShows: tvRes.items || []
+            };
+          }).catch(error => {
+            console.error("Error loading watchlist:", error);
+            return { myMovies: [], myTvShows: [] };
+          });
         },
 
         render() {
@@ -242,13 +248,7 @@ export default function myRoute() {
 
                   return (
                     <Tile
-                      key={element.sid}
-                      title={element.title}
-                      quality={element.quality}
-                      isUpdated={element.isUpdated}
-                      route={element.type}
-                      poster={element.poster}
-                      payload={element}
+                      {...element}
                     />
                   );
                 })}
