@@ -560,10 +560,10 @@ class TMDB {
         type: 'movie',
       }));
 
-      return { movies };
+      return { movies, total: res.total_results };
     } catch (e) {
       defaultErrorHandlers(e);
-      return { movies: [] };
+      return { movies: [], total: 0 };
     }
   }
 

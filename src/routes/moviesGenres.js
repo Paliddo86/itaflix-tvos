@@ -140,7 +140,7 @@ export default function moviesGenresRoute() {
                   <section>
                     {genres.map((genre, index) => {
                       const id = index;
-                      const {movies} = this.state[id];
+                      const {movies, total} = this.state[id];
 
                       return (
                         <listItemLockup
@@ -150,7 +150,7 @@ export default function moviesGenresRoute() {
                         >
                           <title>{capitalizeText(genre.name)}</title>
                           <decorationLabel>
-                            {movies ? movies.length : "..."}
+                            {movies ? total : "..."}
                           </decorationLabel>
                           <relatedContent>
                             { movies ? (
