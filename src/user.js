@@ -5,12 +5,13 @@ import EventBus from './event-bus';
 const bus = new EventBus();
 
 const STORAGE_KEY = 'itaflix-user';
+const TMDB_LOGIN_RETRY = 'itaflix-tmdb-retry';
 
 const cache = {
   payload: JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'),
 };
 
-const contract = ['till', 'token', 'logged', 'family', 'selected', 'fingerprint', 'verified_at', 'user_id', 'email', 'password', 'list_id'];
+const contract = ['till', 'token', 'logged', 'family', 'selected', 'fingerprint', 'verified_at', 'user_id', 'email', 'password', 'list_id', 'tmdb_session_id', 'tmdb_username', 'tmdb_account_id', 'tmdb_logged', 'tmdb_login_time'];
 
 export const subscription = bus.subscription.bind(bus);
 
@@ -97,4 +98,52 @@ export function getLoginData() {
 
 export function getListId() {
   return get().list_id;
+}
+
+/**
+ * TMDB Session Management
+ */
+export function getTmdbSessionId() {
+  return get().tmdb_session_id || "";
+}
+
+export function getTmdbUsername() {
+  return get().tmdb_username || "";
+}
+
+export function getTmdbAccountId() {
+  return get().tmdb_account_id || null;
+}
+
+export function isTmdbAuthenticated() {
+  return !!(get().tmdb_session_id && get().tmdb_logged);
+}
+
+export function isTmdbSessionExpired() {
+  const loginTime = get().tmdb_login_time;
+  if (!loginTime) return true;
+  
+  // Session valid for 30 days
+  const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+  return Date.now() - loginTime > thirtyDaysMs;
+}
+
+export function setTmdbSession(sessionId, username, accountId) {
+  return set({
+    tmdb_session_id: sessionId,
+    tmdb_username: username,
+    tmdb_account_id: accountId,
+    tmdb_logged: 1,
+    tmdb_login_time: Date.now()
+  });
+}
+
+export function clearTmdbSession() {
+  return set({
+    tmdb_session_id: '',
+    tmdb_username: '',
+    tmdb_account_id: null,
+    tmdb_logged: 0,
+    tmdb_login_time: null
+  });
 }

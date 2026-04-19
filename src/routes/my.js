@@ -5,6 +5,7 @@ import * as user from '../user';
 import { get as i18n } from '../localization';
 
 import { checkSession, getMyListCollection } from '../request/adc';
+import tmdbLoginRoute from './tmdb-login';
 
 import {
   link,
@@ -108,6 +109,24 @@ export default function myRoute() {
 
         render() {
           const { myMovies, myTvShows, loading } = this.state;
+          const tmdbAuthenticated = user.isTmdbAuthenticated();
+          
+          // Se non è autenticato, mostra la dialog di login
+          if (!tmdbAuthenticated) {
+            return (
+              <document>
+                <head>{commonStyles}</head>
+                <alertTemplate>
+                  <title>{i18n('tmdb-login-required')}</title>
+                  <description>{i18n('tmdb-login-need-login')}</description>
+                  <button onSelect={this.showLoginDialog}>
+                    <text>{i18n('tmdb-login-title')}</text>
+                  </button>
+                </alertTemplate>
+              </document>
+            );
+          }
+          
           if (loading) {
             return <Loader />;
           }
@@ -153,6 +172,20 @@ export default function myRoute() {
               </stackTemplate>
             </document>
           );
+        },
+
+        showLoginDialog() {
+          tmdbLoginRoute({
+            onSuccess: () => {
+              this.setState({ loading: true });
+              this.loadData().then(payload => {
+                this.setState({ loading: false, ...payload });
+              });
+            },
+            onError: (error) => {
+              console.error('Login error:', error);
+            }
+          }).pipe(TVDML.renderModal).sink();
         },
 
         renderSectionGrid(collection, title, schedule = []) {

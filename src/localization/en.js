@@ -226,5 +226,22 @@ export default {
 
   'translation-localization': 'Localization',
   'translation-subtitles': 'Subtitles',
-  'loading': 'Loading...'
+  'loading': 'Loading...',
+
+  // TMDB Login
+  'tmdb-login-title': 'Sign in to your account',
+  'tmdb-login-username-description': 'Enter your username',
+  'tmdb-login-username-placeholder': 'Username',
+  'tmdb-login-password-description': 'Enter your password',
+  'tmdb-login-password-placeholder': 'Password',
+  'tmdb-login-next': 'Next',
+  'tmdb-login-login': 'Sign In',
+  'tmdb-login-authorizing': 'Authenticating...',
+  'tmdb-login-success': 'Sign in successful! Welcome',
+  'tmdb-login-error-generic': 'Sign in failed, please check your credentials',
+  'tmdb-login-required': 'You must sign in to your account to continue',
+  'tmdb-login-need-login': 'Sign in to your account',
+  'tmdb-connected': 'Connected as',
+  'tmdb-logout': 'Sign out',
+  'tmdb-not-connected': 'Not connected',
 };

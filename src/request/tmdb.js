@@ -823,6 +823,206 @@ class TMDB {
       return null;
     }
   }
+
+  /**
+   * POST request to TMDB API
+   */
+  static async _tmdbPost(path, data = {}) {
+    this._ensureKey();
+    const url = `${this.API_BASE}${path}?api_key=${this._apiKey}`;
+    
+    const body = JSON.stringify(data);
+    const xhr = new XMLHttpRequest();
+    
+    return new Promise((resolve, reject) => {
+      xhr.open('POST', url);
+      xhr.setRequestHeader('Content-Type', 'application/json');
+      
+      xhr.addEventListener('load', () => {
+        if ((xhr.status >= 200 && xhr.status < 300) || xhr.status === 304) {
+          try {
+            const response = JSON.parse(xhr.responseText);
+            resolve(response);
+          } catch (e) {
+            reject(new Error('Invalid JSON response'));
+          }
+        } else {
+          const errorData = {};
+          try {
+            const response = JSON.parse(xhr.responseText);
+            errorData.message = response.status_message || 'API Error';
+            errorData.code = response.status_code || xhr.status;
+          } catch (e) {
+            errorData.message = xhr.statusText || 'API Error';
+            errorData.code = xhr.status;
+          }
+          reject(new Error(errorData.message || `HTTP Error ${xhr.status}`));
+        }
+      });
+      
+      xhr.addEventListener('error', () => {
+        reject(new Error('Network error'));
+      });
+      
+      xhr.addEventListener('abort', () => {
+        reject(new Error('Request aborted'));
+      });
+      
+      xhr.addEventListener('timeout', () => {
+        reject(new Error('Request timeout'));
+      });
+      
+      xhr.send(body);
+    });
+  }
+
+  /**
+   * Create a new request token
+   */
+  static async createRequestToken() {
+    try {
+      const res = await this._tmdbGet('/authentication/token/new');
+      
+      if (!res.success || !res.request_token) {
+        throw new Error('Failed to create request token');
+      }
+      
+      return res.request_token;
+    } catch (e) {
+      console.error('Error creating request token:', e);
+      throw e;
+    }
+  }
+
+  /**
+   * Validate and approve a request token
+   * Note: This typically requires user approval on TMDB website,
+   * but we'll use an alternative approach with username/password
+   */
+  static async createSessionWithCredentials(username, password, requestToken) {
+    try {
+      // First, validate the request token with username and password
+      const validateRes = await this._tmdbPost('/authentication/token/validate_with_login', {
+        username,
+        password,
+        request_token: requestToken
+      });
+      
+      if (!validateRes.success) {
+        throw new Error(validateRes.status_message || 'Invalid credentials');
+      }
+      
+      // Then create a session from the approved request token
+      const sessionRes = await this._tmdbPost('/authentication/session/new', {
+        request_token: validateRes.request_token
+      });
+      
+      if (!sessionRes.success || !sessionRes.session_id) {
+        throw new Error('Failed to create session');
+      }
+      
+      return {
+        session_id: sessionRes.session_id,
+        username,
+        request_token: validateRes.request_token
+      };
+    } catch (e) {
+      console.error('Error creating session:', e);
+      throw e;
+    }
+  }
+
+  /**
+   * Get account details using session
+   */
+  static async getAccountDetails(sessionId) {
+    try {
+      const res = await this._tmdbGet('/account', { session_id: sessionId });
+      
+      if (res.id) {
+        return {
+          id: res.id,
+          username: res.username,
+          name: res.name,
+          include_adult: res.include_adult,
+          iso_639_1: res.iso_639_1,
+          iso_3166_1: res.iso_3166_1
+        };
+      }
+      
+      throw new Error('Failed to retrieve account details');
+    } catch (e) {
+      console.error('Error getting account details:', e);
+      throw e;
+    }
+  }
+
+  /**
+   * Validate if a session is still valid
+   */
+  static async validateSession(sessionId) {
+    try {
+      const res = await this._tmdbGet('/account', { session_id: sessionId });
+      return res.id ? true : false;
+    } catch (e) {
+      console.error('Error validating session:', e);
+      return false;
+    }
+  }
+
+  /**
+   * Delete/logout a session
+   */
+  static async deleteSession(sessionId) {
+    try {
+      const res = await this._tmdbPost('/authentication/session', {
+        session_id: sessionId
+      });
+      
+      return res.success || false;
+    } catch (e) {
+      console.error('Error deleting session:', e);
+      return false;
+    }
+  }
+
+  /**
+   * Get user's watchlist
+   */
+  static async getWatchlist(sessionId, page = 1) {
+    try {
+      const res = await this._tmdbGet('/account/watchlist/movies', { session_id: sessionId, page });
+      
+      const items = (res.results || []).map(it => this._mapMovieToItem(it));
+      return {
+        items,
+        totalPages: res.total_pages,
+        totalResults: res.total_results
+      };
+    } catch (e) {
+      console.error('Error getting watchlist:', e);
+      return { items: [], totalPages: 0, totalResults: 0 };
+    }
+  }
+
+  /**
+   * Add movie to watchlist
+   */
+  static async addToWatchlist(sessionId, movieId) {
+    try {
+      const res = await this._tmdbPost('/account/watchlist', {
+        session_id: sessionId,
+        media_type: 'movie',
+        media_id: movieId,
+        watchlist: true
+      });
+      
+      return res.success || false;
+    } catch (e) {
+      console.error('Error adding to watchlist:', e);
+      return false;
+    }
+  }
 }
 
 export default TMDB;

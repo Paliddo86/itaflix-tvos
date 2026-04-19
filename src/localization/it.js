@@ -281,5 +281,22 @@ export default {
   'generic-error': 'Errore generico',
   'loading': 'Caricamento...',
   'no-content': 'Contenuto non disponibile',
+
+  // TMDB Login
+  'tmdb-login-title': 'Accedi al tuo account',
+  'tmdb-login-username-description': 'Inserisci il tuo username',
+  'tmdb-login-username-placeholder': 'Username',
+  'tmdb-login-password-description': 'Inserisci la tua password per',
+  'tmdb-login-password-placeholder': 'Password',
+  'tmdb-login-next': 'Avanti',
+  'tmdb-login-login': 'Accedi',
+  'tmdb-login-authorizing': 'Sto autenticando...',
+  'tmdb-login-success': 'Accesso riuscito! Benvenuto',
+  'tmdb-login-error-generic': 'Errore di accesso, controlla le credenziali',
+  'tmdb-login-required': 'Devi accedere al tuo account per continuare',
+  'tmdb-login-need-login': 'Accedi al tuo account',
+  'tmdb-connected': 'Connesso come',
+  'tmdb-logout': 'Esci dal tuo account',
+  'tmdb-not-connected': 'Non connesso',
   
 };

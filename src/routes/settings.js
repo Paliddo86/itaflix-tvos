@@ -10,6 +10,8 @@ import { deepEqualShouldUpdate } from '../utils/components';
 import { version } from '../helpers/constants';
 
 import poster from '../assets/img/poster.png';
+import tmdbLoginRoute from './tmdb-login';
+import TMDB from '../request/tmdb';
 
 const { get: i18n } = localization;
 
@@ -80,12 +82,16 @@ export default function settingsRoute() {
           const extended = user.isExtended();
           const authorized = user.isAuthorized();
           const language = localization.getLanguage();
+          const tmdbAuthenticated = user.isTmdbAuthenticated();
+          const tmdbUsername = user.getTmdbUsername();
 
           return {
             token,
             language,
             extended,
             authorized,
+            tmdbAuthenticated,
+            tmdbUsername,
             settings: settings.getAll(),
           };
         },
@@ -99,12 +105,16 @@ export default function settingsRoute() {
           this.userStateChangeStream = user.subscription();
           this.userStateChangeStream.pipe(() => {
             const token = user.getToken();
+            const tmdbAuthenticated = user.isTmdbAuthenticated();
+            const tmdbUsername = user.getTmdbUsername();
 
-            if (token !== this.state.token) {
+            if (token !== this.state.token || tmdbAuthenticated !== this.state.tmdbAuthenticated) {
               this.setState({
                 token,
                 extended: user.isExtended(),
                 authorized: user.isAuthorized(),
+                tmdbAuthenticated,
+                tmdbUsername,
               });
             }
           });
@@ -122,6 +132,8 @@ export default function settingsRoute() {
             extended,
             authorized,
             settings: currentSettings,
+            tmdbAuthenticated,
+            tmdbUsername,
           } = this.state;
 
           const { BASEURL } = getStartParams();
@@ -168,6 +180,11 @@ export default function settingsRoute() {
                       margin: 80 0 0;
                       text-align: center;
                     }
+
+                    .tmdb-status {
+                      color: ${tmdbAuthenticated ? 'rgb(34, 177, 76)' : 'rgb(255, 0, 0)'};
+                      font-weight: bold;
+                    }
                   `}
                 />
               </head>
@@ -201,6 +218,38 @@ export default function settingsRoute() {
                         )}
                       </listItemLockup>
                     ))}
+                  </section>
+                  <section>
+                    <header>
+                      <title>{i18n('tmdb-login-title')}</title>
+                    </header>
+                    {tmdbAuthenticated ? (
+                      <listItemLockup disabled="true">
+                        <title class="tmdb-status">
+                          {i18n('tmdb-connected')} {tmdbUsername}
+                        </title>
+                      </listItemLockup>
+                    ) : (
+                      <listItemLockup
+                        // eslint-disable-next-line react/jsx-no-bind
+                        onSelect={this.handleTmdbToggle}
+                      >
+                        <title class="tmdb-status">
+                          {i18n('tmdb-not-connected')}
+                        </title>
+                        <decorationLabel>
+                          {i18n('tmdb-login-title')}
+                        </decorationLabel>
+                      </listItemLockup>
+                    )}
+                    {tmdbAuthenticated && (
+                      <listItemLockup
+                        // eslint-disable-next-line react/jsx-no-bind
+                        onSelect={this.handleTmdbToggle}
+                      >
+                        <title>{i18n('tmdb-logout')}</title>
+                      </listItemLockup>
+                    )}
                   </section>
                   <section>
                     <header>
@@ -252,6 +301,42 @@ export default function settingsRoute() {
           settings.set(key, value);
           this.setState({ settings: settings.getAll() });
           TVDML.removeModal();
+        },
+
+        handleTmdbToggle() {
+          const { tmdbAuthenticated } = this.state;
+
+          if (tmdbAuthenticated) {
+            // Logout
+            const sessionId = user.getTmdbSessionId();
+            if (sessionId) {
+              TMDB.deleteSession(sessionId)
+                .then(() => {
+                  user.clearTmdbSession();
+                  this.setState({
+                    tmdbAuthenticated: false,
+                    tmdbUsername: '',
+                  });
+                })
+                .catch(error => {
+                  console.error('Logout error:', error);
+                });
+            }
+          } else {
+            // Login
+            tmdbLoginRoute({
+              onSuccess: (data) => {
+                TVDML.removeModal();
+                this.setState({
+                  tmdbAuthenticated: true,
+                  tmdbUsername: data.username,
+                });
+              },
+              onError: (error) => {
+                console.error('Login error:', error);
+              }
+            }).pipe(TVDML.renderModal).sink();
+          }
         },
       }),
     ),
