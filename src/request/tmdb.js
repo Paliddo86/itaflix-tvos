@@ -455,8 +455,8 @@ class TMDB {
    */
   static async getSeasonDetails(seasonNumber, tvShow) {
     try {
-      if (!tvShow || !tvShow.tmdb_id) return;
-      const res = await this._tmdbGet(`/tv/${tvShow.tmdb_id}/season/${seasonNumber}`, { language: this._language });
+      if (!tvShow || !tvShow.tmdb_id && !tvShow.id) return;
+      const res = await this._tmdbGet(`/tv/${tvShow.tmdb_id || tvShow.id}/season/${seasonNumber}`, { language: this._language });
 
       const season = tvShow.getSeasonById(seasonNumber);
       if (!season) return;
