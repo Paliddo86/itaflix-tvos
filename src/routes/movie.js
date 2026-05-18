@@ -169,7 +169,7 @@ export default function movieRoute() {
                     {this.renderInfo()}
                     {!this.props.banner && <heroImg src={this.props.poster} />}
                   </banner>
-                  {/* {this.renderCollection()}*/}
+                  {this.renderCollection()}
                   {this.renderRecomendations()}
                 </productTemplate>
               </document>
@@ -536,7 +536,10 @@ export default function movieRoute() {
           },
 
           renderCollection() {
-            if (!this.state.collection.length) return null;
+             /** @type {Movie} */
+            const movie = this.state.movie;
+            const {collection} = movie;
+            if (!collection || !collection.length) return null;
 
             return (
               <shelf>
@@ -544,26 +547,9 @@ export default function movieRoute() {
                   <title>{i18n('movie-collection')}</title>
                 </header>
                 <section>
-                  {this.state.collection.map(movie => {
-                    const {
-                      sid,
-                      poster,
-                      quality,
-                      isUpdated
-                    } = movie;
-
-                    const title = i18n('movie-title', movie);
-
+                  {collection.map(movie => {
                     return (
-                      <Tile
-                        key={sid}
-                        title={title}
-                        poster={poster}
-                        route="movie"
-                        quality={quality}
-                        isUpdated={isUpdated}
-                        payload={movie}
-                      />
+                      <Tile {...movie}/>
                     );
                   })}
                 </section>

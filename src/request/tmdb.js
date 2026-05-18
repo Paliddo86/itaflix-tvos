@@ -375,6 +375,21 @@ class TMDB {
         });
       }
 
+      if (res.belongs_to_collection) {
+        const collectionId = res.belongs_to_collection.id;
+        const collectionRes = await this._tmdbGet(`/collection/${collectionId}`);
+        if (collectionRes && collectionRes.parts) {
+          collectionRes.parts.sort((a, b) => {
+            const dateA = a.release_date || '9999-99-99';
+            const dateB = b.release_date || '9999-99-99';
+            return dateA.localeCompare(dateB);
+          }).forEach(part => {
+            target.addToCollection(this._mapMovieToItem(part));
+          });
+        }        
+
+      }
+
       return target;
     } catch (e) {
       defaultErrorHandlers(e);

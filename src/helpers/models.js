@@ -55,6 +55,7 @@ export class Movie{
         this.runtime = runtime;
         this.status = status;
         this.isSubIta = isSubIta;
+        this.collection = null;
     }
 
     /**
@@ -63,6 +64,17 @@ export class Movie{
      */
     addToRecommendations(movie) {
         this.recommendations.push(movie);
+    }
+
+    /**
+     * 
+     * @param {Movie} movie 
+     */
+    addToCollection(movie) {
+        if (!this.collection){
+            this.collection = []
+        }
+        this.collection.push(movie);
     }
 }
 
