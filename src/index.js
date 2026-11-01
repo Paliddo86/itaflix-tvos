@@ -17,6 +17,7 @@ import movieRoute from './routes/movie';
 import tvShowsGenresRoute from './routes/tvShowsGenres';
 import animeRoute from './routes/anime';
 import animeSeriesRoute from './routes/animeSeries';
+import animeSeasonRoute from './routes/animeSeason';
 import homeRoute from './routes/home';
 import Loader from './components/loader';
 import TMDB from './request/tmdb';
@@ -133,6 +134,8 @@ TVDML.handleRoute('tvShowsGenres').pipe(tvShowsGenresRoute());
 TVDML.handleRoute('anime').pipe(animeRoute());
 
 TVDML.handleRoute('animeSeries').pipe(animeSeriesRoute());
+
+TVDML.handleRoute('animeSeason').pipe(animeSeasonRoute());
 
 TVDML.handleRoute('home').pipe(homeRoute());
 

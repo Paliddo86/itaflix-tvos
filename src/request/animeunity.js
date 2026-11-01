@@ -221,7 +221,10 @@ function parseFeaturedAnime(html) {
       type: 'animeSeries',
       id: buildId(anime.id, anime.slug),
       title,
-      poster: imageUrl(anime.imageurl_cover || anime.imageurl),
+      // imageurl_cover e' un banner orizzontale: come poster va usato
+      // imageurl, altrimenti la shelf mostra immagini tagliate/sbagliate.
+      poster: imageUrl(anime.imageurl),
+      banner: imageUrl(anime.imageurl_cover),
       overview: anime.plot || '',
       rating: anime.score ? Number(anime.score) || 10 : 10,
     });
@@ -365,9 +368,47 @@ export function getAnime(id) {
  * Per serie con piu' di 120 episodi il Kotlin pagina via API: qui leggiamo
  * solo l'attributo `episodes`, che copre il caso normale.
  */
+const EPISODES_INLINE_LIMIT = 120;
+
+function toEpisode(episode, index) {
+  const number = Number(episode.number) || (index + 1);
+
+  return {
+    id: String(episode.id),
+    number,
+    title: `Episodio ${number}`,
+    overview: '',
+    poster: '',
+  };
+}
+
+/**
+ * Episodi di un intervallo, per le serie che ne hanno piu' di 120.
+ * Equivalente di getEpisodesFromApiRange (AnimeUnityProvider.kt:1180).
+ *
+ * @param {number} animeId id numerico dell'anime
+ * @param {number} startRange
+ * @param {number} endRange
+ */
+export function getEpisodesByRange(animeId, startRange, endRange) {
+  const url = `${BASE_URL}/info_api/${animeId}/1`
+    + `?start_range=${startRange}&end_range=${endRange}`;
+
+  return get(url, {
+    'User-Agent': USER_AGENT,
+    'X-Requested-With': 'XMLHttpRequest',
+  }).then(body => {
+    const parsed = safeJsonParse(body, null);
+    if (!parsed || !Array.isArray(parsed.episodes)) return [];
+
+    return parsed.episodes.map(toEpisode);
+  });
+}
+
 export function getEpisodes(id) {
   return get(`${BASE_URL}/anime/${id}`, { 'User-Agent': USER_AGENT }).then(html => {
     const episodesRaw = readAttr(html, 'video-player', 'episodes');
+    const episodesCount = Number(readAttr(html, 'video-player', 'episodes_count')) || 0;
 
     // Il payload e' JSON gia' decodificato dalle entita HTML. Alcune versioni
     // del sito lo URL-encodano: proviamo entrambe le strade, senza mai lanciare.
@@ -381,25 +422,53 @@ export function getEpisodes(id) {
       }
     }
 
-    if (!Array.isArray(episodes)) return { episodes: [], embedUrl: null };
-
-    const list = episodes.map((episode, index) => {
-      const number = Number(episode.number) || (index + 1);
-
-      return {
-        id: String(episode.id),
-        number,
-        title: `Episodio ${number}`,
-        overview: '',
-        poster: '',
-      };
-    });
-
     // embed_url sulla video-player copre film / episodio 1
     const embedUrl = readAttr(html, 'video-player', 'embed_url');
 
-    return { episodes: list, embedUrl };
+    if (!Array.isArray(episodes)) {
+      return { episodes: [], embedUrl, episodesCount };
+    }
+
+    const list = episodes.map(toEpisode);
+
+    // La pagina espone al massimo 120 episodi inline (confermato su One Piece
+    // ITA: 944 totali, 120 inline). Il resto arriva da info_api a blocchi.
+    return { episodes: list, embedUrl, episodesCount };
   });
+}
+
+/**
+ * Carica tutti gli episodi di una serie, paginando via info_api quando
+ * superano il limite inline.
+ */
+export function getAllEpisodes(animeId, episodesCount) {
+  const total = Number(episodesCount) || 0;
+
+  const first = getEpisodes(`${animeId}`);
+
+  if (total <= EPISODES_INLINE_LIMIT) {
+    return first.then(result => result);
+  }
+
+  const numericId = String(animeId).split('-')[0];
+  const ranges = [];
+
+  for (let start = 1; start <= total; start += EPISODES_INLINE_LIMIT) {
+    ranges.push([start, Math.min(start + EPISODES_INLINE_LIMIT - 1, total)]);
+  }
+
+  return first.then(result =>
+    Promise.all(ranges.map(([start, end]) => getEpisodesByRange(numericId, start, end)))
+      .then(chunks => {
+        const episodes = chunks.reduce((all, chunk) => all.concat(chunk), []);
+
+        return {
+          episodes: episodes.length ? episodes : result.episodes,
+          embedUrl: result.embedUrl,
+          episodesCount: total,
+        };
+      }),
+  );
 }
 
 /**
