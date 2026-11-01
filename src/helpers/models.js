@@ -284,11 +284,14 @@ export class Anime {
      *   date?: string,
      *   type?: string,
      *   episodes_count?: number,
+     *   episodes_length?: number,
+     *   status?: string,
+     *   studio?: string,
      *   genres?: Genre[],
      *   recommendations?: Anime[]
      * }} param0
      */
-    constructor({ id, slug, title, title_eng, plot, imageurl, cover, imageurl_cover, score, date, type, episodes_count, genres, recommendations }) {
+    constructor({ id, slug, title, title_eng, plot, imageurl, cover, imageurl_cover, score, date, type, episodes_count, episodes_length, status, studio, genres, recommendations }) {
         const cleanTitle = title_eng || title || "";
         const animeType = type || "TV";
 
@@ -308,6 +311,11 @@ export class Anime {
         this.genres = genres || [];
         this.recommendations = recommendations || [];
         this.episodes_count = parseInt(episodes_count) || 0;
+        // episodes_length e' la durata del singolo episodio, in minuti.
+        this.runtime = parseInt(episodes_length) || 0;
+        // status arriva in italiano da AnimeUnity ("In Corso", "Completo").
+        this.status = status || '';
+        this.studio = studio || '';
         this.isMovie = animeType === "Movie";
         this.quality = "HD";
         this.type = "animeSeries";

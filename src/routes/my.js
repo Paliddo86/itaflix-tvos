@@ -95,8 +95,10 @@ export default function myRoute() {
           const sessionId = user.getTmdbSessionId();
           const accountId = user.getTmdbAccountId();
 
+          const myAnime = user.getAnimeFavorites();
+
           if (!sessionId || !accountId) {
-            return Promise.resolve({ myMovies: [], myTvShows: [] });
+            return Promise.resolve({ myMovies: [], myTvShows: [], myAnime });
           }
 
           return Promise.all([
@@ -105,20 +107,23 @@ export default function myRoute() {
           ]).then(([moviesRes, tvRes]) => {
             return {
               myMovies: moviesRes.items || [],
-              myTvShows: tvRes.items || []
+              myTvShows: tvRes.items || [],
+              myAnime
             };
           }).catch(error => {
             console.error("Error loading watchlist:", error);
-            return { myMovies: [], myTvShows: [] };
+            return { myMovies: [], myTvShows: [], myAnime };
           });
         },
 
         render() {
-          const { myMovies, myTvShows, loading } = this.state;
+          const { myMovies, myTvShows, myAnime, loading } = this.state;
           const tmdbAuthenticated = user.isTmdbAuthenticated();
           
-          // Se non è autenticato, mostra la dialog di login
-          if (!tmdbAuthenticated) {
+          // Se non e' autenticato a TMDB mostra la dialog di login, ma solo
+          // quando non ci sono anime preferiti da mostrare: quelli vivono in
+          // locale e non richiedono un account TMDB.
+          if (!tmdbAuthenticated && !(myAnime && myAnime.length)) {
             return (
               <document>
                 <head>{commonStyles}</head>
@@ -173,6 +178,8 @@ export default function myRoute() {
                     this.renderSectionGrid(myMovies, 'my-movies')}
                   {myTvShows && myTvShows.length &&
                     this.renderSectionGrid(myTvShows, 'my-tv-show')}
+                  {myAnime && myAnime.length &&
+                    this.renderSectionGrid(myAnime, 'my-anime')}
                   {/* {closed.length && this.renderSectionGrid(closed, 'my-closed')} */}
                 </collectionList>
               </stackTemplate>

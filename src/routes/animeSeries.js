@@ -8,6 +8,8 @@ import { getAllEpisodes, getAnime } from '../request/animeunity';
 import { defaultErrorHandlers } from '../helpers/auth/handlers';
 import Loader from '../components/loader';
 import { get as i18n } from '../localization';
+import * as user from '../user';
+import * as settings from '../settings';
 
 // Soglia oltre la quale la lista episodi viene divisa in blocchi,
 // come fa la controparte Kotlin (AnimeUnityProvider.kt:1160).
@@ -35,6 +37,7 @@ export default function animeSeriesRoute() {
           getInitialState() {
             return {
               loading: true,
+              isPreferred: false,
               anime: null,
               seasons: [],
             };
@@ -86,7 +89,7 @@ export default function animeSeriesRoute() {
 
           renderStatus() {
             const { anime } = this.state;
-            const { genres } = anime;
+            const { genres, status } = anime;
 
             return (
               <infoList>
@@ -94,23 +97,48 @@ export default function animeSeriesRoute() {
                   <header>
                     <title>{i18n('tvshow-status')}</title>
                   </header>
-                  <text>{i18n('status-ongoing') || 'N/A'}</text>
+                  <text key={status}>
+                    {status ? i18n(`status-${status.toLowerCase()}`) || status : 'N/A'}
+                  </text>
                 </info>
                 <info>
                   <header>
                     <title>{i18n('tvshow-genres')}</title>
                   </header>
-                  {(genres || []).map(genre => (
-                    <text key={genre.id}>{genre.name}</text>
-                  ))}
+                  {(genres || []).map(genre => {
+                    const genreName = settings.getTvShowGenresById(genre.id);
+                    return <text key={genre.id}>{genreName || genre.name}</text>;
+                  })}
                 </info>
               </infoList>
             );
           },
 
           renderInfo() {
-            const { anime } = this.state;
-            const { title, released, rating, overview: description, runtime } = anime;
+            const { anime, isPreferred } = this.state;
+            const {
+              title, released, rating, overview: description, runtime,
+            } = anime;
+
+            const addToMyBtn = (
+              <buttonLockup onSelect={this.onMy}>
+                <badge src="resource://button-rate" />
+                <title>{i18n('add-to-my')}</title>
+              </buttonLockup>
+            );
+
+            const isOnMyBtn = (
+              <buttonLockup onSelect={this.removeFromMy}>
+                <badge src="resource://button-rated" />
+                <title>{i18n('remove-from-my')}</title>
+              </buttonLockup>
+            );
+
+            const buttons = (
+              <row>
+                {isPreferred ? isOnMyBtn : addToMyBtn}
+              </row>
+            );
 
             return (
               <stack>
@@ -134,8 +162,37 @@ export default function animeSeriesRoute() {
                 >
                   {description}
                 </description>
+                {buttons}
               </stack>
             );
+          },
+
+          onMy() {
+            const { anime } = this.state;
+
+            user.toggleAnimeFavorite({
+              id: anime.id,
+              title: anime.title,
+              poster: anime.poster,
+              banner: anime.banner,
+              slug: anime.slug,
+            });
+
+            this.setState({ isPreferred: user.isAnimeFavorite(anime.id) });
+          },
+
+          removeFromMy() {
+            const { anime } = this.state;
+
+            user.toggleAnimeFavorite({
+              id: anime.id,
+              title: anime.title,
+              poster: anime.poster,
+              banner: anime.banner,
+              slug: anime.slug,
+            });
+
+            this.setState({ isPreferred: user.isAnimeFavorite(anime.id) });
           },
 
           renderSeasons() {
@@ -172,11 +229,31 @@ export default function animeSeriesRoute() {
           },
 
           onShowFullDescription() {
-            // Replica di tvshow.js: la descrizione si espande nativamente.
+            const { anime } = this.state;
+
+            if (!anime) return;
+
+            TVDML.renderModal(
+              <document>
+                <descriptiveAlertTemplate>
+                  <title>{anime.title}</title>
+                  <description>{anime.overview}</description>
+                </descriptiveAlertTemplate>
+              </document>,
+            ).sink();
           },
 
           componentDidMount() {
-            this.loadData();
+            const setState = this.setState.bind(this);
+
+            this.appResumeStream = TVDML.subscribe(TVDML.event.RESUME);
+            this.appResumeStream.pipe(() => this.loadData().then(setState));
+
+            this.loadData().then(payload => this.setState(payload));
+          },
+
+          componentWillUnmount() {
+            if (this.appResumeStream) this.appResumeStream.unsubscribe();
           },
 
           loadData() {
@@ -205,6 +282,7 @@ export default function animeSeriesRoute() {
                     loading: false,
                     anime,
                     seasons,
+                    isPreferred: user.isAnimeFavorite(anime.id),
                   });
                 }),
               )

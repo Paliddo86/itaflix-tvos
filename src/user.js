@@ -11,7 +11,7 @@ const cache = {
   payload: JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'),
 };
 
-const contract = ['till', 'token', 'logged', 'family', 'selected', 'fingerprint', 'verified_at', 'user_id', 'email', 'password', 'list_id', 'tmdb_session_id', 'tmdb_username', 'tmdb_account_id', 'tmdb_logged', 'tmdb_login_time'];
+const contract = ['till', 'token', 'logged', 'family', 'selected', 'fingerprint', 'verified_at', 'user_id', 'email', 'password', 'list_id', 'tmdb_session_id', 'tmdb_username', 'tmdb_account_id', 'tmdb_logged', 'tmdb_login_time', 'anime_favorites'];
 
 export const subscription = bus.subscription.bind(bus);
 
@@ -146,4 +146,46 @@ export function clearTmdbSession() {
     tmdb_logged: 0,
     tmdb_login_time: null
   });
+}
+
+/**
+ * Preferiti anime (AnimeUnity).
+ * Storage locale: gli anime non hanno un id TMDB, quindi non possono
+ * passare dall'endpoint /account/{id}/favorite di TMDB.
+ * Ogni voce e' { id, title, poster, banner }.
+ */
+export function getAnimeFavorites() {
+  const list = get().anime_favorites;
+  return Array.isArray(list) ? list : [];
+}
+
+export function isAnimeFavorite(animeId) {
+  return getAnimeFavorites().some(item => item.id === animeId);
+}
+
+/**
+ * Aggiunge o rimuove un anime dai preferiti.
+ * @param {{id: string, title: string, poster?: string, banner?: string}} anime
+ * @returns {boolean} true se ora e' tra i preferiti
+ */
+export function toggleAnimeFavorite(anime) {
+  if (!anime || !anime.id) return false;
+
+  const favorites = getAnimeFavorites();
+  const exists = favorites.some(item => item.id === anime.id);
+
+  const next = exists
+    ? favorites.filter(item => item.id !== anime.id)
+    : favorites.concat([{
+      id: anime.id,
+      title: anime.title || '',
+      poster: anime.poster || '',
+      banner: anime.banner || '',
+      slug: anime.slug || '',
+      type: 'animeSeries',
+    }]);
+
+  set({ anime_favorites: next });
+
+  return !exists;
 }
