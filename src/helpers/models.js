@@ -355,10 +355,12 @@ export class AnimeSeason {
      *   animeId?: string,
      *   animeTitle?: string,
      *   animeBanner?: string,
-     *   range?: string
+     *   range?: string,
+     *   episodeStart?: number,
+     *   episodeEnd?: number
      * }} param0
      */
-    constructor({ id, number, title, episodes, poster, animeId, animeTitle, animeBanner, range }) {
+    constructor({ id, number, title, episodes, poster, animeId, animeTitle, animeBanner, range, episodeStart, episodeEnd }) {
         this.id = id || `${animeId || "anime"}-${number}`;
         this.number = number;
         this.title = title || "";
@@ -372,6 +374,11 @@ export class AnimeSeason {
         this.animeTitle = animeTitle || "";
         this.animeBanner = animeBanner || "";
         this.range = range || "";
+        // Estremi numerici del blocco: servono alla route per ricaricare
+        // gli episodi, cosi' non vanno passati come attributi TVML.
+        this.episodeStart = episodeStart || (this.episodes.length ? this.episodes[0].number : 0);
+        this.episodeEnd = episodeEnd
+            || (this.episodes.length ? this.episodes[this.episodes.length - 1].number : 0);
     }
 
     /**
@@ -421,6 +428,8 @@ export function buildAnimeSeasons(episodes, meta = {}, perSeason = 120) {
             // il range va nel counter, non nel titolo.
             title: "",
             range: `${from}-${to}`,
+            episodeStart: from,
+            episodeEnd: to,
             episodes: chunk,
             poster: meta.poster,
             animeId: meta.animeId,
