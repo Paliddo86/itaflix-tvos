@@ -28,6 +28,16 @@ npm run serve
 
 Now you can build Xcode project and run it in tvOS simulator or on Apple TV.
 
+## Anime section
+
+Dalla versione 5.2.0 l'app include una sezione **Anime** con [AnimeUnity](https://www.animeunity.co) come sorgente.
+La sezione presenta le tre categorie native del sito (Ultimi Episodi, Ultime Aggiunte, In Evidenza)
+e il dettaglio serie con la lista episodi. La riproduzione risolve l'embed via vixcloud.
+
+La logica e' un port della controparte Kotlin del progetto Itaflix, adattato a TVML:
+`src/request/animeunity.js`, `src/extractors/animeunity.js`, `src/routes/anime.js`, `src/routes/animeSeries.js`.
+Il piano di implementazione e le verifiche sono in [docs/PLAN_ANIME_TVOS.md](docs/PLAN_ANIME_TVOS.md).
+
 ## Application
 
 ![App Icon](AppIcon.png)
