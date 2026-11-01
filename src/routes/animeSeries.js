@@ -98,9 +98,14 @@ export default function animeSeriesRoute() {
               <document>
                 <head>{styles}</head>
                 <productTemplate>
+                  {show.banner && (
+                    <background>
+                      <img src={show.banner} scaleToFill="true" />
+                    </background>
+                  )}
                   <banner style="background-color: rgba(0, 0, 0, 0.5);">
                     {this.renderInfo(show)}
-                    <heroImg src={show.poster} />
+                    {!show.banner && <heroImg src={show.poster} />}
                   </banner>
                   {this.renderSeasons(show)}
                 </productTemplate>
@@ -144,6 +149,7 @@ export default function animeSeriesRoute() {
                       seasonTitle={i18n('anime-episodes')}
                       animeTitle={show.title}
                       animePoster={show.poster}
+                      animeBanner={show.banner}
                       animeId={show.id}
                     />
                   </section>
@@ -168,6 +174,7 @@ export default function animeSeriesRoute() {
                       seasonTitle={season.title}
                       animeTitle={show.title}
                       animePoster={show.poster}
+                      animeBanner={show.banner}
                       animeId={show.id}
                     />
                   ))}

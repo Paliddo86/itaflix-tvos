@@ -126,7 +126,7 @@ function toShow(anime) {
     type: 'animeSeries',
     id: buildId(anime.id, anime.slug),
     title,
-    poster: imageUrl(anime.imageurl),
+    poster: imageUrl(anime.imageurl || anime.cover),
     overview: anime.plot || '',
     rating: anime.score ? Number(anime.score) || 10 : 10,
   };
@@ -221,9 +221,12 @@ function parseFeaturedAnime(html) {
       type: 'animeSeries',
       id: buildId(anime.id, anime.slug),
       title,
-      // imageurl_cover e' un banner orizzontale: come poster va usato
-      // imageurl, altrimenti la shelf mostra immagini tagliate/sbagliate.
-      poster: imageUrl(anime.imageurl),
+      // Il carousel espone tre immagini diverse:
+      //  imageurl       -> poster verticale (anilist, storyblok, nexilia)
+      //  cover          -> copertina alternativa (animeworld)
+      //  imageurl_cover -> banner orizzontale, NON usabile come poster
+      // Poster: imageurl, poi cover; banner separato per lo sfondo.
+      poster: imageUrl(anime.imageurl || anime.cover),
       banner: imageUrl(anime.imageurl_cover),
       overview: anime.plot || '',
       rating: anime.score ? Number(anime.score) || 10 : 10,
@@ -346,17 +349,42 @@ export function getAnime(id) {
   return get(`${BASE_URL}/anime/${id}`, { 'User-Agent': USER_AGENT }).then(html => {
     const titleMatch = /<h1[^>]*class="[^"]*title[^"]*"[^>]*>([\s\S]*?)<\/h1>/i.exec(html);
     const plotMatch = /<div[^>]*class="[^"]*description[^"]*"[^>]*>([\s\S]*?)<\/div>/i.exec(html);
+
+    // Il tag <img class="cover"> e' spesso un placeholder (es. 640x960):
+    // i dati veri stanno nel JSON dell'attributo `anime` di <video-player>.
+    let meta = null;
+    const animeJson = readAttr(html, 'video-player', 'anime');
+
+    if (animeJson) {
+      meta = safeJsonParse(animeJson, null);
+    }
+
     const coverMatch = /<img[^>]*class="[^"]*cover[^"]*"[^>]*src="([^"]+)"/i.exec(html);
+    const htmlCover = coverMatch ? decodeHtml(coverMatch[1]) : '';
+
+    // Gerarchia: imageurl (poster verticale), poi cover, poi l'img della pagina.
+    const poster = meta
+      ? imageUrl(meta.imageurl || meta.cover || htmlCover)
+      : imageUrl(htmlCover);
+
+    // imageurl_cover e' il banner orizzontale usato come sfondo.
+    const banner = meta ? imageUrl(meta.imageurl_cover) : '';
 
     const episodesCountRaw = readAttr(html, 'video-player', 'episodes_count');
+
+    const title = titleMatch
+      ? decodeHtml(titleMatch[1]).replace(/<[^>]*>/g, '').trim()
+      : (meta && (meta.title_eng || meta.title)) || '';
 
     return {
       type: 'animeSeries',
       id,
-      title: titleMatch ? decodeHtml(titleMatch[1]).replace(/<[^>]*>/g, '').trim() : '',
+      title,
       overview: plotMatch ? decodeHtml(plotMatch[1]).replace(/<[^>]*>/g, '').trim() : '',
-      poster: imageUrl(coverMatch ? decodeHtml(coverMatch[1]) : ''),
-      rating: 10,
+      poster,
+      banner,
+      slug: (meta && meta.slug) || id,
+      rating: meta && meta.score ? Number(meta.score) || 10 : 10,
       episodesCount: episodesCountRaw ? Number(episodesCountRaw) || 0 : 0,
     };
   });

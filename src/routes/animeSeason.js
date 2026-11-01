@@ -23,11 +23,12 @@ export default function animeSeasonRoute() {
   return TVDML.createPipeline()
     .pipe(
       TVDML.passthrough(
-        ({ navigation: { episodes, seasonTitle, animeTitle, animePoster, animeId } }) => ({
+        ({ navigation: { episodes, seasonTitle, animeTitle, animePoster, animeBanner, animeId } }) => ({
           episodes: episodes || [],
           seasonTitle,
           animeTitle,
           animePoster,
+          animeBanner,
           animeId,
         }),
       ),
@@ -97,7 +98,7 @@ export default function animeSeasonRoute() {
                     <relatedContent>
                       <lockup>
                         <img
-                          src={this.props.animePoster}
+                          src={this.props.animePoster || this.props.animeBanner}
                           style="tv-placeholder: tv"
                           width="100%"
                           height="100%"
