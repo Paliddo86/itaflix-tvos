@@ -7,6 +7,7 @@ export default {
 
   'menu-my': 'My',
   'menu-anime': 'Anime',
+  'animeSeries-type': 'Anime',
   'anime-latest-episodes': 'Latest Episodes',
   'anime-latest-additions': 'Latest Additions',
   'anime-featured': 'Featured',

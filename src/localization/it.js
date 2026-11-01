@@ -136,6 +136,7 @@ export default {
   'tvshow-update': 'Nuovi Episodi',
   'season-update': 'Nuovi Episodi',
   'tvshow-type': 'Serie TV',
+  'animeSeries-type': 'Anime',
   'season-type': 'Stagione',
   'tvshow-status': 'Stato Serie TV',
   'tvshow-genres': 'Generi',

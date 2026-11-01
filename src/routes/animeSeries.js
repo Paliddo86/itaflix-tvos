@@ -1,9 +1,11 @@
+/* global Player Playlist */
+
 import * as TVDML from 'tvdml';
 
 import styles from '../common/styles';
 
-import { createMediaItems, isMoreThanDaysAhead } from '../utils';
-import AnimeUnity from '../request/animeunity';
+import { createMediaItems } from '../utils';
+import { getAnime, getEpisodes, getEmbedUrl } from '../request/animeunity';
 import AnimeUnityExtractor from '../extractors/animeunity';
 import { defaultErrorHandlers } from '../helpers/auth/handlers';
 import Loader from '../components/loader';
@@ -12,10 +14,11 @@ import { get as i18n } from '../localization';
 export default function animeSeriesRoute() {
   return TVDML.createPipeline()
     .pipe(
-      TVDML.passthrough(({ nextValue }) => {
-        const params = (nextValue && nextValue.routeParams) || {};
-        return params;
-      }),
+      TVDML.passthrough(({ navigation }) => ({
+        id: (navigation && navigation.id) || (navigation && navigation.sid),
+        title: navigation && navigation.title,
+        poster: navigation && navigation.poster,
+      })),
     )
     .pipe(
       TVDML.render(
@@ -118,9 +121,9 @@ export default function animeSeriesRoute() {
               return Promise.resolve();
             }
 
-            return AnimeUnity.getAnime(id)
+            return getAnime(id)
               .then(show =>
-                AnimeUnity.getEpisodes(id).then(({ episodes, embedUrl }) => {
+                getEpisodes(id).then(({ episodes, embedUrl }) => {
                   this.setState({
                     loading: false,
                     show,
@@ -161,7 +164,7 @@ export default function animeSeriesRoute() {
             const embedPromise =
               episode.number === 1 && showEmbedUrl
                 ? Promise.resolve(showEmbedUrl)
-                : AnimeUnity.getEmbedUrl(this.props.id, episode.id);
+                : getEmbedUrl(this.props.id, episode.id);
 
             embedPromise
               .then(embed => AnimeUnityExtractor.getStreamUrl(embed))

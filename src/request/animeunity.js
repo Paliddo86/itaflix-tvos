@@ -1,14 +1,11 @@
 import * as request from '../request';
 
-//***************************************************** */
-// AnimeUnity request layer by Pal0X
-//
-// Port di AnimeUnityProvider.kt dal progetto Kotlin Itaflix.
-// Differenze deliberate:
-//  - host animeunity.co (il .so del Kotlin non risolve piu')
-//  - parsing HTML con regex + JSON degli attributi (su tvOS il DOM
-//    non e' affidabile), stesso approccio di vixsrc.js
-//***************************************************** */
+/*
+ * AnimeUnity request layer by Pal0X
+ * Port di AnimeUnityProvider.kt dal progetto Kotlin Itaflix.
+ * Host animeunity.co (il .so del Kotlin non risolve piu'), parsing HTML
+ * con regex e JSON degli attributi perche' su tvOS il DOM non e' affidabile.
+ */
 
 const BASE_URL = 'https://www.animeunity.co';
 
@@ -44,13 +41,13 @@ function addHeaders(dict) {
 }
 
 function get(url, headers = {}) {
-  return request.get(url, { prepare: addHeaders(headers) }).then(request.toString);
+  return request.get(url, { prepare: addHeaders(headers) }).then(request.toString());
 }
 
 function postJson(url, payload, headers = {}) {
   return request
     .post(url, payload, { prepare: addHeaders(headers) })
-    .then(request.toString);
+    .then(request.toString());
 }
 
 /**
@@ -371,7 +368,18 @@ export function getAnime(id) {
 export function getEpisodes(id) {
   return get(`${BASE_URL}/anime/${id}`, { 'User-Agent': USER_AGENT }).then(html => {
     const episodesRaw = readAttr(html, 'video-player', 'episodes');
-    const episodes = safeJsonParse(episodesRaw ? decodeURIComponent(episodesRaw) : null, null);
+
+    // Il payload e' JSON gia' decodificato dalle entita HTML. Alcune versioni
+    // del sito lo URL-encodano: proviamo entrambe le strade, senza mai lanciare.
+    let episodes = safeJsonParse(episodesRaw, null);
+
+    if (!Array.isArray(episodes) && episodesRaw) {
+      try {
+        episodes = JSON.parse(decodeURIComponent(episodesRaw));
+      } catch (e) {
+        episodes = null;
+      }
+    }
 
     if (!Array.isArray(episodes)) return { episodes: [], embedUrl: null };
 

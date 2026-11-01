@@ -1,14 +1,12 @@
 import * as request from '../request';
 
-//***************************************************** */
-// AnimeUnity Extractor (vixcloud.cc) by Pal0X
-//
-// Port fedele di VixcloudExtractor.kt dal provider AnimeUnity
-// del progetto Kotlin Itaflix. Differenze deliberate:
-//  - host vixcloud.cc (il .co del Kotlin oggi non risolve)
-//  - UA esattamente quello del Kotlin (Windows), non lo UA Safari di vixsrc
-//  - nessun DoH: il Kotlin usa il DNS di sistema anche qui
-//***************************************************** */
+/*
+ * AnimeUnity Extractor by Pal0X
+ * Port di VixcloudExtractor.kt dal provider AnimeUnity del progetto
+ * Kotlin Itaflix. Host vixcloud.cc (il .co del riferimento non risolve),
+ * parsing con regex e brace matching perche' su tvOS il DOM non e'
+ * affidabile. Nessun header richiesto in riproduzione.
+ */
 
 export class AnimeUnityExtractor {
   static baseUrl = 'https://vixcloud.cc';

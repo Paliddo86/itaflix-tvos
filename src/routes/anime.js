@@ -5,7 +5,7 @@ import styles from '../common/styles';
 
 import { getStartParams } from '../utils';
 import logo from '../assets/img/logo.png';
-import AnimeUnity from '../request/animeunity';
+import { getHome } from '../request/animeunity';
 import { defaultErrorHandlers } from '../helpers/auth/handlers';
 import Loader from '../components/loader';
 import { get as i18n } from '../localization';
@@ -96,15 +96,22 @@ export default function animeRoute() {
         loadData(updating) {
           this.setState(updating ? { updating: true } : { loading: true });
 
-          return AnimeUnity.getHome()
+          return getHome()
             .then(({ categories }) => {
+              const list = categories || [];
+
+              if (!list.length) {
+                console.warn('Anime: nessuna categoria parsata dalla home');
+              }
+
               this.setState({
                 loading: false,
                 updating: false,
-                categories: categories || [],
+                categories: list,
               });
             })
             .catch(error => {
+              console.error('Anime: getHome fallita', error);
               this.setState({ loading: false, updating: false, categories: [] });
               defaultErrorHandlers(error);
             });
