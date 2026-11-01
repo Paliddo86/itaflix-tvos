@@ -6,6 +6,13 @@ export default {
   'auth-checking': 'Checking authorization...',
 
   'menu-my': 'My',
+  'menu-anime': 'Anime',
+  'anime-latest-episodes': 'Latest Episodes',
+  'anime-latest-additions': 'Latest Additions',
+  'anime-featured': 'Featured',
+  'anime-episodes-count': ({ count }) => `Episodes - ${count}`,
+  'anime-no-episodes': 'No episodes available',
+  'go-back': 'Back',
   'menu-tvshows': 'Shows',
   'menu-movies': 'Movies',
   'menu-search': 'Home',
