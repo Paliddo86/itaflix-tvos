@@ -346,10 +346,11 @@ export class AnimeSeason {
      *   poster?: string,
      *   animeId?: string,
      *   animeTitle?: string,
-     *   animeBanner?: string
+     *   animeBanner?: string,
+     *   range?: string
      * }} param0
      */
-    constructor({ id, number, title, episodes, poster, animeId, animeTitle, animeBanner }) {
+    constructor({ id, number, title, episodes, poster, animeId, animeTitle, animeBanner, range }) {
         this.id = id || `${animeId || "anime"}-${number}`;
         this.number = number;
         this.title = title || "";
@@ -362,6 +363,7 @@ export class AnimeSeason {
         this.animeId = animeId || "";
         this.animeTitle = animeTitle || "";
         this.animeBanner = animeBanner || "";
+        this.range = range || "";
     }
 
     /**
@@ -407,7 +409,10 @@ export function buildAnimeSeasons(episodes, meta = {}, perSeason = 120) {
 
         seasons.push(new AnimeSeason({
             number: seasons.length + 1,
-            title: `Episodi ${from}-${to}`,
+            // Il titolo resta "Episodi" come nella controparte serie TV;
+            // il range va nel counter, non nel titolo.
+            title: "",
+            range: `${from}-${to}`,
             episodes: chunk,
             poster: meta.poster,
             animeId: meta.animeId,

@@ -1,7 +1,7 @@
 import * as TVDML from 'tvdml';
+import moment from 'moment';
 
 import Tile from '../components/tile';
-import styles from '../common/styles';
 
 import { buildAnimeSeasons } from '../helpers/models';
 import { getAllEpisodes, getAnime } from '../request/animeunity';
@@ -9,10 +9,16 @@ import { defaultErrorHandlers } from '../helpers/auth/handlers';
 import Loader from '../components/loader';
 import { get as i18n } from '../localization';
 
-// Soglia oltre la quale la lista episodi viene divisa in "stagioni" virtuali,
+// Soglia oltre la quale la lista episodi viene divisa in blocchi,
 // come fa la controparte Kotlin (AnimeUnityProvider.kt:1160).
 const EPISODES_PER_SEASON = 120;
 
+/**
+ * Dettaglio serie anime.
+ * Struttura copiata da src/routes/tvshow.js: productTemplate, background
+ * condizionale, banner con renderStatus/renderInfo, heroImg solo quando
+ * manca il banner, shelf delle stagioni.
+ */
 export default function animeSeriesRoute() {
   return TVDML.createPipeline()
     .pipe(
@@ -29,7 +35,6 @@ export default function animeSeriesRoute() {
           getInitialState() {
             return {
               loading: true,
-              highlightEpisode: 0,
               anime: null,
               seasons: [],
             };
@@ -37,7 +42,9 @@ export default function animeSeriesRoute() {
 
           render() {
             if (this.state.loading) {
-              return <Loader title={this.props.title || i18n('loading')} />;
+              return (
+                <Loader title={this.props.title} heroImg={this.props.poster} />
+              );
             }
 
             const { anime } = this.state;
@@ -45,11 +52,10 @@ export default function animeSeriesRoute() {
             if (!anime) {
               return (
                 <document>
-                  <head>{styles}</head>
                   <alertTemplate>
                     <title>{i18n('generic-error')}</title>
                     <button onSelect={TVDML.navigateBack}>
-                      <text>{i18n('go-back')}</text>
+                      <text>{i18n('generic-error-close')}</text>
                     </button>
                   </alertTemplate>
                 </document>
@@ -58,88 +64,100 @@ export default function animeSeriesRoute() {
 
             return (
               <document>
-                <head>{styles}</head>
                 <productTemplate>
                   {anime.banner && (
                     <background>
-                      <img src={anime.banner} scaleToFill="true" />
+                      <img
+                        src={anime.banner}
+                        scaleToFill="true"
+                      />
                     </background>
                   )}
                   <banner style="background-color: rgba(0, 0, 0, 0.5);">
-                    {this.renderStatus(anime)}
-                    {this.renderInfo(anime)}
+                    {this.renderStatus()}
+                    {this.renderInfo()}
                     {!anime.banner && <heroImg src={anime.poster} />}
                   </banner>
-                  {this.renderSeasons(anime)}
+                  {this.renderSeasons()}
                 </productTemplate>
               </document>
             );
           },
 
-          renderStatus(anime) {
-            if (!anime.genres || !anime.genres.length) return null;
+          renderStatus() {
+            const { anime } = this.state;
+            const { genres } = anime;
 
             return (
               <infoList>
                 <info>
                   <header>
+                    <title>{i18n('tvshow-status')}</title>
+                  </header>
+                  <text>{i18n('status-ongoing') || 'N/A'}</text>
+                </info>
+                <info>
+                  <header>
                     <title>{i18n('tvshow-genres')}</title>
                   </header>
-                  <description>{anime.genres.map(g => g.name).join(', ')}</description>
+                  {(genres || []).map(genre => (
+                    <text key={genre.id}>{genre.name}</text>
+                  ))}
                 </info>
               </infoList>
             );
           },
 
-          renderInfo(anime) {
+          renderInfo() {
+            const { anime } = this.state;
+            const { title, released, rating, overview: description, runtime } = anime;
+
             return (
               <stack>
-                <title>{anime.title}</title>
-                {anime.rating && (
-                  <row>
-                    <ratingBadge value={String(anime.rating / 10)} />
-                  </row>
-                )}
-                {anime.released && (
-                  <row>
-                    <text>{anime.released}</text>
-                  </row>
-                )}
-                <description>{anime.overview || i18n('no-description')}</description>
+                <title>{title}</title>
+                <row>
+                  <ratingBadge value={rating / 10} />
+                  <text>{`${i18n('tvshow-information-year').toUpperCase()}: ${released}`}</text>
+                  {runtime ? (
+                    <text>
+                      {`${i18n('tvshow-information-runtime').toUpperCase()}: ${moment.duration(runtime, 'minutes').humanize()}`}
+                    </text>
+                  ) : null}
+                </row>
+                <description
+                  allowsZooming="true"
+                  handlesOverflow="true"
+                  onSelect={this.onShowFullDescription}
+                  style={`
+                    tv-text-max-lines: 1;
+                  `}
+                >
+                  {description}
+                </description>
               </stack>
             );
           },
 
-          renderSeasons(anime) {
-            const { seasons } = this.state;
+          renderSeasons() {
+            const { anime, seasons } = this.state;
 
-            if (!seasons || !seasons.length) {
-              return (
-                <shelf>
-                  <header>
-                    <title>{i18n('anime-no-episodes')}</title>
-                  </header>
-                </shelf>
-              );
-            }
+            if (!seasons.length) return null;
 
             return (
               <shelf>
                 <header>
-                  <title>
-                    {seasons.length > 1
-                      ? `${i18n('anime-seasons')} - ${seasons.length}`
-                      : i18n('anime-episodes-count', { count: anime.episodes_count })}
-                  </title>
+                  <title>{i18n('tvshow-seasons')} - {seasons.length}</title>
                 </header>
                 <section>
                   {seasons.map(season => (
                     <Tile
-                      key={season.id}
                       type={season.type}
-                      title={season.title || i18n('anime-episodes')}
+                      season={season}
+                      title={season.title || i18n('anime-season-title')}
                       poster={season.poster || anime.poster}
-                      counter={season.episodes_count}
+                      counter={season.range || season.episodes_count}
+                      isWatched={false}
+                      isUpdated={season.isUpdated}
                       episodes={season.episodes}
                       seasonTitle={season.title}
                       animeTitle={anime.title}
@@ -151,6 +169,10 @@ export default function animeSeriesRoute() {
                 </section>
               </shelf>
             );
+          },
+
+          onShowFullDescription() {
+            // Replica di tvshow.js: la descrizione si espande nativamente.
           },
 
           componentDidMount() {

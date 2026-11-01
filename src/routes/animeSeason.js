@@ -2,29 +2,31 @@
 
 import * as TVDML from 'tvdml';
 
-import { createMediaItems, getStartParams } from '../utils';
+import { createMediaItems, getStartParams, isMoreThanDaysAhead } from '../utils';
 import { AnimeSeason } from '../helpers/models';
 import { getEmbedUrl } from '../request/animeunity';
 import AnimeUnityExtractor from '../extractors/animeunity';
 import { defaultErrorHandlers } from '../helpers/auth/handlers';
+import Loader from '../components/loader';
 import { get as i18n } from '../localization';
 
 import hand from '../assets/icons/hand.png';
 import hand2x from '../assets/icons/hand@2x.png';
 
 /**
- * Lista episodi di una "stagione" anime.
- * Replica di src/routes/season.js: stesso compilationTemplate, stessi
- * stili inline, stesso pattern dei listItemLockup e del player.
- *
- * Riceve tutto via navigation dal dettaglio della serie:
- * episodes, seasonTitle, animeTitle, animePoster, animeId.
+ * Lista episodi di un blocco anime.
+ * Copia integrale della struttura di src/routes/season.js: stesso
+ * compilationTemplate, stesso blocco <style>, stesso relatedContent con
+ * <img> sempre presente (tv-placeholder: tv disegna il placeholder quando
+ * manca l'immagine), stessi listItemLockup e stessa gestione del player.
  */
 export default function animeSeasonRoute() {
   return TVDML.createPipeline()
     .pipe(
       TVDML.passthrough(
-        ({ navigation: { episodes, seasonTitle, animeTitle, animePoster, animeBanner, animeId } }) => ({
+        ({ navigation: {
+          episodes, seasonTitle, animeTitle, animePoster, animeBanner, animeId,
+        } }) => ({
           episodes: episodes || [],
           seasonTitle,
           animeTitle,
@@ -38,8 +40,6 @@ export default function animeSeasonRoute() {
       TVDML.render(
         TVDML.createComponent({
           getInitialState() {
-            // Ricostruisce il modello AnimeSeason dai parametri di navigazione,
-            // cosi' la vista episodi lavora con lo stesso oggetto della serie TV.
             this.season = new AnimeSeason({
               number: 1,
               title: this.props.seasonTitle,
@@ -56,6 +56,15 @@ export default function animeSeasonRoute() {
           },
 
           render() {
+            const seasonTitle = this.season.title;
+            const season = this.season;
+
+            if (!season.episodes.length) {
+              return (
+                <Loader title={`${this.season.animeTitle} - ${seasonTitle}`} />
+              );
+            }
+
             const { BASEURL } = getStartParams();
 
             return (
@@ -110,7 +119,7 @@ export default function animeSeasonRoute() {
                     <relatedContent>
                       <lockup>
                         <img
-                          src={this.season.animeBanner || this.season.poster}
+                          src={season.animePoster}
                           style="tv-placeholder: tv"
                           width="100%"
                           height="100%"
@@ -118,40 +127,64 @@ export default function animeSeasonRoute() {
                       </lockup>
                     </relatedContent>
                     <segmentBarHeader>
-                      <title>{this.season.animeTitle}</title>
-                      <subtitle>
-                        {this.season.title
-                          || i18n('anime-episodes-count', {
-                            count: this.season.episodes.length,
-                          })}
-                      </subtitle>
+                      <title>{season.animeTitle}</title>
+                      <subtitle>{seasonTitle}</subtitle>
                     </segmentBarHeader>
                     <section>
-                      {this.season.episodes.map((episode, index) => {
+                      {season.episodes.map((episode, index) => {
                         const highlight = index === this.state.highlightEpisode;
 
+                        const epTitle = i18n('episode-number', { epLabel: episode.number || '' });
+                        const description = episode.overview || i18n('no-description');
+                        const isNewEpisode = isMoreThanDaysAhead(episode.updated_at);
+
                         // eslint-disable-next-line react/jsx-no-bind
+                        const onSelectDesc = this.onShowMenu.bind(this, episode);
+
                         const onSelectEpisode = this.playEpisode.bind(this, episode);
+
+                        const listItemRef = highlight
+                          ? // eslint-disable-next-line react/jsx-no-bind
+                            this.onHighlightedItemRender.bind(this, episode)
+                          : undefined;
 
                         return (
                           <listItemLockup
                             class="item"
+                            ref={listItemRef}
                             onPlay={onSelectEpisode}
                             onSelect={onSelectEpisode}
+                            onHoldselect={onSelectDesc}
                             autoHighlight={highlight ? 'true' : undefined}
                           >
                             <ordinal minLength="3">{episode.number}</ordinal>
-                            <title class="title">
-                              {i18n('episode-number', { epLabel: episode.number })}
-                            </title>
+                            <title class="title">{epTitle}</title>
+                            {isNewEpisode && (
+                              <decorationLabel>
+                                <text>{i18n('tvshow-new')}</text>
+                              </decorationLabel>
+                            )}
                             <relatedContent>
                               <lockup class="item-content">
+                                <img
+                                  src={episode.poster}
+                                  style="tv-placeholder: tv"
+                                  width="100%"
+                                  height="100%"
+                                />
                                 <description class="item-desc">
-                                  {episode.overview || i18n('no-description')}
+                                  {description}
                                 </description>
                                 <description class="item-desc">
                                   <badge
-                                    srcset={`${BASEURL + hand} 1x, ${BASEURL + hand2x} 2x`}
+                                    class="badge"
+                                    style="margin: 0 0 -5"
+                                    width="30"
+                                    height="30"
+                                    srcset={`
+                                      ${BASEURL + hand} 1x,
+                                      ${BASEURL + hand2x} 2x
+                                    `}
                                   />
                                   {' '}
                                   {i18n('tvshow-episode-menu-hint')}
@@ -168,21 +201,45 @@ export default function animeSeasonRoute() {
             );
           },
 
+          onHighlightedItemRender(episode) {
+            // Parita' con season.js: il ref viene assegnato all'episodio
+            // evidenziato. Qui non c'e' autoplay, come nella controparte.
+            this.setState({ highlightEpisode: episode.number - 1 });
+          },
+
+          onShowMenu(episode) {
+            const titleCode = i18n('tvshow-episode-title', episode);
+            const description = episode.overview || i18n('no-description');
+
+            TVDML.renderModal(
+              <document>
+                <alertTemplate>
+                  <title>{titleCode}</title>
+                  <description>{description}</description>
+                  <button onSelect={TVDML.removeModal}>
+                    <text>{i18n('generic-error-close')}</text>
+                  </button>
+                </alertTemplate>
+              </document>,
+            ).sink();
+          },
+
           playEpisode(episode) {
             const player = new Player();
             player.playlist = new Playlist();
             player.interactiveOverlayDismissable = false;
 
-            const preparePlayer = streamUrl => {
+            const preparePlayer = link => {
               const media = {
-                title: `${this.season.animeTitle} - ${episode.title}`,
-                description: '',
-                stream: streamUrl,
-                artworkImageURL: this.season.poster || this.season.animeBanner,
+                title: `${this.season.animeTitle} - ${i18n('episode-number', { epLabel: episode.number })}`,
+                description: episode.overview || '',
+                stream: link,
+                artworkImageURL: this.season.animePoster || this.season.animeBanner,
                 resumeTime: 0,
               };
 
-              player.playlist.push(createMediaItems(media));
+              const mediaItem = createMediaItems(media);
+              player.playlist.push(mediaItem);
               player.play();
             };
 
