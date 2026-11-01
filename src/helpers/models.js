@@ -263,3 +263,158 @@ export class Episode {
         this.updated_at = updated_at || null;
     }
 }
+/**
+ * Serie anime da AnimeUnity.
+ * Rispecchia TvShow ma normalizza i campi che arrivano dal provider:
+ * AnimeUnity espone id + slug separati (id usato nella route),
+ * imageurl come poster verticale e imageurl_cover come banner orizzontale.
+ */
+export class Anime {
+    /**
+     * @param {{
+     *   id: number|string,
+     *   slug?: string,
+     *   title?: string,
+     *   title_eng?: string,
+     *   plot?: string,
+     *   imageurl?: string,
+     *   cover?: string,
+     *   imageurl_cover?: string,
+     *   score?: number|string,
+     *   date?: string,
+     *   type?: string,
+     *   episodes_count?: number,
+     *   genres?: Genre[],
+     *   recommendations?: Anime[]
+     * }} param0
+     */
+    constructor({ id, slug, title, title_eng, plot, imageurl, cover, imageurl_cover, score, date, type, episodes_count, genres, recommendations }) {
+        const cleanTitle = title_eng || title || "";
+        const animeType = type || "TV";
+
+        this.id = slug ? `${id}-${slug}` : String(id);
+        this.sid = this.id;
+        this.slug = slug || String(id);
+        this.title = cleanTitle;
+        this.overview = plot || "";
+        this.released = date ? new Date(date).getFullYear().toString() : "";
+        this.rating = parseInt(score) || 10;
+
+        // Poster verticale; cover come fallback. Mai imageurl_cover (banner).
+        this.poster = imageurl || cover || "";
+        this.cover = cover || imageurl || "";
+        this.banner = imageurl_cover || "";
+
+        this.genres = genres || [];
+        this.recommendations = recommendations || [];
+        this.episodes_count = parseInt(episodes_count) || 0;
+        this.isMovie = animeType === "Movie";
+        this.quality = "HD";
+        this.type = "animeSeries";
+        this.seasons = [];
+    }
+
+    /**
+     * @param {AnimeSeason} season
+     */
+    addToSeasons(season) {
+        this.seasons.push(season);
+    }
+
+    getSeasonById(seasonNumber) {
+        return this.seasons.find(s => s.number === seasonNumber);
+    }
+}
+
+/**
+ * Blocco di episodi di una serie anime.
+ * Replica Season: stessa forma, cosi' la lista episodi puo' usare
+ * lo stesso template della controparte serie TV.
+ */
+export class AnimeSeason {
+    /**
+     * @type {Episode[]}
+     */
+    episodes = [];
+
+    /**
+     * @param {{
+     *   id?: string,
+     *   number: number,
+     *   title?: string,
+     *   episodes?: Episode[],
+     *   poster?: string,
+     *   animeId?: string,
+     *   animeTitle?: string,
+     *   animeBanner?: string
+     * }} param0
+     */
+    constructor({ id, number, title, episodes, poster, animeId, animeTitle, animeBanner }) {
+        this.id = id || `${animeId || "anime"}-${number}`;
+        this.number = number;
+        this.title = title || "";
+        this.plot = "";
+        this.episodes_count = episodes ? episodes.length : 0;
+        this.episodes = (episodes || []).map(e => (e instanceof Episode ? e : new Episode(e)));
+        this.type = "animeSeason";
+        this.isUpdated = false;
+        this.poster = poster || "";
+        this.animeId = animeId || "";
+        this.animeTitle = animeTitle || "";
+        this.animeBanner = animeBanner || "";
+    }
+
+    /**
+     * @param {Episode} episode
+     */
+    addEpisode(episode) {
+        this.episodes.push(episode);
+        this.episodes_count = this.episodes.length;
+    }
+}
+
+/**
+ * Divide gli episodi in blocchi, come fa la controparte Kotlin
+ * (AnimeUnityProvider.kt:1160, CalculateEpisodeRanges).
+ *
+ * @param {Episode[]} episodes
+ * @param {Object} meta { animeId, animeTitle, animeBanner, poster }
+ * @param {number} perSeason
+ * @returns {AnimeSeason[]}
+ */
+export function buildAnimeSeasons(episodes, meta = {}, perSeason = 120) {
+    if (!episodes || !episodes.length) return [];
+
+    // Sotto il limite non serve spezzare: un unico blocco.
+    if (episodes.length <= perSeason) {
+        return [new AnimeSeason({
+            number: 1,
+            title: meta.seasonTitle || "",
+            episodes,
+            poster: meta.poster,
+            animeId: meta.animeId,
+            animeTitle: meta.animeTitle,
+            animeBanner: meta.animeBanner,
+        })];
+    }
+
+    const seasons = [];
+
+    for (let start = 0; start < episodes.length; start += perSeason) {
+        const chunk = episodes.slice(start, start + perSeason);
+        const from = chunk[0].number;
+        const to = chunk[chunk.length - 1].number;
+
+        seasons.push(new AnimeSeason({
+            number: seasons.length + 1,
+            title: `Episodi ${from}-${to}`,
+            episodes: chunk,
+            poster: meta.poster,
+            animeId: meta.animeId,
+            animeTitle: meta.animeTitle,
+            animeBanner: meta.animeBanner,
+        }));
+    }
+
+    return seasons;
+}

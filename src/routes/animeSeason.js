@@ -3,6 +3,7 @@
 import * as TVDML from 'tvdml';
 
 import { createMediaItems, getStartParams } from '../utils';
+import { AnimeSeason } from '../helpers/models';
 import { getEmbedUrl } from '../request/animeunity';
 import AnimeUnityExtractor from '../extractors/animeunity';
 import { defaultErrorHandlers } from '../helpers/auth/handlers';
@@ -37,9 +38,20 @@ export default function animeSeasonRoute() {
       TVDML.render(
         TVDML.createComponent({
           getInitialState() {
+            // Ricostruisce il modello AnimeSeason dai parametri di navigazione,
+            // cosi' la vista episodi lavora con lo stesso oggetto della serie TV.
+            this.season = new AnimeSeason({
+              number: 1,
+              title: this.props.seasonTitle,
+              episodes: this.props.episodes,
+              poster: this.props.animePoster,
+              animeId: this.props.animeId,
+              animeTitle: this.props.animeTitle,
+              animeBanner: this.props.animeBanner,
+            });
+
             return {
               highlightEpisode: 0,
-              embedUrl: null,
             };
           },
 
@@ -98,7 +110,7 @@ export default function animeSeasonRoute() {
                     <relatedContent>
                       <lockup>
                         <img
-                          src={this.props.animePoster || this.props.animeBanner}
+                          src={this.season.animeBanner || this.season.poster}
                           style="tv-placeholder: tv"
                           width="100%"
                           height="100%"
@@ -106,16 +118,16 @@ export default function animeSeasonRoute() {
                       </lockup>
                     </relatedContent>
                     <segmentBarHeader>
-                      <title>{this.props.animeTitle}</title>
+                      <title>{this.season.animeTitle}</title>
                       <subtitle>
-                        {this.props.seasonTitle
+                        {this.season.title
                           || i18n('anime-episodes-count', {
-                            count: this.props.episodes.length,
+                            count: this.season.episodes.length,
                           })}
                       </subtitle>
                     </segmentBarHeader>
                     <section>
-                      {this.props.episodes.map((episode, index) => {
+                      {this.season.episodes.map((episode, index) => {
                         const highlight = index === this.state.highlightEpisode;
 
                         // eslint-disable-next-line react/jsx-no-bind
@@ -163,10 +175,10 @@ export default function animeSeasonRoute() {
 
             const preparePlayer = streamUrl => {
               const media = {
-                title: `${this.props.animeTitle} - ${episode.title}`,
+                title: `${this.season.animeTitle} - ${episode.title}`,
                 description: '',
                 stream: streamUrl,
-                artworkImageURL: this.props.animePoster,
+                artworkImageURL: this.season.poster || this.season.animeBanner,
                 resumeTime: 0,
               };
 
@@ -174,7 +186,7 @@ export default function animeSeasonRoute() {
               player.play();
             };
 
-            getEmbedUrl(this.props.animeId, episode.id)
+            getEmbedUrl(this.season.animeId, episode.id)
               .then(embed => AnimeUnityExtractor.getStreamUrl(embed))
               .then(preparePlayer)
               .catch(error => {

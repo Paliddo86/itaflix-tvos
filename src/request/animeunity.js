@@ -1,4 +1,5 @@
 import * as request from '../request';
+import { Anime, Episode } from '../helpers/models';
 
 /*
  * AnimeUnity request layer by Pal0X
@@ -122,14 +123,12 @@ function toShow(anime) {
   const title = anime.title_eng || anime.title || '';
   if (!anime.id || !title) return null;
 
-  return {
-    type: 'animeSeries',
-    id: buildId(anime.id, anime.slug),
-    title,
-    poster: imageUrl(anime.imageurl || anime.cover),
-    overview: anime.plot || '',
-    rating: anime.score ? Number(anime.score) || 10 : 10,
-  };
+  return new Anime({
+    ...anime,
+    imageurl: imageUrl(anime.imageurl),
+    cover: imageUrl(anime.cover),
+    imageurl_cover: imageUrl(anime.imageurl_cover),
+  });
 }
 
 /**
@@ -184,13 +183,12 @@ function parseLatestAdditions(html) {
       const title = decodeHtml(titleMatch[1]).replace(/<[^>]*>/g, '').trim();
 
       if (title) {
-        shows.push({
-          type: 'animeSeries',
+        shows.push(new Anime({
           id,
+          slug: id,
           title,
-          poster: imageUrl(imgMatch ? decodeHtml(imgMatch[1]) : ''),
-          rating: 10,
-        });
+          imageurl: imageUrl(imgMatch ? decodeHtml(imgMatch[1]) : ''),
+        }));
       }
     }
 
@@ -217,20 +215,13 @@ function parseFeaturedAnime(html) {
     const title = anime.title_eng || anime.title || '';
     if (!title) return;
 
-    items.push({
-      type: 'animeSeries',
-      id: buildId(anime.id, anime.slug),
+    items.push(new Anime({
+      ...anime,
       title,
-      // Il carousel espone tre immagini diverse:
-      //  imageurl       -> poster verticale (anilist, storyblok, nexilia)
-      //  cover          -> copertina alternativa (animeworld)
-      //  imageurl_cover -> banner orizzontale, NON usabile come poster
-      // Poster: imageurl, poi cover; banner separato per lo sfondo.
-      poster: imageUrl(anime.imageurl || anime.cover),
-      banner: imageUrl(anime.imageurl_cover),
-      overview: anime.plot || '',
-      rating: anime.score ? Number(anime.score) || 10 : 10,
-    });
+      imageurl: imageUrl(anime.imageurl),
+      cover: imageUrl(anime.cover),
+      imageurl_cover: imageUrl(anime.imageurl_cover),
+    }));
   });
 
   return items;
@@ -376,17 +367,23 @@ export function getAnime(id) {
       ? decodeHtml(titleMatch[1]).replace(/<[^>]*>/g, '').trim()
       : (meta && (meta.title_eng || meta.title)) || '';
 
-    return {
-      type: 'animeSeries',
-      id,
+    const anime = new Anime({
+      ...(meta || {}),
+      id: meta && meta.id ? meta.id : String(id).split('-')[0],
+      slug: (meta && meta.slug) || String(id).split('-').slice(1).join('-'),
       title,
-      overview: plotMatch ? decodeHtml(plotMatch[1]).replace(/<[^>]*>/g, '').trim() : '',
-      poster,
-      banner,
-      slug: (meta && meta.slug) || id,
-      rating: meta && meta.score ? Number(meta.score) || 10 : 10,
-      episodesCount: episodesCountRaw ? Number(episodesCountRaw) || 0 : 0,
-    };
+      plot: plotMatch ? decodeHtml(plotMatch[1]).replace(/<[^>]*>/g, '').trim() : (meta && meta.plot),
+      imageurl: poster,
+      imageurl_cover: banner,
+      episodes_count: episodesCountRaw,
+    });
+
+    // La route usa l'id richiesto, che puo' includere lo slug.
+    anime.id = id;
+    anime.sid = id;
+    anime.episodesCount = episodesCountRaw ? Number(episodesCountRaw) || 0 : 0;
+
+    return anime;
   });
 }
 
@@ -401,13 +398,15 @@ const EPISODES_INLINE_LIMIT = 120;
 function toEpisode(episode, index) {
   const number = Number(episode.number) || (index + 1);
 
-  return {
+  return new Episode({
     id: String(episode.id),
     number,
     title: `Episodio ${number}`,
     overview: '',
     poster: '',
-  };
+    created_at: episode.created_at || null,
+    updated_at: episode.created_at || null,
+  });
 }
 
 /**

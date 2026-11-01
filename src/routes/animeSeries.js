@@ -3,6 +3,7 @@ import * as TVDML from 'tvdml';
 import Tile from '../components/tile';
 import styles from '../common/styles';
 
+import { buildAnimeSeasons } from '../helpers/models';
 import { getAllEpisodes, getAnime } from '../request/animeunity';
 import { defaultErrorHandlers } from '../helpers/auth/handlers';
 import Loader from '../components/loader';
@@ -12,34 +13,6 @@ import { get as i18n } from '../localization';
 // come fa la controparte Kotlin (AnimeUnityProvider.kt:1160).
 const EPISODES_PER_SEASON = 120;
 
-/**
- * Divide gli episodi in blocchi da EPISODES_PER_SEASON.
- * Restituisce [] se non serve spezzare: in quel caso il dettaglio
- * mostra la lista episodi direttamente.
- */
-function buildSeasons(episodes) {
-  if (!episodes || episodes.length <= EPISODES_PER_SEASON) return [];
-
-  const seasons = [];
-
-  for (let start = 0; start < episodes.length; start += EPISODES_PER_SEASON) {
-    const chunk = episodes.slice(start, start + EPISODES_PER_SEASON);
-    const from = chunk[0].number;
-    const to = chunk[chunk.length - 1].number;
-
-    seasons.push({
-      type: 'animeSeason',
-      number: seasons.length + 1,
-      title: `Episodi ${from}-${to}`,
-      episodes: chunk,
-      episodes_count: chunk.length,
-      poster: '',
-    });
-  }
-
-  return seasons;
-}
-
 export default function animeSeriesRoute() {
   return TVDML.createPipeline()
     .pipe(
@@ -47,21 +20,18 @@ export default function animeSeriesRoute() {
         id: (navigation && (navigation.id || navigation.sid)) || '',
         title: navigation && navigation.title,
         poster: navigation && navigation.poster,
-        episodes: navigation && navigation.episodes,
-        seasonTitle: navigation && navigation.seasonTitle,
+        banner: navigation && navigation.banner,
       })),
     )
     .pipe(
       TVDML.render(
         TVDML.createComponent({
           getInitialState() {
-            const episodes = this.props.episodes || [];
-
             return {
-              loading: episodes.length === 0,
+              loading: true,
               highlightEpisode: 0,
-              show: null,
-              episodes,
+              anime: null,
+              seasons: [],
             };
           },
 
@@ -70,17 +40,9 @@ export default function animeSeriesRoute() {
               return <Loader title={this.props.title || i18n('loading')} />;
             }
 
-            return this.renderDetail();
-          },
+            const { anime } = this.state;
 
-          /* ---------------------------------------------------------- */
-          /* Dettaglio: replica di tvshow.js (productTemplate)          */
-          /* ---------------------------------------------------------- */
-
-          renderDetail() {
-            const { show } = this.state;
-
-            if (!show) {
+            if (!anime) {
               return (
                 <document>
                   <head>{styles}</head>
@@ -98,61 +60,65 @@ export default function animeSeriesRoute() {
               <document>
                 <head>{styles}</head>
                 <productTemplate>
-                  {show.banner && (
+                  {anime.banner && (
                     <background>
-                      <img src={show.banner} scaleToFill="true" />
+                      <img src={anime.banner} scaleToFill="true" />
                     </background>
                   )}
                   <banner style="background-color: rgba(0, 0, 0, 0.5);">
-                    {this.renderInfo(show)}
-                    {!show.banner && <heroImg src={show.poster} />}
+                    {this.renderStatus(anime)}
+                    {this.renderInfo(anime)}
+                    {!anime.banner && <heroImg src={anime.poster} />}
                   </banner>
-                  {this.renderSeasons(show)}
+                  {this.renderSeasons(anime)}
                 </productTemplate>
               </document>
             );
           },
 
-          renderInfo(show) {
+          renderStatus(anime) {
+            if (!anime.genres || !anime.genres.length) return null;
+
+            return (
+              <infoList>
+                <info>
+                  <header>
+                    <title>{i18n('tvshow-genres')}</title>
+                  </header>
+                  <description>{anime.genres.map(g => g.name).join(', ')}</description>
+                </info>
+              </infoList>
+            );
+          },
+
+          renderInfo(anime) {
             return (
               <stack>
-                <title>{show.title}</title>
-                {show.rating && (
+                <title>{anime.title}</title>
+                {anime.rating && (
                   <row>
-                    <ratingBadge value={String(show.rating / 10)} />
+                    <ratingBadge value={String(anime.rating / 10)} />
                   </row>
                 )}
-                <description>{show.overview || i18n('no-description')}</description>
+                {anime.released && (
+                  <row>
+                    <text>{anime.released}</text>
+                  </row>
+                )}
+                <description>{anime.overview || i18n('no-description')}</description>
               </stack>
             );
           },
 
-          renderSeasons(show) {
-            const seasons = buildSeasons(this.state.episodes);
+          renderSeasons(anime) {
+            const { seasons } = this.state;
 
-            if (!seasons.length) {
-              // Pochi episodi: si entra direttamente nella lista episodi
+            if (!seasons || !seasons.length) {
               return (
                 <shelf>
                   <header>
-                    <title>
-                      {i18n('anime-episodes-count', { count: this.state.episodes.length })}
-                    </title>
+                    <title>{i18n('anime-no-episodes')}</title>
                   </header>
-                  <section>
-                    <Tile
-                      type="animeSeason"
-                      title={i18n('anime-episodes')}
-                      poster={show.poster}
-                      counter={this.state.episodes.length}
-                      episodes={this.state.episodes}
-                      seasonTitle={i18n('anime-episodes')}
-                      animeTitle={show.title}
-                      animePoster={show.poster}
-                      animeBanner={show.banner}
-                      animeId={show.id}
-                    />
-                  </section>
                 </shelf>
               );
             }
@@ -160,32 +126,32 @@ export default function animeSeriesRoute() {
             return (
               <shelf>
                 <header>
-                  <title>{i18n('anime-seasons')} - {seasons.length}</title>
+                  <title>
+                    {seasons.length > 1
+                      ? `${i18n('anime-seasons')} - ${seasons.length}`
+                      : i18n('anime-episodes-count', { count: anime.episodes_count })}
+                  </title>
                 </header>
                 <section>
                   {seasons.map(season => (
                     <Tile
-                      key={`${show.id}-${season.number}`}
-                      type="animeSeason"
-                      title={season.title}
-                      poster={show.poster}
+                      key={season.id}
+                      type={season.type}
+                      title={season.title || i18n('anime-episodes')}
+                      poster={season.poster || anime.poster}
                       counter={season.episodes_count}
                       episodes={season.episodes}
                       seasonTitle={season.title}
-                      animeTitle={show.title}
-                      animePoster={show.poster}
-                      animeBanner={show.banner}
-                      animeId={show.id}
+                      animeTitle={anime.title}
+                      animePoster={anime.poster}
+                      animeBanner={anime.banner}
+                      animeId={anime.id}
                     />
                   ))}
                 </section>
               </shelf>
             );
           },
-
-          /* ---------------------------------------------------------- */
-          /* Dati                                                       */
-          /* ---------------------------------------------------------- */
 
           componentDidMount() {
             this.loadData();
@@ -194,32 +160,38 @@ export default function animeSeriesRoute() {
           loadData() {
             const { id } = this.props;
 
-            // Si arriva dalla stagione virtuale: gli episodi sono gia' in props.
-            if (this.state.episodes.length) return Promise.resolve();
-
             if (!id) {
-              this.setState({ loading: false, show: null });
+              this.setState({ loading: false, anime: null });
               return Promise.resolve();
             }
 
             return getAnime(id)
-              .then(show =>
-                getAllEpisodes(id, show.episodesCount).then(({ episodes, embedUrl }) => {
+              .then(anime =>
+                getAllEpisodes(id, anime.episodesCount).then(({ episodes }) => {
+                  const seasons = buildAnimeSeasons(
+                    episodes,
+                    {
+                      animeId: anime.id,
+                      animeTitle: anime.title,
+                      animeBanner: anime.banner,
+                      poster: anime.poster,
+                    },
+                    EPISODES_PER_SEASON,
+                  );
+
                   this.setState({
                     loading: false,
-                    show,
-                    episodes,
-                    embedUrl,
+                    anime,
+                    seasons,
                   });
                 }),
               )
               .catch(error => {
                 console.error('Anime: caricamento serie fallito', error);
-                this.setState({ loading: false, show: null });
+                this.setState({ loading: false, anime: null });
                 defaultErrorHandlers(error);
               });
           },
-
         }),
       ),
     );
