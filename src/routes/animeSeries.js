@@ -211,9 +211,10 @@ export default function animeSeriesRoute() {
                   {seasons.map(season => (
                     <Tile
                       type={season.type}
-                      title={season.title || i18n('anime-season-title')}
+                      title={i18n('anime-season-title')}
+                      subtitle={season.range}
                       poster={season.poster || anime.poster}
-                      counter={season.range || season.episodes_count}
+                      counter={season.episodes_count}
                       isWatched={false}
                       isUpdated={season.isUpdated}
                       animeId={anime.id}

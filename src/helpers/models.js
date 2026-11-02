@@ -408,9 +408,15 @@ export function buildAnimeSeasons(episodes, meta = {}, perSeason = 120) {
 
     // Sotto il limite non serve spezzare: un unico blocco.
     if (episodes.length <= perSeason) {
+        const first = episodes[0].number;
+        const last = episodes[episodes.length - 1].number;
+
         return [new AnimeSeason({
             number: 1,
             title: meta.seasonTitle || "",
+            range: `${first}-${last}`,
+            episodeStart: first,
+            episodeEnd: last,
             episodes,
             poster: meta.poster,
             animeId: meta.animeId,
@@ -428,8 +434,7 @@ export function buildAnimeSeasons(episodes, meta = {}, perSeason = 120) {
 
         seasons.push(new AnimeSeason({
             number: seasons.length + 1,
-            // Il titolo resta "Episodi" come nella controparte serie TV;
-            // il range va nel counter, non nel titolo.
+            // Il titolo resta "Episodi": il range va nel sottotitolo.
             title: "",
             range: `${from}-${to}`,
             episodeStart: from,
