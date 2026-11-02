@@ -367,6 +367,10 @@ export function getAnime(id) {
       ? decodeHtml(titleMatch[1]).replace(/<[^>]*>/g, '').trim()
       : (meta && (meta.title_eng || meta.title)) || '';
 
+    if (!meta) {
+      console.error('AnimeUnity: JSON del video-player non leggibile, dati ridotti');
+    }
+
     const anime = new Anime({
       ...(meta || {}),
       id: meta && meta.id ? meta.id : String(id).split('-')[0],

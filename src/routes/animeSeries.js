@@ -29,6 +29,8 @@ export default function animeSeriesRoute() {
         title: navigation && navigation.title,
         poster: navigation && navigation.poster,
         banner: navigation && navigation.banner,
+        // Fallback: il tile della sezione anime porta gia' lo status.
+        status: navigation && navigation.status,
       })),
     )
     .pipe(
@@ -264,8 +266,14 @@ export default function animeSeriesRoute() {
             }
 
             return getAnime(id)
-              .then(anime =>
-                getAllEpisodes(id, anime.episodesCount).then(({ episodes }) => {
+              .then(rawAnime => {
+                const anime = rawAnime;
+
+                if (!anime.status && this.props.status) {
+                  anime.status = this.props.status;
+                }
+
+                return getAllEpisodes(id, anime.episodesCount).then(({ episodes }) => {
                   const seasons = buildAnimeSeasons(
                     episodes,
                     {
@@ -283,8 +291,8 @@ export default function animeSeriesRoute() {
                     seasons,
                     isPreferred: user.isAnimeFavorite(anime.id),
                   });
-                }),
-              )
+                });
+              })
               .catch(error => {
                 console.error('Anime: caricamento serie fallito', error);
                 this.setState({ loading: false, anime: null });
