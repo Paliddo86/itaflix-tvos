@@ -219,7 +219,6 @@ export default function animeSeriesRoute() {
                       animeId={anime.id}
                       animeTitle={anime.title}
                       animePoster={anime.poster}
-                      animeBanner={anime.banner}
                       episodeStart={season.episodeStart}
                       episodeEnd={season.episodeEnd}
                     />
@@ -279,7 +278,6 @@ export default function animeSeriesRoute() {
                     {
                       animeId: anime.id,
                       animeTitle: anime.title,
-                      animeBanner: anime.banner,
                       poster: anime.poster,
                     },
                     EPISODES_PER_SEASON,

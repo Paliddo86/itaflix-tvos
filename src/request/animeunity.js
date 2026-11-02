@@ -169,7 +169,6 @@ function toShow(anime) {
     ...anime,
     imageurl: imageUrl(anime.imageurl),
     cover: imageUrl(anime.cover),
-    imageurl_cover: imageUrl(anime.imageurl_cover),
   });
 }
 
@@ -262,7 +261,6 @@ function parseFeaturedAnime(html) {
       title,
       imageurl: imageUrl(anime.imageurl),
       cover: imageUrl(anime.cover),
-      imageurl_cover: imageUrl(anime.imageurl_cover),
     }));
   });
 
@@ -400,9 +398,6 @@ export function getAnime(id) {
       ? imageUrl(meta.imageurl || meta.cover || htmlCover)
       : imageUrl(htmlCover);
 
-    // imageurl_cover e' il banner orizzontale usato come sfondo.
-    const banner = meta ? imageUrl(meta.imageurl_cover) : '';
-
     const episodesCountRaw = readAttr(html, 'video-player', 'episodes_count');
 
     const title = titleMatch
@@ -420,7 +415,8 @@ export function getAnime(id) {
       title,
       plot: plotMatch ? decodeHtml(plotMatch[1]).replace(/<[^>]*>/g, '').trim() : (meta && meta.plot),
       imageurl: poster,
-      imageurl_cover: banner,
+      // imageurl_cover non viene passato: il banner di AnimeUnity e' di
+      // qualita' scarsa, senza di esso la schermata usa il poster.
       episodes_count: episodesCountRaw,
     });
 

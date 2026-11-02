@@ -34,7 +34,6 @@ export default function animeSeasonRoute() {
           animeId: navigation.animeId,
           animeTitle: navigation.animeTitle,
           animePoster: navigation.animePoster,
-          animeBanner: navigation.animeBanner,
           seasonTitle: navigation.title,
           episodeStart: Number(navigation.episodeStart) || 0,
           episodeEnd: Number(navigation.episodeEnd) || 0,
@@ -118,7 +117,7 @@ export default function animeSeasonRoute() {
                     <relatedContent>
                       <lockup>
                         <img
-                          src={this.props.animePoster || this.props.animeBanner}
+                          src={this.props.animePoster}
                           style="tv-placeholder: tv"
                           width="100%"
                           height="100%"
@@ -254,7 +253,7 @@ export default function animeSeasonRoute() {
                 title: `${this.props.animeTitle} - ${i18n('episode-number', { epLabel: episode.number })}`,
                 description: episode.overview || '',
                 stream: link,
-                artworkImageURL: this.props.animePoster || this.props.animeBanner,
+                artworkImageURL: this.props.animePoster,
                 resumeTime: 0,
               };
 

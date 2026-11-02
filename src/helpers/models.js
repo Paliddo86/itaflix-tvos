@@ -306,7 +306,11 @@ export class Anime {
         // Poster verticale; cover come fallback. Mai imageurl_cover (banner).
         this.poster = imageurl || cover || "";
         this.cover = cover || imageurl || "";
-        this.banner = imageurl_cover || "";
+
+        // Il banner di AnimeUnity (imageurl_cover) e' un'immagine orizzontale
+        // di qualita' scarsa: lasciandolo vuoto la schermata dettaglio usa
+        // il poster come heroImg, come nelle serie TV senza banner.
+        this.banner = "";
 
         this.genres = genres || [];
         this.recommendations = recommendations || [];
