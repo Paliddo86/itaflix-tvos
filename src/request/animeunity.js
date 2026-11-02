@@ -25,6 +25,7 @@ let sessionPromise = null;
 
 function decodeHtml(value) {
   if (!value) return '';
+
   return value
     .replace(/&quot;/g, '"')
     .replace(/&#0?39;/g, "'")
@@ -32,6 +33,35 @@ function decodeHtml(value) {
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
     .replace(/&amp;/g, '&');
+}
+
+/**
+ * Decodifica il valore di un attributo HTML che contiene JSON entity-encoded.
+ *
+ * AnimeUnity a volte doppia-codifica le virgolette nel testo: il plot puo'
+ * contenere "&amp;quot;" (cioe' &quot; protetto). Con una decodifica
+ * sequenziale "&quot;" -> '"' verrebbe applicata prima di "&amp;" -> '&',
+ * spezzando la stringa JSON e facendo fallire il parse.
+ *
+ * Qui "&amp;" viene messo temporaneamente da parte, si decodifica il resto,
+ * poi si ripristina: cosi' "&amp;quot;" diventa il testo "&quot;" e non una
+ * virgoletta che chiude la stringa.
+ */
+const AMP_PLACEHOLDER = '\u0000AMP\u0000';
+
+function decodeJsonAttr(value) {
+  if (!value) return '';
+
+  const protectedValue = value.replace(/&amp;/g, AMP_PLACEHOLDER);
+
+  const decoded = protectedValue
+    .replace(/&quot;/g, '"')
+    .replace(/&#0?39;/g, "'")
+    .replace(/&apos;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>');
+
+  return decoded.split(AMP_PLACEHOLDER).join('&');
 }
 
 function addHeaders(dict) {
@@ -61,10 +91,22 @@ function readAttr(html, tagPattern, attrName) {
   return attrMatch ? decodeHtml(attrMatch[1]) : null;
 }
 
+/**
+ * Come readAttr ma senza decodificare: serve agli attributi che contengono
+ * JSON, dove la decodifica va fatta da decodeJsonAttr in un colpo solo.
+ */
+function readRawAttr(html, tagPattern, attrName) {
+  const tagMatch = new RegExp(`<${tagPattern}[^>]*>`, 'i').exec(html);
+  if (!tagMatch) return null;
+  const attrMatch = new RegExp(`${attrName}="([^"]*)"`, 'i').exec(tagMatch[0]);
+  return attrMatch ? attrMatch[1] : null;
+}
+
 function safeJsonParse(raw, fallback) {
   if (!raw) return fallback;
+
   try {
-    return JSON.parse(decodeHtml(raw));
+    return JSON.parse(decodeJsonAttr(raw));
   } catch (e) {
     console.warn('AnimeUnity: JSON non valido', e);
     return fallback;
@@ -136,7 +178,7 @@ function toShow(anime) {
  * Equivalente di parseLatestEpisodes (AnimeUnityProvider.kt:412).
  */
 function parseLatestEpisodes(html) {
-  const itemsJson = readAttr(html, 'layout-items', 'items-json');
+  const itemsJson = readRawAttr(html, 'layout-items', 'items-json');
   const parsed = safeJsonParse(itemsJson, null);
   if (!parsed || !parsed.data) return [];
 
@@ -203,7 +245,7 @@ function parseLatestAdditions(html) {
  * Equivalente di parseFeaturedAnime (AnimeUnityProvider.kt:530).
  */
 function parseFeaturedAnime(html) {
-  const animesJson = readAttr(html, 'the-carousel', 'animes');
+  const animesJson = readRawAttr(html, 'the-carousel', 'animes');
   const parsed = safeJsonParse(animesJson, null);
   if (!Array.isArray(parsed)) return [];
 
@@ -344,7 +386,7 @@ export function getAnime(id) {
     // Il tag <img class="cover"> e' spesso un placeholder (es. 640x960):
     // i dati veri stanno nel JSON dell'attributo `anime` di <video-player>.
     let meta = null;
-    const animeJson = readAttr(html, 'video-player', 'anime');
+    const animeJson = readRawAttr(html, 'video-player', 'anime');
 
     if (animeJson) {
       meta = safeJsonParse(animeJson, null);
@@ -438,7 +480,7 @@ export function getEpisodesByRange(animeId, startRange, endRange) {
 
 export function getEpisodes(id) {
   return get(`${BASE_URL}/anime/${id}`, { 'User-Agent': USER_AGENT }).then(html => {
-    const episodesRaw = readAttr(html, 'video-player', 'episodes');
+    const episodesRaw = readRawAttr(html, 'video-player', 'episodes');
     const episodesCount = Number(readAttr(html, 'video-player', 'episodes_count')) || 0;
 
     // Il payload e' JSON gia' decodificato dalle entita HTML. Alcune versioni
