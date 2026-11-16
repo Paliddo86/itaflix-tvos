@@ -59,12 +59,148 @@ export class VixSrcService{
       .then(...this.requestLogger('GET', url));
   }
 
+  /**
+   * Contatore per gli id di richiesta del bridge nativo.
+   */
+  static fetchSeq = 0;
+
+  /**
+   * GET della pagina embed con header `Referer`.
+   *
+   * PERCHE' NON BASTA XHR: su tvOS `Referer` e' un forbidden header, il
+   * webview lo scarta in silenzio e vixsrc risponde 403.
+   *
+   * Il nativo espone due funzioni (tvos/itaflix/AppDelegate.swift):
+   *   FetchWithReferer(url, referer, requestId)  avvia la richiesta
+   *   ReadFetchResult(requestId)                 legge l'esito
+   *
+   * Non si usa una callback JS dal nativo: trattenere una JSValue in una
+   * closure asincrona la rende invalida e fa crashare ITMLKit in
+   * -[__NSSetM addObject:]. Il risultato passa quindi da UserDefaults e qui
+   * viene letto con un polling breve.
+   */
+  static getEmbed(url) {
+    const referer = `${this.baseUrl}/`;
+
+    const scope = typeof globalThis !== 'undefined' ? globalThis : null;
+    const fetchNative = scope && typeof scope.FetchWithReferer === 'function'
+      ? scope.FetchWithReferer
+      : null;
+    const readNative = scope && typeof scope.ReadFetchResult === 'function'
+      ? scope.ReadFetchResult
+      : null;
+
+    if (fetchNative && readNative) {
+      this.fetchSeq += 1;
+      const requestId = `r${Date.now()}_${this.fetchSeq}`;
+
+      fetchNative(url, referer, requestId);
+
+      const started = Date.now();
+      const timeoutMs = 15000;
+
+      return new Promise((resolve, reject) => {
+        const tick = () => {
+          const res = readNative(requestId) || {};
+
+          if (res.done) {
+            if (res.error) {
+              reject(new Error(String(res.error)));
+              return;
+            }
+            resolve({
+              status: Number(res.status) || 0,
+              html: res.body == null ? '' : String(res.body),
+            });
+            return;
+          }
+
+          if (Date.now() - started > timeoutMs) {
+            reject(new Error('Timeout nel recupero della pagina embed'));
+            return;
+          }
+
+          setTimeout(tick, 60);
+        };
+
+        setTimeout(tick, 60);
+      }).then(result => {
+        if (process.env.NODE_ENV === 'development') {
+          console.info('GET(native)', url, result.status, `${result.html.length}b`);
+        }
+        return result;
+      });
+    }
+
+    // Fallback: XHR diretto (su tvOS il Referer viene scartato).
+    return request
+      .get(url, { prepare: this.addHeaders(this.headers()) })
+      .then(response => ({ status: response.status, html: response.responseText }))
+      .then(...this.requestLogger('GET', url));
+  }
+
+  /**
+   * Lingua preferita passata a vixsrc.
+   *
+   * Determina quale traccia audio vixsrc marca DEFAULT=YES nella playlist:
+   * con `lang=it` l'audio italiano, senza parametro l'inglese.
+   * (Verificato: senza `lang` -> "English" DEFAULT=YES.)
+   */
+  static lang = 'it';
+
   static buildUrl(id) {
-    return `${this.baseUrl}/api/movie/${id}`;
+    return `${this.baseUrl}/api/movie/${id}?lang=${this.lang}`;
+  }
+
+  /**
+   * Numero massimo di tentativi sulla pagina embed.
+   *
+   * Il vecchio codice usava `do { ... } while (true)` gestendo solo 200 e 410:
+   * qualunque altro status (403, 404, 500...) causava un ciclo infinito di
+   * richieste. Qui ogni caso e' gestito e i tentativi sono limitati.
+   */
+  static maxEmbedAttempts = 5;
+
+  /**
+   * Scarica l'HTML della pagina embed.
+   *
+   * 200 -> ok, si restituisce l'HTML.
+   * 410 -> token scaduto: si richiede un nuovo `src` all'API e si riprova.
+   * altro -> errore esplicito (niente loop).
+   *
+   * @param {string} apiUrl URL dell'API che espone `src`
+   * @param {object} data   risposta corrente dell'API (contiene `src`)
+   * @returns {Promise<string>} HTML della pagina embed
+   */
+  static async fetchEmbedHtml(apiUrl, data) {
+    let current = data;
+
+    for (let attempt = 1; attempt <= this.maxEmbedAttempts; attempt += 1) {
+      const embedUrl = `${this.baseUrl}${current.src}`;
+      const response = await this.getEmbed(embedUrl);
+
+      if (response.status === 200) {
+        return response.html;
+      }
+
+      if (response.status === 410) {
+        const refreshed = await this.getJson(apiUrl);
+        if (!refreshed || !refreshed.src) {
+          throw new Error("Field 'src' mancante nel JSON.");
+        }
+        current = refreshed;
+      } else {
+        throw new Error(`Status code: ${response.status}`);
+      }
+    }
+
+    throw new Error(
+      `Impossibile recuperare la pagina embed dopo ${this.maxEmbedAttempts} tentativi.`,
+    );
   }
 
   static buildTvShowUrl(id, seasonNumber, episodeNumber) {
-    return `${this.baseUrl}/api/tv/${id}/${seasonNumber}/${episodeNumber}`;
+    return `${this.baseUrl}/api/tv/${id}/${seasonNumber}/${episodeNumber}?lang=${this.lang}`;
   }
 
   static findObjectEnd(str) {
@@ -261,6 +397,9 @@ export class VixSrcService{
       params.push("h=1");
     }
 
+    // Lingua: allinea le tracce marcate DEFAULT nella playlist.
+    params.push(`lang=${this.lang}`);
+
     // Verifica se la URL ha già parametri
     if (url.includes("?")) {
       url += "&" + params.join("&");
@@ -272,62 +411,26 @@ export class VixSrcService{
   }
 
   static async getMovieUrl(id) {
-    try {
-      let url = this.buildUrl(id);
-      let data = await this.getJson(url);
-  
-      if (!data.src) {
-        throw new Error("Field 'src' mancante nel JSON.");
-      }
-  
-      let newUrl = `${this.baseUrl}${data.src}`;
-      let response;
-  
-      do {
-        response = await this.get(newUrl, true);
-        console.log("HTML Response:", response.status);
-        if (response.status === 410) {
-          data = await this.getJson(url);
-          newUrl = `${this.baseUrl}${data.src}`;
-        } else if (response.status === 200) {
-          break;
-        }
-      } while (true);
-  
-      const result = this.extractUrl(response.html);
-      return this.buildFinalUrl(result);
-    } catch (error) {
-      throw error; // Rilancia l'errore dopo il log
+    const url = this.buildUrl(id);
+    const data = await this.getJson(url);
+
+    if (!data.src) {
+      throw new Error("Field 'src' mancante nel JSON.");
     }
+
+    const html = await this.fetchEmbedHtml(url, data);
+    return this.buildFinalUrl(this.extractUrl(html));
   }
 
   static async getTvShowUrl(id, seasonNumber, episodeNumber) {
-    try {
-      let url = this.buildTvShowUrl(id, seasonNumber, episodeNumber);
-      let data = await this.getJson(url);
+    const url = this.buildTvShowUrl(id, seasonNumber, episodeNumber);
+    const data = await this.getJson(url);
 
-      if (!data.src) {
-        throw new Error("Field 'src' mancante nel JSON.");
-      }
-
-      let newUrl = `${this.baseUrl}${data.src}`;
-      let response;
-
-      do {
-        response = await this.get(newUrl, true);
-        console.log("HTML Response:", response.status);
-        if (response.status === 410) {
-          data = await this.getJson(url);
-          newUrl = `${this.baseUrl}${data.src}`;
-        } else if (response.status === 200) {
-          break;
-        }
-      } while (true);
-
-      const result = this.extractUrl(response.html);
-      return this.buildFinalUrl(result);
-    } catch (error) {
-      throw error;
+    if (!data.src) {
+      throw new Error("Field 'src' mancante nel JSON.");
     }
+
+    const html = await this.fetchEmbedHtml(url, data);
+    return this.buildFinalUrl(this.extractUrl(html));
   }
 }
