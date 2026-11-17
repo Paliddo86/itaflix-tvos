@@ -103,6 +103,16 @@ class AppDelegate: UIResponder, UIApplicationDelegate, TVApplicationControllerDe
 
     func appController(_ appController: TVApplicationController, evaluateAppJavaScriptIn jsContext: JSContext){
         let defaults = UserDefaults(suiteName: "group.com.antonignatov.soap4atv")
+
+        // Store per il bridge FetchWithReferer.
+        //
+        // NON usa l'App Group: `itaflix.entitlements` non dichiara
+        // com.apple.security.application-groups, quindi
+        // UserDefaults(suiteName: "group...") restituisce nil e ogni
+        // scrittura andrebbe persa. UserDefaults.standard non richiede
+        // entitlement e funziona anche su device.
+        // Le chiavi sono prefissate "vixfetch." per evitare collisioni.
+        let fetchStore = UserDefaults.standard
         let StoreInUserDefaults : @convention(block) (String, String) -> Void = {
             (key, value) -> Void in
             defaults?.set(value, forKey: key)
@@ -130,10 +140,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate, TVApplicationControllerDe
             (urlString, referer, requestId) in
 
             guard let url = URL(string: urlString) else {
-                defaults?.set("ERR:URL non valida", forKey: "vixfetch.\(requestId).error")
-                defaults?.set(0, forKey: "vixfetch.\(requestId).status")
-                defaults?.set("", forKey: "vixfetch.\(requestId).body")
-                defaults?.set(true, forKey: "vixfetch.\(requestId).done")
+                fetchStore.set("ERR:URL non valida", forKey: "vixfetch.\(requestId).error")
+                fetchStore.set(0, forKey: "vixfetch.\(requestId).status")
+                fetchStore.set("", forKey: "vixfetch.\(requestId).body")
+                fetchStore.set(true, forKey: "vixfetch.\(requestId).done")
                 return
             }
 
@@ -158,10 +168,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate, TVApplicationControllerDe
                 let message = error.map { String(describing: $0.localizedDescription) } ?? ""
 
                 // Scrittura su UserDefaults: thread-safe, nessun oggetto JS.
-                defaults?.set(status, forKey: "vixfetch.\(requestId).status")
-                defaults?.set(body, forKey: "vixfetch.\(requestId).body")
-                defaults?.set(message, forKey: "vixfetch.\(requestId).error")
-                defaults?.set(true, forKey: "vixfetch.\(requestId).done")
+                fetchStore.set(status, forKey: "vixfetch.\(requestId).status")
+                fetchStore.set(body, forKey: "vixfetch.\(requestId).body")
+                fetchStore.set(message, forKey: "vixfetch.\(requestId).error")
+                fetchStore.set(true, forKey: "vixfetch.\(requestId).done")
             }
             task.resume()
         }
@@ -170,16 +180,16 @@ class AppDelegate: UIResponder, UIApplicationDelegate, TVApplicationControllerDe
         // Getter sincrono per leggere l'esito del fetch.
         // Firma JS: ReadFetchResult(requestId) -> { done, status, body, error }
         let ReadFetchResult: @convention(block) (String) -> [String: Any] = { requestId in
-            let done = defaults?.bool(forKey: "vixfetch.\(requestId).done") ?? false
-            let status = defaults?.integer(forKey: "vixfetch.\(requestId).status") ?? 0
-            let body = defaults?.string(forKey: "vixfetch.\(requestId).body") ?? ""
-            let error = defaults?.string(forKey: "vixfetch.\(requestId).error") ?? ""
+            let done = fetchStore.bool(forKey: "vixfetch.\(requestId).done")
+            let status = fetchStore.integer(forKey: "vixfetch.\(requestId).status")
+            let body = fetchStore.string(forKey: "vixfetch.\(requestId).body") ?? ""
+            let error = fetchStore.string(forKey: "vixfetch.\(requestId).error") ?? ""
 
             if done {
-                defaults?.removeObject(forKey: "vixfetch.\(requestId).done")
-                defaults?.removeObject(forKey: "vixfetch.\(requestId).status")
-                defaults?.removeObject(forKey: "vixfetch.\(requestId).body")
-                defaults?.removeObject(forKey: "vixfetch.\(requestId).error")
+                fetchStore.removeObject(forKey: "vixfetch.\(requestId).done")
+                fetchStore.removeObject(forKey: "vixfetch.\(requestId).status")
+                fetchStore.removeObject(forKey: "vixfetch.\(requestId).body")
+                fetchStore.removeObject(forKey: "vixfetch.\(requestId).error")
             }
 
             return ["done": done, "status": status, "body": body, "error": error]
