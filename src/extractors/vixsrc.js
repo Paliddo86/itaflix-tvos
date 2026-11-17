@@ -79,8 +79,8 @@ export class VixSrcService{
    * -[__NSSetM addObject:]. Il risultato passa quindi da UserDefaults e qui
    * viene letto con un polling breve.
    */
-  static getEmbed(url) {
-    const referer = `${this.baseUrl}/`;
+  static getEmbed(url, referer) {
+    const ref = referer || `${this.baseUrl}/`;
 
     const scope = typeof globalThis !== 'undefined' ? globalThis : null;
     const fetchNative = scope && typeof scope.FetchWithReferer === 'function'
@@ -94,7 +94,7 @@ export class VixSrcService{
       this.fetchSeq += 1;
       const requestId = `r${Date.now()}_${this.fetchSeq}`;
 
-      fetchNative(url, referer, requestId);
+      fetchNative(url, ref, requestId);
 
       const started = Date.now();
       const timeoutMs = 15000;

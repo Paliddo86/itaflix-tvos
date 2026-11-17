@@ -1,4 +1,5 @@
 import * as request from '../request';
+import { VixSrcService } from './vixsrc';
 
 /*
  * AnimeUnity Extractor by Pal0X
@@ -229,10 +230,12 @@ export class AnimeUnityExtractor {
   /**
    * Catena completa: pagina embed -> URL playlist m3u8.
    *
-   * NOTA IMPORTANTE: la playlist vixcloud e le sue sub-playlist/segmenti
-   * rispondono 200 SENZA alcun header (verificato il 2026-11). Non serve
-   * Referer ne' User-Agent in riproduzione: TVMediaItem di TVMLKit non
-   * espone httpHeaders, quindi va bene cosi'.
+   * La pagina /embed/ di vixcloud risponde 403 senza header `Referer`.
+   * Su tvOS `Referer` e' un forbidden header per XMLHttpRequest e il webview
+   * lo scarta in silenzio, quindi il fetch passa dal bridge nativo
+   * (VixSrcService.getEmbed -> URLSession), lo stesso usato per vixsrc.
+   *
+   * La playlist e i segmenti rispondono 200 senza header (verificato).
    *
    * @param {string} embedUrl URL embed restituito da AnimeUnity
    * @returns {Promise<string>} URL della playlist pronto per il player
@@ -242,8 +245,13 @@ export class AnimeUnityExtractor {
       throw new Error('AnimeUnityExtractor: embedUrl mancante');
     }
 
-    const html = await this.get(embedUrl);
-    const data = this.extractPlaylistData(html);
+    const response = await VixSrcService.getEmbed(embedUrl, 'https://animeunity.cx/');
+
+    if (response.status !== 200) {
+      throw new Error(`Status code: ${response.status}`);
+    }
+
+    const data = this.extractPlaylistData(response.html);
 
     return this.buildFinalUrl(data, embedUrl);
   }
