@@ -7,11 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		133820192173BD1E00F5F20A /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 135F90911D2D887B006ACB5B /* AppDelegate.swift */; };
 		135F90921D2D887B006ACB5B /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 135F90911D2D887B006ACB5B /* AppDelegate.swift */; };
 		135F90961D2D887B006ACB5B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 135F90951D2D887B006ACB5B /* Assets.xcassets */; };
 /* End PBXBuildFile section */
-
 
 /* Begin PBXCopyFilesBuildPhase section */
 		137C11AB1D35971000514062 /* Embed Frameworks */ = {
@@ -31,7 +29,6 @@
 		135F90911D2D887B006ACB5B /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		135F90951D2D887B006ACB5B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		135F90971D2D887B006ACB5B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		20C244022166C2CB0055C35F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		20C2440A2166CAF50055C35F /* itaflix.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = itaflix.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -50,7 +47,6 @@
 			isa = PBXGroup;
 			children = (
 				135F90901D2D887B006ACB5B /* itaflix */,
-				20C243FC2166C2CB0055C35F /* Frameworks */,
 				135F908F1D2D887B006ACB5B /* Products */,
 			);
 			sourceTree = "<group>";
@@ -114,16 +110,6 @@
 							};
 						};
 					};
-					20C243FA2166C2CB0055C35F = {
-						CreatedOnToolsVersion = 9.2;
-						LastSwiftMigration = 1010;
-						ProvisioningStyle = Automatic;
-						SystemCapabilities = {
-							com.apple.ApplicationGroups.iOS = {
-								enabled = 0;
-							};
-						};
-					};
 				};
 			};
 			buildConfigurationList = 135F90891D2D887B006ACB5B /* Build configuration list for PBXProject "itaflix" */;
@@ -165,7 +151,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
-
 
 /* Begin XCBuildConfiguration section */
 		135F90981D2D887B006ACB5B /* Debug */ = {
@@ -286,7 +271,7 @@
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = "App Icon & Top Shelf Image";
 				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
-				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 5CKXUB348U;
@@ -295,7 +280,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 5.4.0;
+				MARKETING_VERSION = 5.4.1;
 				"OTHER_CODE_SIGN_FLAGS[sdk=*]" = "--generate-entitlement-der";
 				OTHER_SWIFT_FLAGS = "-DDEBUG";
 				PRODUCT_BUNDLE_IDENTIFIER = com.elenanigro.itaflix;
@@ -312,7 +297,7 @@
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = "App Icon & Top Shelf Image";
 				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
-				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 5CKXUB348U;
@@ -321,7 +306,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 5.4.0;
+				MARKETING_VERSION = 5.4.1;
 				"OTHER_CODE_SIGN_FLAGS[sdk=*]" = "--generate-entitlement-der";
 				OTHER_SWIFT_FLAGS = "-DRELEASE";
 				PRODUCT_BUNDLE_IDENTIFIER = com.elenanigro.itaflix;

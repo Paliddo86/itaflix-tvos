@@ -124,11 +124,6 @@ export class VixSrcService{
         };
 
         setTimeout(tick, 60);
-      }).then(result => {
-        if (process.env.NODE_ENV === 'development') {
-          console.info('GET(native)', url, result.status, `${result.html.length}b`);
-        }
-        return result;
       });
     }
 
