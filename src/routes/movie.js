@@ -382,6 +382,14 @@ export default function movieRoute() {
             // #region LOAD MOVIE
             // Loading and starting playback.
             const preparePlayer = (link) => {
+              // Guard: una URL vuota/assente farebbe crashare ITMLKit dentro
+              // new MediaItem() (__NSSetM addObject: con nil). Meglio un
+              // errore gestito dall'app.
+              if (!link || typeof link !== 'string') {
+                defaultErrorHandlers(new Error('Stream non disponibile'));
+                return;
+              }
+
               let movie = {
                 title,
                 description: overview,
